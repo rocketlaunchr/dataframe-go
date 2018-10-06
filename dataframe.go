@@ -98,6 +98,7 @@ func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interfac
 	}
 }
 
+// Prepend inserts a row at the beginning.
 func (df *DataFrame) Prepend(vals ...interface{}) {
 	df.lock.Lock()
 	defer df.lock.Unlock()
@@ -135,10 +136,12 @@ func (df *DataFrame) Prepend(vals ...interface{}) {
 	}
 }
 
+// Append inserts a row at the end.
 func (df *DataFrame) Append(vals ...interface{}) {
 	df.Insert(df.n, vals...)
 }
 
+// Insert adds a row to a particular position.
 func (df *DataFrame) Insert(row int, vals ...interface{}) {
 	df.lock.Lock()
 	defer df.lock.Unlock()
@@ -181,6 +184,7 @@ func (df *DataFrame) insert(row int, vals ...interface{}) {
 	}
 }
 
+// Remove deletes a row.
 func (df *DataFrame) Remove(row int) {
 	df.lock.Lock()
 	defer df.lock.Unlock()
@@ -230,6 +234,8 @@ func (df *DataFrame) UpdateRow(row int, vals ...interface{}) {
 	}
 }
 
+// NameToColumn returns the index of the series based on the name.
+// The starting index is 0.
 func (df *DataFrame) NameToColumn(seriesName string) int {
 	for idx, aSeries := range df.Series {
 		if aSeries.Name() == seriesName {
@@ -244,29 +250,13 @@ func (df *DataFrame) Swap(row1, row2 int) {
 	df.lock.Lock()
 	defer df.lock.Unlock()
 
+	df.swap(row1, row2)
+}
+
+func (df *DataFrame) swap(row1, row2 int) {
 	for idx := range df.Series {
 		df.Series[idx].Swap(row1, row2)
 	}
-}
-
-// Sort is used to sort the data according to different keys
-func (df *DataFrame) Sort(vals ...interface{}) {
-	df.lock.Lock()
-	defer df.lock.Unlock()
-
-	// TODO
-	// if len(vals) > 0 {
-
-	// 	for _, field := range vals {
-
-	// 		series := df.Series[df.NameToColumn(field.(string))]
-
-	// 		series.Slice(series., less func(i, j int) bool)
-
-	// 	}
-
-	// }
-
 }
 
 // Lock will lock the dataframe allowing you to directly manipulate

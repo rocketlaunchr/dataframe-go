@@ -15,14 +15,23 @@ type SeriesTime struct {
 }
 
 // NewSeriesTime creates a new series with the underlying type as time.Time
-func NewSeriesTime(name string, size int, capacity int, vals ...interface{}) *SeriesTime {
+func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTime {
 	s := &SeriesTime{
 		name:   name,
 		Values: []*time.Time{},
 	}
 
-	if size > capacity {
-		capacity = size
+	var (
+		size     int
+		capacity int
+	)
+
+	if init != nil {
+		size = init.Size
+		capacity = init.Capacity
+		if size > capacity {
+			capacity = size
+		}
 	}
 
 	s.Values = make([]*time.Time, size, capacity)
@@ -94,12 +103,14 @@ func (s *SeriesTime) Prepend(val interface{}, options ...Options) {
 }
 
 func (s *SeriesTime) Append(val interface{}, options ...Options) int {
+	var locked bool
 	if len(options) > 0 && !options[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
+		locked = true
 	}
 
-	row := s.NRows()
+	row := s.NRows(Options{DontLock: locked})
 	s.insert(row, val)
 	return row
 }
@@ -166,22 +177,18 @@ func (s *SeriesTime) Swap(row1, row2 int, options ...Options) {
 	s.Values[row1], s.Values[row2] = s.Values[row2], s.Values[row1]
 }
 
-func (s *SeriesTime) SortLessFunc() func(val1 interface{}, val2 interface{}) bool {
-	return func(val1 interface{}, val2 interface{}) bool {
-		t1 := val1.(time.Time)
-		t2 := val2.(time.Time)
+func (s *SeriesTime) IsEqualFunc(a, b interface{}) bool {
+	t1 := a.(time.Time)
+	t2 := b.(time.Time)
 
-		return t1.Before(t2)
-	}
+	return t1.Equal(t2)
 }
 
-func (s *SeriesTime) SortEqualFunc() func(val1 interface{}, val2 interface{}) bool {
-	return func(val1 interface{}, val2 interface{}) bool {
-		t1 := val1.(time.Time)
-		t2 := val2.(time.Time)
+func (s *SeriesTime) IsLessThanFunc(a, b interface{}) bool {
+	t1 := a.(time.Time)
+	t2 := b.(time.Time)
 
-		return t1.Equal(t2)
-	}
+	return t1.Before(t2)
 }
 
 func (s *SeriesTime) Sort(options ...Options) {

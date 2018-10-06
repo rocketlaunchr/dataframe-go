@@ -67,14 +67,14 @@ type Series interface {
 	// Sort will sort the series
 	Sort(options ...Options)
 
-	// SortLessFunc is a function that returns true when val1 is
-	// less than val2. val1 and val2 must not be nil.
-	// See: https://golang.org/pkg/sort/#SliceStable
-	SortLessFunc() func(val1 interface{}, val2 interface{}) bool
+	// IsEqualFunc returns true if a is equal to b
+	IsEqualFunc(a, b interface{}) bool
 
-	// SortEqualFunc is a function that returns true when val1 is
-	// equal to val2. val1 and val2 must not be nil.
-	SortEqualFunc() func(val1 interface{}, val2 interface{}) bool
+	// IsLessThanFunc returns true if a is less than b
+	IsLessThanFunc(a, b interface{}) bool
+
+	// Swap is used to swap 2 values based on their row position.
+	Swap(row1, row2 int, options ...Options)
 
 	// Lock will lock the Series allowing you to directly manipulate
 	// the underlying slice with confidence.
@@ -82,7 +82,4 @@ type Series interface {
 
 	// Unlock will unlock the Series that was previously locked.
 	Unlock()
-
-	// Swap is used to swap 2 values based on their row position.
-	Swap(row1, row2 int, options ...Options)
 }
