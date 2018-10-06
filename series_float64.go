@@ -1,23 +1,25 @@
 package dataframe
 
 import (
+	"fmt"
 	"sort"
+	"strconv"
 	"sync"
 )
 
-type SeriesString struct {
+type SeriesFloat64 struct {
 	valFormatter ValueToStringFormatter
 
 	lock   sync.RWMutex
 	name   string
-	Values []*string
+	Values []*float64
 }
 
-// NewSeriesString creates a new series with the underlying type as string
-func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *SeriesString {
-	s := &SeriesString{
+// NewSeriesFloat64 creates a new series with the underlying type as float64
+func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *SeriesFloat64 {
+	s := &SeriesFloat64{
 		name:   name,
-		Values: []*string{},
+		Values: []*float64{},
 	}
 
 	var (
@@ -33,7 +35,7 @@ func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *Series
 		}
 	}
 
-	s.Values = make([]*string, size, capacity)
+	s.Values = make([]*float64, size, capacity)
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
@@ -47,15 +49,15 @@ func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *Series
 	return s
 }
 
-func (s *SeriesString) Name() string {
+func (s *SeriesFloat64) Name() string {
 	return s.name
 }
 
-func (s *SeriesString) Type() string {
-	return "string"
+func (s *SeriesFloat64) Type() string {
+	return "float64"
 }
 
-func (s *SeriesString) NRows(options ...Options) int {
+func (s *SeriesFloat64) NRows(options ...Options) int {
 	if len(options) > 0 && !options[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
@@ -64,7 +66,7 @@ func (s *SeriesString) NRows(options ...Options) int {
 	return len(s.Values)
 }
 
-func (s *SeriesString) Value(row int, options ...Options) interface{} {
+func (s *SeriesFloat64) Value(row int, options ...Options) interface{} {
 	if len(options) > 0 && !options[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
@@ -77,11 +79,11 @@ func (s *SeriesString) Value(row int, options ...Options) interface{} {
 	return *val
 }
 
-func (s *SeriesString) ValueString(row int, options ...Options) string {
+func (s *SeriesFloat64) ValueString(row int, options ...Options) string {
 	return s.valFormatter(s.Value(row, options...))
 }
 
-func (s *SeriesString) Prepend(val interface{}, options ...Options) {
+func (s *SeriesFloat64) Prepend(val interface{}, options ...Options) {
 	if len(options) > 0 && !options[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
@@ -101,7 +103,7 @@ func (s *SeriesString) Prepend(val interface{}, options ...Options) {
 	s.insert(0, val)
 }
 
-func (s *SeriesString) Append(val interface{}, options ...Options) int {
+func (s *SeriesFloat64) Append(val interface{}, options ...Options) int {
 	var locked bool
 	if len(options) > 0 && !options[0].DontLock {
 		s.lock.Lock()
@@ -114,7 +116,7 @@ func (s *SeriesString) Append(val interface{}, options ...Options) int {
 	return row
 }
 
-func (s *SeriesString) Insert(row int, val interface{}, options ...Options) {
+func (s *SeriesFloat64) Insert(row int, val interface{}, options ...Options) {
 	if len(options) > 0 && !options[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
@@ -123,13 +125,13 @@ func (s *SeriesString) Insert(row int, val interface{}, options ...Options) {
 	s.insert(row, val)
 }
 
-func (s *SeriesString) insert(row int, val interface{}) {
+func (s *SeriesFloat64) insert(row int, val interface{}) {
 	s.Values = append(s.Values, nil)
 	copy(s.Values[row+1:], s.Values[row:])
 	s.Values[row] = s.valToPointer(val)
 }
 
-func (s *SeriesString) Remove(row int, options ...Options) {
+func (s *SeriesFloat64) Remove(row int, options ...Options) {
 	if len(options) > 0 && !options[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
@@ -138,7 +140,7 @@ func (s *SeriesString) Remove(row int, options ...Options) {
 	s.Values = append(s.Values[:row], s.Values[row+1:]...)
 }
 
-func (s *SeriesString) Update(row int, val interface{}, options ...Options) {
+func (s *SeriesFloat64) Update(row int, val interface{}, options ...Options) {
 	if len(options) > 0 && !options[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
@@ -147,15 +149,19 @@ func (s *SeriesString) Update(row int, val interface{}, options ...Options) {
 	s.Values[row] = s.valToPointer(val)
 }
 
-func (s *SeriesString) valToPointer(v interface{}) *string {
+func (s *SeriesFloat64) valToPointer(v interface{}) *float64 {
 	if v == nil {
 		return nil
 	} else {
-		return &[]string{v.(string)}[0]
+		f, err := strconv.ParseFloat(fmt.Sprintf("%v", v), 64)
+		if err != nil {
+			_ = v.(float64)
+		}
+		return &f
 	}
 }
 
-func (s *SeriesString) SetValueToStringFormatter(f ValueToStringFormatter) {
+func (s *SeriesFloat64) SetValueToStringFormatter(f ValueToStringFormatter) {
 	if f == nil {
 		s.valFormatter = DefaultValueFormatter
 		return
@@ -163,7 +169,7 @@ func (s *SeriesString) SetValueToStringFormatter(f ValueToStringFormatter) {
 	s.valFormatter = f
 }
 
-func (s *SeriesString) Swap(row1, row2 int, options ...Options) {
+func (s *SeriesFloat64) Swap(row1, row2 int, options ...Options) {
 	if row1 == row2 {
 		return
 	}
@@ -176,21 +182,21 @@ func (s *SeriesString) Swap(row1, row2 int, options ...Options) {
 	s.Values[row1], s.Values[row2] = s.Values[row2], s.Values[row1]
 }
 
-func (s *SeriesString) IsEqualFunc(a, b interface{}) bool {
-	s1 := a.(string)
-	s2 := b.(string)
+func (s *SeriesFloat64) IsEqualFunc(a, b interface{}) bool {
+	f1 := a.(float64)
+	f2 := b.(float64)
 
-	return s1 == s2
+	return f1 == f2
 }
 
-func (s *SeriesString) IsLessThanFunc(a, b interface{}) bool {
-	s1 := a.(string)
-	s2 := b.(string)
+func (s *SeriesFloat64) IsLessThanFunc(a, b interface{}) bool {
+	f1 := a.(float64)
+	f2 := b.(float64)
 
-	return s1 < s2
+	return f1 < f2
 }
 
-func (s *SeriesString) Sort(options ...Options) {
+func (s *SeriesFloat64) Sort(options ...Options) {
 
 	var sortDesc bool
 
@@ -231,10 +237,10 @@ func (s *SeriesString) Sort(options ...Options) {
 	})
 }
 
-func (s *SeriesString) Lock() {
+func (s *SeriesFloat64) Lock() {
 	s.lock.Lock()
 }
 
-func (s *SeriesString) Unlock() {
+func (s *SeriesFloat64) Unlock() {
 	s.lock.Unlock()
 }
