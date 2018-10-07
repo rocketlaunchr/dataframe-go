@@ -184,17 +184,45 @@ func (s *SeriesString) Swap(row1, row2 int, options ...Options) {
 }
 
 func (s *SeriesString) IsEqualFunc(a, b interface{}) bool {
-	s1 := a.(string)
-	s2 := b.(string)
 
-	return s1 == s2
+	if a == nil {
+		if b == nil {
+			return true
+		} else {
+			return false
+		}
+	} else {
+		if b == nil {
+			return false
+		} else {
+			s1 := a.(string)
+			s2 := b.(string)
+
+			return s1 == s2
+		}
+	}
+
 }
 
 func (s *SeriesString) IsLessThanFunc(a, b interface{}) bool {
-	s1 := a.(string)
-	s2 := b.(string)
 
-	return s1 < s2
+	if a == nil {
+		if b == nil {
+			return true
+		} else {
+			return true
+		}
+	} else {
+		if b == nil {
+			return false
+		} else {
+			s1 := a.(string)
+			s2 := b.(string)
+
+			return s1 < s2
+		}
+	}
+
 }
 
 func (s *SeriesString) Sort(options ...Options) {

@@ -190,17 +190,45 @@ func (s *SeriesFloat64) Swap(row1, row2 int, options ...Options) {
 }
 
 func (s *SeriesFloat64) IsEqualFunc(a, b interface{}) bool {
-	f1 := a.(float64)
-	f2 := b.(float64)
 
-	return f1 == f2
+	if a == nil {
+		if b == nil {
+			return true
+		} else {
+			return false
+		}
+	} else {
+		if b == nil {
+			return false
+		} else {
+			f1 := a.(float64)
+			f2 := b.(float64)
+
+			return f1 == f2
+		}
+	}
+
 }
 
 func (s *SeriesFloat64) IsLessThanFunc(a, b interface{}) bool {
-	f1 := a.(float64)
-	f2 := b.(float64)
 
-	return f1 < f2
+	if a == nil {
+		if b == nil {
+			return true
+		} else {
+			return true
+		}
+	} else {
+		if b == nil {
+			return false
+		} else {
+			f1 := a.(float64)
+			f2 := b.(float64)
+
+			return f1 < f2
+		}
+	}
+
 }
 
 func (s *SeriesFloat64) Sort(options ...Options) {

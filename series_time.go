@@ -185,17 +185,45 @@ func (s *SeriesTime) Swap(row1, row2 int, options ...Options) {
 }
 
 func (s *SeriesTime) IsEqualFunc(a, b interface{}) bool {
-	t1 := a.(time.Time)
-	t2 := b.(time.Time)
 
-	return t1.Equal(t2)
+	if a == nil {
+		if b == nil {
+			return true
+		} else {
+			return false
+		}
+	} else {
+		if b == nil {
+			return false
+		} else {
+			t1 := a.(time.Time)
+			t2 := b.(time.Time)
+
+			return t1.Equal(t2)
+		}
+	}
+
 }
 
 func (s *SeriesTime) IsLessThanFunc(a, b interface{}) bool {
-	t1 := a.(time.Time)
-	t2 := b.(time.Time)
 
-	return t1.Before(t2)
+	if a == nil {
+		if b == nil {
+			return true
+		} else {
+			return true
+		}
+	} else {
+		if b == nil {
+			return false
+		} else {
+			t1 := a.(time.Time)
+			t2 := b.(time.Time)
+
+			return t1.Before(t2)
+		}
+	}
+
 }
 
 func (s *SeriesTime) Sort(options ...Options) {
