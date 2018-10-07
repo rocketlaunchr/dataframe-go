@@ -74,6 +74,13 @@ func (s *SeriesGeneric) Name() string {
 	return s.name
 }
 
+func (s *SeriesGeneric) Rename(n string) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	s.name = n
+}
+
 func (s *SeriesGeneric) Type() string {
 	return fmt.Sprintf("%T", s.concreteType)
 }

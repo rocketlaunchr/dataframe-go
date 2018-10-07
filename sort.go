@@ -75,7 +75,11 @@ func (df *DataFrame) Sort(keys []SortKey) {
 
 		name, ok := key.Key.(string)
 		if ok {
-			key.seriesIndex = df.NameToColumn(name)
+			col, err := df.NameToColumn(name)
+			if err != nil {
+				panic(err)
+			}
+			key.seriesIndex = col
 		} else {
 			key.seriesIndex = key.Key.(int)
 		}
