@@ -60,6 +60,10 @@ type ValuesOptions struct {
 	// InitialRow should be adjusted to NRows()-1 if Step is negative.
 	// If Step is 0, the function will panic.
 	Step int
+
+	// Don't apply lock. This is useful if you intend to Write lock
+	// the entire dataframe
+	DontLock bool
 }
 
 // Values will return an iterator that can be used to iterate through all the values
@@ -67,6 +71,12 @@ func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interfac
 
 	var row int
 	var step int = 1
+
+	var dontlock bool
+
+	if len(options) > 0 {
+		dontlock = options[0].DontLock
+	}
 
 	if len(options) > 0 {
 		row = options[0].InitialRow
@@ -77,8 +87,10 @@ func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interfac
 	}
 
 	return func() (*int, map[interface{}]interface{}) {
-		df.lock.RLock()
-		defer df.lock.RUnlock()
+		if !dontlock {
+			df.lock.RLock()
+			defer df.lock.RUnlock()
+		}
 
 		if row > df.n-1 || row < 0 {
 			// Don't iterate further
