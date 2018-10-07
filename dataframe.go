@@ -61,9 +61,9 @@ type ValuesOptions struct {
 	// If Step is 0, the function will panic.
 	Step int
 
-	// Don't apply lock. This is useful if you intend to Write lock
+	// Don't apply read lock. This is useful if you intend to Write lock
 	// the entire dataframe
-	DontLock bool
+	DontReadLock bool
 }
 
 // Values will return an iterator that can be used to iterate through all the values
@@ -72,10 +72,10 @@ func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interfac
 	var row int
 	var step int = 1
 
-	var dontlock bool
+	var dontReadLock bool
 
 	if len(options) > 0 {
-		dontlock = options[0].DontLock
+		dontReadLock = options[0].DontReadLock
 	}
 
 	if len(options) > 0 {
@@ -87,7 +87,7 @@ func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interfac
 	}
 
 	return func() (*int, map[interface{}]interface{}) {
-		if !dontlock {
+		if !dontReadLock {
 			df.lock.RLock()
 			defer df.lock.RUnlock()
 		}
