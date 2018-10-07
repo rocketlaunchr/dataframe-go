@@ -52,6 +52,13 @@ func (s *SeriesTime) Name() string {
 	return s.name
 }
 
+func (s *SeriesTime) Rename(n string) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	s.name = n
+}
+
 func (s *SeriesTime) Type() string {
 	return "time"
 }

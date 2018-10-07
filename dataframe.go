@@ -1,6 +1,7 @@
 package dataframe
 
 import (
+	"errors"
 	"sync"
 )
 
@@ -79,7 +80,7 @@ func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interfac
 		df.lock.RLock()
 		defer df.lock.RUnlock()
 
-		if row > df.NRows()-1 || row < 0 {
+		if row > df.n-1 || row < 0 {
 			// Don't iterate further
 			return nil, nil
 		}
@@ -119,7 +120,11 @@ func (df *DataFrame) Prepend(vals ...interface{}) {
 			}
 
 			for name, val := range v {
-				df.Series[df.NameToColumn(name)].Prepend(val)
+				col, err := df.NameToColumn(name)
+				if err != nil {
+					panic(err)
+				}
+				df.Series[col].Prepend(val)
 			}
 		default:
 			// Check if number of vals is equal to number of series
@@ -167,7 +172,11 @@ func (df *DataFrame) insert(row int, vals ...interface{}) {
 			}
 
 			for name, val := range v {
-				df.Series[df.NameToColumn(name)].Insert(row, val)
+				col, err := df.NameToColumn(name)
+				if err != nil {
+					panic(err)
+				}
+				df.Series[col].Insert(row, val)
 			}
 		default:
 			// Check if number of vals is equal to number of series
@@ -203,7 +212,11 @@ func (df *DataFrame) Update(row int, col interface{}, val interface{}) {
 
 	switch name := col.(type) {
 	case string:
-		col = df.NameToColumn(name)
+		_col, err := df.NameToColumn(name)
+		if err != nil {
+			panic(err)
+		}
+		col = _col
 	}
 
 	df.Series[col.(int)].Update(row, val)
@@ -219,7 +232,11 @@ func (df *DataFrame) UpdateRow(row int, vals ...interface{}) {
 		switch v := vals[0].(type) {
 		case map[string]interface{}:
 			for name, val := range v {
-				df.Series[df.NameToColumn(name)].Update(row, val)
+				col, err := df.NameToColumn(name)
+				if err != nil {
+					panic(err)
+				}
+				df.Series[col].Update(row, val)
 			}
 		default:
 			// Check if number of vals is equal to number of series
@@ -234,15 +251,27 @@ func (df *DataFrame) UpdateRow(row int, vals ...interface{}) {
 	}
 }
 
+// Names will return a list of all the series names.
+func (df *DataFrame) Names() []string {
+	names := []string{}
+
+	for _, aSeries := range df.Series {
+		names = append(names, aSeries.Name())
+	}
+
+	return names
+}
+
 // NameToColumn returns the index of the series based on the name.
 // The starting index is 0.
-func (df *DataFrame) NameToColumn(seriesName string) int {
+func (df *DataFrame) NameToColumn(seriesName string) (int, error) {
 	for idx, aSeries := range df.Series {
 		if aSeries.Name() == seriesName {
-			return idx
+			return idx, nil
 		}
 	}
-	panic("no series contains name")
+
+	return 0, errors.New("no series contains name")
 }
 
 // Swap is used to swap 2 values based on their row position.

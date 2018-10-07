@@ -17,6 +17,9 @@ type Series interface {
 	// Name returns the series name
 	Name() string
 
+	// Rename renames the series
+	Rename(n string)
+
 	// Type returns the type of data the series holds
 	Type() string
 

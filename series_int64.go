@@ -53,6 +53,13 @@ func (s *SeriesInt64) Name() string {
 	return s.name
 }
 
+func (s *SeriesInt64) Rename(n string) {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	s.name = n
+}
+
 func (s *SeriesInt64) Type() string {
 	return "int64"
 }
