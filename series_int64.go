@@ -190,17 +190,45 @@ func (s *SeriesInt64) Swap(row1, row2 int, options ...Options) {
 }
 
 func (s *SeriesInt64) IsEqualFunc(a, b interface{}) bool {
-	t1 := a.(int64)
-	t2 := b.(int64)
 
-	return t1 == t2
+	if a == nil {
+		if b == nil {
+			return true
+		} else {
+			return false
+		}
+	} else {
+		if b == nil {
+			return false
+		} else {
+			t1 := a.(int64)
+			t2 := b.(int64)
+
+			return t1 == t2
+		}
+	}
+
 }
 
 func (s *SeriesInt64) IsLessThanFunc(a, b interface{}) bool {
-	t1 := a.(int64)
-	t2 := b.(int64)
 
-	return t1 < t2
+	if a == nil {
+		if b == nil {
+			return true
+		} else {
+			return true
+		}
+	} else {
+		if b == nil {
+			return false
+		} else {
+			t1 := a.(int64)
+			t2 := b.(int64)
+
+			return t1 < t2
+		}
+	}
+
 }
 
 func (s *SeriesInt64) Sort(options ...Options) {
