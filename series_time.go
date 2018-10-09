@@ -190,16 +190,15 @@ func (s *SeriesTime) IsEqualFunc(a, b interface{}) bool {
 			return true
 		}
 		return false
-	} else {
-		if b == nil {
-			return false
-		}
-		t1 := a.(time.Time)
-		t2 := b.(time.Time)
-
-		return t1.Equal(t2)
 	}
 
+	if b == nil {
+		return false
+	}
+	t1 := a.(time.Time)
+	t2 := b.(time.Time)
+
+	return t1.Equal(t2)
 }
 
 func (s *SeriesTime) IsLessThanFunc(a, b interface{}) bool {
@@ -209,16 +208,15 @@ func (s *SeriesTime) IsLessThanFunc(a, b interface{}) bool {
 			return true
 		}
 		return true
-	} else {
-		if b == nil {
-			return false
-		}
-		t1 := a.(time.Time)
-		t2 := b.(time.Time)
-
-		return t1.Before(t2)
 	}
 
+	if b == nil {
+		return false
+	}
+	t1 := a.(time.Time)
+	t2 := b.(time.Time)
+
+	return t1.Before(t2)
 }
 
 func (s *SeriesTime) Sort(options ...Options) {
@@ -246,17 +244,17 @@ func (s *SeriesTime) Sort(options ...Options) {
 				return true
 			}
 			return true
-		} else {
-			if s.Values[j] == nil {
-				// i has value and j is nil
-				return false
-			}
-			// Both are not nil
-			ti := *s.Values[i]
-			tj := *s.Values[j]
-
-			return ti.Before(tj)
 		}
+
+		if s.Values[j] == nil {
+			// i has value and j is nil
+			return false
+		}
+		// Both are not nil
+		ti := *s.Values[i]
+		tj := *s.Values[j]
+
+		return ti.Before(tj)
 	})
 }
 
