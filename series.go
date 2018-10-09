@@ -1,7 +1,5 @@
 package dataframe
 
-import ()
-
 type Options struct {
 	// Don't apply lock
 	DontLock bool
@@ -10,6 +8,9 @@ type Options struct {
 	SortDesc bool
 }
 
+// ValueToStringFormatter is used to convert a value
+// into a string. Val can be nil or the concrete
+// type stored by the series.
 type ValueToStringFormatter func(val interface{}) string
 
 type Series interface {
@@ -48,7 +49,7 @@ type Series interface {
 	// the absence of a value.
 	Append(val interface{}, options ...Options) int
 
-	// Insert is used to set a value at an arbitary row in
+	// Insert is used to set a value at an arbitrary row in
 	// the series. All existing values from that row onwards
 	// are shifted by 1. val can be a concrete data type or nil.
 	// Nil represents the absence of a value.
