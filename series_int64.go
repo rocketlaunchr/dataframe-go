@@ -159,13 +159,12 @@ func (s *SeriesInt64) Update(row int, val interface{}, options ...Options) {
 func (s *SeriesInt64) valToPointer(v interface{}) *int64 {
 	if v == nil {
 		return nil
-	} else {
-		i, err := strconv.ParseInt(fmt.Sprintf("%v", v), 10, 64)
-		if err != nil {
-			_ = v.(int64)
-		}
-		return &i
 	}
+	i, err := strconv.ParseInt(fmt.Sprintf("%v", v), 10, 64)
+	if err != nil {
+		_ = v.(int64)
+	}
+	return &i
 }
 
 func (s *SeriesInt64) SetValueToStringFormatter(f ValueToStringFormatter) {
@@ -194,18 +193,16 @@ func (s *SeriesInt64) IsEqualFunc(a, b interface{}) bool {
 	if a == nil {
 		if b == nil {
 			return true
-		} else {
-			return false
 		}
+		return false
 	} else {
 		if b == nil {
 			return false
-		} else {
-			t1 := a.(int64)
-			t2 := b.(int64)
-
-			return t1 == t2
 		}
+		t1 := a.(int64)
+		t2 := b.(int64)
+
+		return t1 == t2
 	}
 
 }
@@ -215,18 +212,16 @@ func (s *SeriesInt64) IsLessThanFunc(a, b interface{}) bool {
 	if a == nil {
 		if b == nil {
 			return true
-		} else {
-			return true
 		}
+		return true
 	} else {
 		if b == nil {
 			return false
-		} else {
-			t1 := a.(int64)
-			t2 := b.(int64)
-
-			return t1 < t2
 		}
+		t1 := a.(int64)
+		t2 := b.(int64)
+
+		return t1 < t2
 	}
 
 }
@@ -254,20 +249,18 @@ func (s *SeriesInt64) Sort(options ...Options) {
 			if s.Values[j] == nil {
 				// both are nil
 				return true
-			} else {
-				return true
 			}
+			return true
 		} else {
 			if s.Values[j] == nil {
 				// i has value and j is nil
 				return false
-			} else {
-				// Both are not nil
-				ti := *s.Values[i]
-				tj := *s.Values[j]
-
-				return ti < tj
 			}
+			// Both are not nil
+			ti := *s.Values[i]
+			tj := *s.Values[j]
+
+			return ti < tj
 		}
 	})
 }

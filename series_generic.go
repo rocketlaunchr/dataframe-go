@@ -273,17 +273,15 @@ func (s *SeriesGeneric) Sort(options ...Options) {
 			if right == nil {
 				// both are nil
 				return true
-			} else {
-				return true
 			}
+			return true
 		} else {
 			if right == nil {
 				// left has value and right is nil
 				return false
-			} else {
-				// Both are not nil
-				return s.isLessThanFunc(left, right)
 			}
+			// Both are not nil
+			return s.isLessThanFunc(left, right)
 		}
 	})
 }
