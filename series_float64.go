@@ -195,16 +195,15 @@ func (s *SeriesFloat64) IsEqualFunc(a, b interface{}) bool {
 			return true
 		}
 		return false
-	} else {
-		if b == nil {
-			return false
-		}
-		f1 := a.(float64)
-		f2 := b.(float64)
-
-		return f1 == f2
 	}
 
+	if b == nil {
+		return false
+	}
+	f1 := a.(float64)
+	f2 := b.(float64)
+
+	return f1 == f2
 }
 
 func (s *SeriesFloat64) IsLessThanFunc(a, b interface{}) bool {
@@ -214,16 +213,15 @@ func (s *SeriesFloat64) IsLessThanFunc(a, b interface{}) bool {
 			return true
 		}
 		return true
-	} else {
-		if b == nil {
-			return false
-		}
-		f1 := a.(float64)
-		f2 := b.(float64)
-
-		return f1 < f2
 	}
 
+	if b == nil {
+		return false
+	}
+	f1 := a.(float64)
+	f2 := b.(float64)
+
+	return f1 < f2
 }
 
 func (s *SeriesFloat64) Sort(options ...Options) {
@@ -251,17 +249,17 @@ func (s *SeriesFloat64) Sort(options ...Options) {
 				return true
 			}
 			return true
-		} else {
-			if s.Values[j] == nil {
-				// i has value and j is nil
-				return false
-			}
-			// Both are not nil
-			ti := *s.Values[i]
-			tj := *s.Values[j]
-
-			return ti < tj
 		}
+
+		if s.Values[j] == nil {
+			// i has value and j is nil
+			return false
+		}
+		// Both are not nil
+		ti := *s.Values[i]
+		tj := *s.Values[j]
+
+		return ti < tj
 	})
 }
 
