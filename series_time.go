@@ -158,9 +158,8 @@ func (s *SeriesTime) Update(row int, val interface{}, options ...Options) {
 func (s *SeriesTime) valToPointer(v interface{}) *time.Time {
 	if v == nil {
 		return nil
-	} else {
-		return &[]time.Time{v.(time.Time)}[0]
 	}
+	return &[]time.Time{v.(time.Time)}[0]
 }
 
 func (s *SeriesTime) SetValueToStringFormatter(f ValueToStringFormatter) {
@@ -189,18 +188,16 @@ func (s *SeriesTime) IsEqualFunc(a, b interface{}) bool {
 	if a == nil {
 		if b == nil {
 			return true
-		} else {
-			return false
 		}
+		return false
 	} else {
 		if b == nil {
 			return false
-		} else {
-			t1 := a.(time.Time)
-			t2 := b.(time.Time)
-
-			return t1.Equal(t2)
 		}
+		t1 := a.(time.Time)
+		t2 := b.(time.Time)
+
+		return t1.Equal(t2)
 	}
 
 }
@@ -210,18 +207,16 @@ func (s *SeriesTime) IsLessThanFunc(a, b interface{}) bool {
 	if a == nil {
 		if b == nil {
 			return true
-		} else {
-			return true
 		}
+		return true
 	} else {
 		if b == nil {
 			return false
-		} else {
-			t1 := a.(time.Time)
-			t2 := b.(time.Time)
-
-			return t1.Before(t2)
 		}
+		t1 := a.(time.Time)
+		t2 := b.(time.Time)
+
+		return t1.Before(t2)
 	}
 
 }
@@ -249,20 +244,18 @@ func (s *SeriesTime) Sort(options ...Options) {
 			if s.Values[j] == nil {
 				// both are nil
 				return true
-			} else {
-				return true
 			}
+			return true
 		} else {
 			if s.Values[j] == nil {
 				// i has value and j is nil
 				return false
-			} else {
-				// Both are not nil
-				ti := *s.Values[i]
-				tj := *s.Values[j]
-
-				return ti.Before(tj)
 			}
+			// Both are not nil
+			ti := *s.Values[i]
+			tj := *s.Values[j]
+
+			return ti.Before(tj)
 		}
 	})
 }
