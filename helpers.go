@@ -5,6 +5,7 @@ import (
 )
 
 const (
+	// Constants to convert a bool to an int
 	FALSE = 0
 	TRUE  = 1
 )

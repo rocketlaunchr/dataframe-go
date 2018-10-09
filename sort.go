@@ -47,9 +47,8 @@ func (s *sorter) Less(i, j int) bool {
 			if key.SortDesc {
 				// Sort in descending order
 				return !series.IsLessThanFunc(left, right)
-			} else {
-				return series.IsLessThanFunc(left, right)
 			}
+			return series.IsLessThanFunc(left, right)
 		}
 	}
 

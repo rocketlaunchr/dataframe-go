@@ -5,6 +5,8 @@ import (
 	"sync"
 )
 
+// DataFrame allows you to handle numerous
+//series of data conveniently.
 type DataFrame struct {
 	lock   sync.RWMutex
 	Series []Series
@@ -43,6 +45,8 @@ func NewDataFrame(se ...Series) *DataFrame {
 	return df
 }
 
+// NRows returns the number of rows of data.
+// Each series must contain the same number of rows.
 func (df *DataFrame) NRows() int {
 	df.lock.RLock()
 	defer df.lock.RUnlock()
@@ -122,7 +126,7 @@ func (df *DataFrame) Prepend(vals ...interface{}) {
 		case map[string]interface{}:
 
 			names := map[string]struct{}{}
-			for name, _ := range v {
+			for name := range v {
 				names[name] = struct{}{}
 			}
 
@@ -174,7 +178,7 @@ func (df *DataFrame) insert(row int, vals ...interface{}) {
 		case map[string]interface{}:
 
 			names := map[string]struct{}{}
-			for name, _ := range v {
+			for name := range v {
 				names[name] = struct{}{}
 			}
 
