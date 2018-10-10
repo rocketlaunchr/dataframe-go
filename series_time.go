@@ -265,3 +265,28 @@ func (s *SeriesTime) Lock() {
 func (s *SeriesTime) Unlock() {
 	s.lock.Unlock()
 }
+
+func (s *SeriesTime) Copy(start interface{}, end interface{}) Series {
+
+	if start == nil {
+		start = 0
+	} else {
+		start = start.(int)
+	}
+
+	if end == nil {
+		end = len(s.Values) - 1
+	} else {
+		end = end.(int)
+	}
+
+	// Copy slice
+	x := s.Values[start.(int) : end.(int)+1]
+	newSlice := append(x[:0:0], x...)
+
+	return &SeriesTime{
+		valFormatter: s.valFormatter,
+		name:         s.name,
+		Values:       newSlice,
+	}
+}
