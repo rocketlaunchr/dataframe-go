@@ -86,4 +86,9 @@ type Series interface {
 
 	// Unlock will unlock the Series that was previously locked.
 	Unlock()
+
+	// Copy will create a new copy of the series. s and e are the start and
+	// end range. They are both inclusive. A nil value means no limit.
+	// It is recommended that you lock the Series before attempting to Copy.
+	Copy(s interface{}, e interface{}) Series
 }
