@@ -1,4 +1,4 @@
-Dataframes for Go [![GoDoc](http://godoc.org/github.com/rocketlaunchr/dataframe-go?status.svg)](http://godoc.org/github.com/rocketlaunchr/dataframe-go)
+Dataframes for Go [![GoDoc](http://godoc.org/github.com/rocketlaunchr/dataframe-go?status.svg)](http://godoc.org/github.com/rocketlaunchr/dataframe-go) [![cover.run](https://cover.run/go/github.com/rocketlaunchr/dataframe-go.svg?style=flat&tag=golang-1.10)](https://cover.run/go?tag=golang-1.10&repo=github.com%2Frocketlaunchr%2Fdataframe-go)
 ===============
 
 Dataframes are used for statistics and data manipulation. You can think of a dataframe as an excel spreadsheet.
@@ -144,7 +144,7 @@ OUTPUT:
 ## Importing csv
 
 ```go
-	csvStr := `
+csvStr := `
 Country,Date,Age,Amount,Id
 "United States",2012-02-01,50,112.1,01234
 "United States",2012-02-01,32,321.31,54320
@@ -215,13 +215,13 @@ OUTPUT:
 
 # 
 
-#### Legal Information
+### Legal Information
 
-(C) 2018 PJ Engineering and Business Solutions Pty. Ltd.
+**© 2018 PJ Engineering and Business Solutions Pty. Ltd.**
 
 The license is a modified MIT license. Refer to `LICENSE` file for more details.
 
-#### Final Notes
+### Final Notes
 
 Feel free to enhance features by issuing pull-requests.
 
