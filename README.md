@@ -1,4 +1,4 @@
-Dataframes for Go [![GoDoc](http://godoc.org/github.com/rocketlaunchr/dataframe-go?status.svg)](http://godoc.org/github.com/rocketlaunchr/dataframe-go) [![cover.run](https://cover.run/go/github.com/rocketlaunchr/dataframe-go.svg?style=flat&tag=golang-1.10)](https://cover.run/go?tag=golang-1.10&repo=github.com%2Frocketlaunchr%2Fdataframe-go)
+Dataframes for Go [![GoDoc](http://godoc.org/github.com/rocketlaunchr/dataframe-go?status.svg)](http://godoc.org/github.com/rocketlaunchr/dataframe-go) [![cover.run](https://cover.run/go/github.com/rocketlaunchr/dataframe-go.svg?style=flat&tag=golang-1.10)](https://cover.run/go?tag=golang-1.10&repo=github.com%2Frocketlaunchr%2Fdataframe-go)[![Go Report Card](https://goreportcard.com/badge/github.com/rocketlaunchr/dataframe-go)](https://goreportcard.com/report/github.com/rocketlaunchr/dataframe-go)
 ===============
 
 Dataframes are used for statistics and data manipulation. You can think of a dataframe as an excel spreadsheet.
@@ -217,9 +217,9 @@ OUTPUT:
 
 ### Legal Information
 
-**© 2018 PJ Engineering and Business Solutions Pty. Ltd.**
-
 The license is a modified MIT license. Refer to `LICENSE` file for more details.
+
+**© 2018 PJ Engineering and Business Solutions Pty. Ltd.**
 
 ### Final Notes
 
