@@ -3,16 +3,22 @@ package dataframe
 import (
 	"testing"
 	"time"
+
+	"cloud.google.com/go/civil"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestSeriesRename(t *testing.T) {
 
 	// Create new series
 	init := []Series{
-		NewSeriesFloat64("test", nil),
-		NewSeriesInt64("test", nil),
-		NewSeriesString("test", nil),
-		NewSeriesTime("test", nil),
+
+		NewSeriesFloat64("test", &SeriesInit{0, 1}),
+		NewSeriesInt64("test", &SeriesInit{0, 1}),
+		NewSeriesString("test", &SeriesInit{0, 1}),
+		NewSeriesTime("test", &SeriesInit{0, 1}),
+		NewSeries("test", civil.Date{}, &SeriesInit{0, 1}),
 	}
 
 	for i := range init {
@@ -31,10 +37,11 @@ func TestSeriesType(t *testing.T) {
 
 	// Create new series
 	init := []Series{
-		NewSeriesFloat64("test", nil),
-		NewSeriesInt64("test", nil),
-		NewSeriesString("test", nil),
-		NewSeriesTime("test", nil),
+		NewSeriesFloat64("test", &SeriesInit{0, 1}),
+		NewSeriesInt64("test", &SeriesInit{0, 1}),
+		NewSeriesString("test", &SeriesInit{0, 1}),
+		NewSeriesTime("test", &SeriesInit{0, 1}),
+		NewSeries("test", civil.Date{}, &SeriesInit{0, 1}),
 	}
 
 	expected := []string{
@@ -42,6 +49,7 @@ func TestSeriesType(t *testing.T) {
 		"int64",
 		"string",
 		"time",
+		"civil.Date",
 	}
 
 	for i := range init {
@@ -57,17 +65,19 @@ func TestSeriesNRows(t *testing.T) {
 
 	// Create new series
 	init := []Series{
-		NewSeriesFloat64("test", nil, 1, 2, 3),
-		NewSeriesInt64("test", nil, 1, 2, 3),
-		NewSeriesString("test", nil, "1", "2", "3"),
-		NewSeriesTime("test", nil, time.Now(), time.Now(), time.Now()),
+		NewSeriesFloat64("test", &SeriesInit{0, 1}, 1, nil, 2, 3),
+		NewSeriesInt64("test", &SeriesInit{0, 1}, 1, nil, 2, 3),
+		NewSeriesString("test", &SeriesInit{0, 1}, "1", nil, "2", "3"),
+		NewSeriesTime("test", &SeriesInit{0, 1}, time.Now(), nil, time.Now(), time.Now()),
+		NewSeries("test", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, nil, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}),
 	}
 
 	expected := []int{
-		3,
-		3,
-		3,
-		3,
+		4,
+		4,
+		4,
+		4,
+		4,
 	}
 
 	for i := range init {
@@ -75,6 +85,29 @@ func TestSeriesNRows(t *testing.T) {
 
 		if s.NRows() != expected[i] {
 			t.Errorf("wrong type: expected: %v actual: %v", expected[i], s.NRows())
+		}
+	}
+
+}
+
+func TestSeriesCopy(t *testing.T) {
+
+	// Create new series
+	init := []Series{
+		NewSeriesFloat64("test", &SeriesInit{0, 1}, 1, nil, 2, 3),
+		NewSeriesInt64("test", &SeriesInit{0, 1}, 1, nil, 2, 3),
+		NewSeriesString("test", &SeriesInit{0, 1}, "1", nil, "2", "3"),
+		NewSeriesTime("test", &SeriesInit{0, 1}, time.Now(), nil, time.Now(), time.Now()),
+		NewSeries("test", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, nil, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}),
+	}
+
+	for i := range init {
+		s := init[i]
+
+		cp := s.Copy()
+
+		if !cmp.Equal(s, cp, cmpopts.IgnoreUnexported(SeriesFloat64{}, SeriesInt64{}, SeriesString{}, SeriesTime{}, SeriesGeneric{})) {
+			t.Errorf("wrong type: expected: %v actual: %v", s, cp)
 		}
 	}
 
