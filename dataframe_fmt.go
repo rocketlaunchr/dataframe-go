@@ -10,20 +10,29 @@ import (
 // Table will produce the data in a table.
 // s and e represent the range of rows to tabulate.
 // They are both inclusive. A nil value means no limit.
-func (df *DataFrame) Table(s interface{}, e interface{}) string {
+func (df *DataFrame) Table(r ...Range) string {
 	df.lock.RLock()
 	defer df.lock.RUnlock()
 
-	if s == nil {
-		s = 0
-	} else {
-		s = s.(int)
+	if len(r) == 0 {
+		r = append(r, Range{})
 	}
 
-	if e == nil {
+	var (
+		s int
+		e int
+	)
+
+	if r[0].Start == nil {
+		s = 0
+	} else {
+		s = *r[0].Start
+	}
+
+	if r[0].End == nil {
 		e = df.n - 1
 	} else {
-		e = e.(int)
+		e = *r[0].End
 	}
 
 	data := [][]string{}
@@ -37,10 +46,10 @@ func (df *DataFrame) Table(s interface{}, e interface{}) string {
 
 	for row := 0; row < df.n; row++ {
 
-		if row > e.(int) {
+		if row > e {
 			break
 		}
-		if row < s.(int) {
+		if row < s {
 			continue
 		}
 
@@ -71,5 +80,5 @@ func (df *DataFrame) Table(s interface{}, e interface{}) string {
 
 // String will display dataframe
 func (df *DataFrame) String() string {
-	return df.Table(nil, nil)
+	return df.Table()
 }

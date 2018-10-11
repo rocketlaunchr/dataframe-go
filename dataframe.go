@@ -315,14 +315,18 @@ func (df *DataFrame) Unlock() {
 	df.lock.Unlock()
 }
 
-// Copy will create a new copy of the dataframe. s and e are the start and
-// end range. They are both inclusive. A nil value means no limit.
-// It is recommended that you lock the dataframe before attempting to Copy.
-func (df *DataFrame) Copy(s interface{}, e interface{}) *DataFrame {
+// Copy will create a new copy of the dataframe.
+// It is recommended that you lock the dataframe
+// before attempting to Copy.
+func (df *DataFrame) Copy(r ...Range) *DataFrame {
+
+	if len(r) == 0 {
+		r = append(r, Range{})
+	}
 
 	seriess := []Series{}
 	for i := range df.Series {
-		seriess = append(seriess, df.Series[i].Copy(s, e))
+		seriess = append(seriess, df.Series[i].Copy(r...))
 	}
 
 	newDF := &DataFrame{
