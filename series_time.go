@@ -49,12 +49,15 @@ func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTi
 }
 
 func (s *SeriesTime) Name() string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	return s.name
 }
 
 func (s *SeriesTime) Rename(n string) {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	s.name = n
 }
@@ -64,7 +67,7 @@ func (s *SeriesTime) Type() string {
 }
 
 func (s *SeriesTime) NRows(options ...Options) int {
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -73,7 +76,7 @@ func (s *SeriesTime) NRows(options ...Options) int {
 }
 
 func (s *SeriesTime) Value(row int, options ...Options) interface{} {
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -90,7 +93,7 @@ func (s *SeriesTime) ValueString(row int, options ...Options) string {
 }
 
 func (s *SeriesTime) Prepend(val interface{}, options ...Options) {
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -111,7 +114,7 @@ func (s *SeriesTime) Prepend(val interface{}, options ...Options) {
 
 func (s *SeriesTime) Append(val interface{}, options ...Options) int {
 	var locked bool
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 		locked = true
@@ -123,7 +126,7 @@ func (s *SeriesTime) Append(val interface{}, options ...Options) int {
 }
 
 func (s *SeriesTime) Insert(row int, val interface{}, options ...Options) {
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -138,7 +141,7 @@ func (s *SeriesTime) insert(row int, val interface{}) {
 }
 
 func (s *SeriesTime) Remove(row int, options ...Options) {
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -147,7 +150,7 @@ func (s *SeriesTime) Remove(row int, options ...Options) {
 }
 
 func (s *SeriesTime) Update(row int, val interface{}, options ...Options) {
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -175,7 +178,7 @@ func (s *SeriesTime) Swap(row1, row2 int, options ...Options) {
 		return
 	}
 
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -223,7 +226,10 @@ func (s *SeriesTime) Sort(options ...Options) {
 
 	var sortDesc bool
 
-	if len(options) > 0 {
+	if len(options) == 0 {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+	} else {
 		if !options[0].DontLock {
 			s.lock.Lock()
 			defer s.lock.Unlock()

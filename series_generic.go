@@ -71,12 +71,15 @@ func NewSeries(name string, concreteType interface{}, init *SeriesInit, vals ...
 }
 
 func (s *SeriesGeneric) Name() string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
 	return s.name
 }
 
 func (s *SeriesGeneric) Rename(n string) {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
 	s.name = n
 }
@@ -86,7 +89,7 @@ func (s *SeriesGeneric) Type() string {
 }
 
 func (s *SeriesGeneric) NRows(options ...Options) int {
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -95,7 +98,7 @@ func (s *SeriesGeneric) NRows(options ...Options) int {
 }
 
 func (s *SeriesGeneric) Value(row int, options ...Options) interface{} {
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -112,7 +115,7 @@ func (s *SeriesGeneric) ValueString(row int, options ...Options) string {
 }
 
 func (s *SeriesGeneric) Prepend(val interface{}, options ...Options) {
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -140,7 +143,7 @@ func (s *SeriesGeneric) Prepend(val interface{}, options ...Options) {
 
 func (s *SeriesGeneric) Append(val interface{}, options ...Options) int {
 	var locked bool
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 		locked = true
@@ -152,7 +155,7 @@ func (s *SeriesGeneric) Append(val interface{}, options ...Options) int {
 }
 
 func (s *SeriesGeneric) Insert(row int, val interface{}, options ...Options) {
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -175,7 +178,7 @@ func (s *SeriesGeneric) insert(row int, val interface{}) {
 }
 
 func (s *SeriesGeneric) Remove(row int, options ...Options) {
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -184,7 +187,7 @@ func (s *SeriesGeneric) Remove(row int, options ...Options) {
 }
 
 func (s *SeriesGeneric) Update(row int, val interface{}, options ...Options) {
-	if len(options) > 0 && !options[0].DontLock {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -251,7 +254,10 @@ func (s *SeriesGeneric) Sort(options ...Options) {
 
 	var sortDesc bool
 
-	if len(options) > 0 {
+	if len(options) == 0 {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+	} else {
 		if !options[0].DontLock {
 			s.lock.Lock()
 			defer s.lock.Unlock()
