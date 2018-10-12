@@ -1,10 +1,13 @@
 package dataframe
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 	"strconv"
 	"sync"
+
+	"github.com/olekukonko/tablewriter"
 )
 
 type SeriesInt64 struct {
@@ -309,4 +312,90 @@ func (s *SeriesInt64) Copy(r ...Range) Series {
 		name:         s.name,
 		Values:       newSlice,
 	}
+}
+
+func (s *SeriesInt64) Table(r ...Range) string {
+
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	if len(r) == 0 {
+		r = append(r, Range{})
+	}
+
+	var (
+		start int
+		end   int
+	)
+
+	if r[0].Start == nil {
+		start = 0
+	} else {
+		start = *r[0].Start
+	}
+
+	if r[0].End == nil {
+		end = len(s.Values) - 1
+	} else {
+		end = *r[0].End
+	}
+
+	data := [][]string{}
+
+	headers := []string{"", s.name} // row header is blank
+	footers := []string{fmt.Sprintf("%dx%d", len(s.Values), 1), s.Type()}
+
+	for row := 0; row < len(s.Values); row++ {
+
+		if row > end {
+			break
+		}
+		if row < start {
+			continue
+		}
+
+		sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, Options{true, false})}
+		data = append(data, sVals)
+	}
+
+	var buf bytes.Buffer
+
+	table := tablewriter.NewWriter(&buf)
+	table.SetHeader(headers)
+	for _, v := range data {
+		table.Append(v)
+	}
+	table.SetFooter(footers)
+	table.SetAlignment(tablewriter.ALIGN_CENTER)
+
+	table.Render()
+
+	return buf.String()
+}
+
+func (s *SeriesInt64) String() string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+
+	count := len(s.Values)
+
+	out := "[ "
+
+	if count > 6 {
+		idx := []int{0, 1, 2, count - 3, count - 2, count - 1}
+		for j, row := range idx {
+			if j == 3 {
+				out = out + "... "
+			}
+			out = out + s.ValueString(row, Options{true, false}) + " "
+		}
+		return out + "]"
+	} else {
+		for row := range s.Values {
+			out = out + s.ValueString(row, Options{true, false}) + " "
+		}
+		return out + "]"
+	}
+
+	return ""
 }
