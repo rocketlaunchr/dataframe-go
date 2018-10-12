@@ -314,6 +314,7 @@ func (s *SeriesFloat64) Copy(r ...Range) Series {
 	}
 }
 
+// Table will produce the Series in a table.
 func (s *SeriesFloat64) Table(r ...Range) string {
 
 	s.lock.RLock()
@@ -373,6 +374,7 @@ func (s *SeriesFloat64) Table(r ...Range) string {
 	return buf.String()
 }
 
+// String implements Stringer interface.
 func (s *SeriesFloat64) String() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -396,6 +398,4 @@ func (s *SeriesFloat64) String() string {
 		}
 		return out + "]"
 	}
-
-	return ""
 }

@@ -129,11 +129,11 @@ func TestSeriesOperations(t *testing.T) {
 
 	// Test Values
 	expectedValues := [][]interface{}{
-		[]interface{}{3.0, 2.0, 4.0},
-		[]interface{}{3, 2, 4},
-		[]interface{}{"3", "2", "4"},
-		[]interface{}{tRef.Add(2 * 24 * time.Hour), tRef.Add(24 * time.Hour), tRef.Add(3 * 24 * time.Hour)},
-		[]interface{}{civil.Date{2018, time.May, 3}, civil.Date{2018, time.May, 2}, civil.Date{2018, time.May, 4}},
+		{3.0, 2.0, 4.0},
+		{3, 2, 4},
+		{"3", "2", "4"},
+		{tRef.Add(2 * 24 * time.Hour), tRef.Add(24 * time.Hour), tRef.Add(3 * 24 * time.Hour)},
+		{civil.Date{2018, time.May, 3}, civil.Date{2018, time.May, 2}, civil.Date{2018, time.May, 4}},
 	}
 
 	for i := range init {

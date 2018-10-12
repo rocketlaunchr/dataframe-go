@@ -355,6 +355,7 @@ func (s *SeriesGeneric) Copy(r ...Range) Series {
 	}
 }
 
+// Table will produce the Series in a table.
 func (s *SeriesGeneric) Table(r ...Range) string {
 
 	s.lock.RLock()
@@ -414,6 +415,7 @@ func (s *SeriesGeneric) Table(r ...Range) string {
 	return buf.String()
 }
 
+// String implements Stringer interface.
 func (s *SeriesGeneric) String() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -437,6 +439,4 @@ func (s *SeriesGeneric) String() string {
 		}
 		return out + "]"
 	}
-
-	return ""
 }
