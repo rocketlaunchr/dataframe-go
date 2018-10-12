@@ -7,9 +7,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-// Table will produce the data in a table.
-// s and e represent the range of rows to tabulate.
-// They are both inclusive. A nil value means no limit.
+// Table will produce the dataframe in a table.
 func (df *DataFrame) Table(r ...Range) string {
 	df.lock.RLock()
 	defer df.lock.RUnlock()
@@ -75,7 +73,6 @@ func (df *DataFrame) Table(r ...Range) string {
 	table.Render()
 
 	return buf.String()
-
 }
 
 // String will display dataframe
