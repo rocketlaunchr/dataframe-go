@@ -166,8 +166,8 @@ func TestSort(t *testing.T) {
 	df := NewDataFrame(s1, s2)
 
 	sks := []SortKey{
-		SortKey{Key: "sales", SortDesc: true},
-		SortKey{Key: "day", SortDesc: false},
+		{Key: "sales", SortDesc: true},
+		{Key: "day", SortDesc: false},
 	}
 
 	df.Sort(sks)
@@ -202,17 +202,3 @@ func TestSort(t *testing.T) {
 	df.Unlock()
 
 }
-
-// iterator := df.Values(dataframe.ValuesOptions{0, 1, true}) // Don't apply read lock because we are write locking from outside.
-
-// df.Lock()
-// for {
-// 	row, vals := iterator()
-// 	if row == nil {
-// 		break
-// 	}
-
-// 	fmt.Println(*row, vals)
-
-// }
-// df.Unlock()
