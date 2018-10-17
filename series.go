@@ -1,3 +1,5 @@
+// Copyright 2018 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+
 package dataframe
 
 type Options struct {
