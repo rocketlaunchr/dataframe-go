@@ -17,16 +17,16 @@ type ValueToStringFormatter func(val interface{}) string
 
 type Series interface {
 
-	// Name returns the series name
+	// Name returns the series name.
 	Name() string
 
-	// Rename renames the series
+	// Rename renames the series.
 	Rename(n string)
 
-	// Type returns the type of data the series holds
+	// Type returns the type of data the series holds.
 	Type() string
 
-	// NRows returns how many rows the series contains
+	// NRows returns how many rows the series contains.
 	NRows(options ...Options) int
 
 	// Value returns the value of a particular row.
@@ -70,13 +70,13 @@ type Series interface {
 	// representation.
 	SetValueToStringFormatter(f ValueToStringFormatter)
 
-	// Sort will sort the series
+	// Sort will sort the series.
 	Sort(options ...Options)
 
-	// IsEqualFunc returns true if a is equal to b
+	// IsEqualFunc returns true if a is equal to b.
 	IsEqualFunc(a, b interface{}) bool
 
-	// IsLessThanFunc returns true if a is less than b
+	// IsLessThanFunc returns true if a is less than b.
 	IsLessThanFunc(a, b interface{}) bool
 
 	// Swap is used to swap 2 values based on their row position.

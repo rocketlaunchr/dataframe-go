@@ -53,6 +53,7 @@ func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *Series
 	return s
 }
 
+// Name returns the series name.
 func (s *SeriesString) Name() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -60,6 +61,7 @@ func (s *SeriesString) Name() string {
 	return s.name
 }
 
+// Rename renames the series.
 func (s *SeriesString) Rename(n string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -67,10 +69,12 @@ func (s *SeriesString) Rename(n string) {
 	s.name = n
 }
 
+// Type returns the type of data the series holds.
 func (s *SeriesString) Type() string {
 	return "string"
 }
 
+// NRows returns how many rows the series contains.
 func (s *SeriesString) NRows(options ...Options) int {
 	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.RLock()
@@ -80,6 +84,10 @@ func (s *SeriesString) NRows(options ...Options) int {
 	return len(s.Values)
 }
 
+// Value returns the value of a particular row.
+// The return value could be nil or the concrete type
+// the data type held by the series.
+// Pointers are never returned.
 func (s *SeriesString) Value(row int, options ...Options) interface{} {
 	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.RLock()
@@ -93,10 +101,17 @@ func (s *SeriesString) Value(row int, options ...Options) interface{} {
 	return *val
 }
 
+// ValueString returns a string representation of a
+// particular row. The string representation is defined
+// by the function set in SetValueToStringFormatter.
+// By default, a nil value is returned as "NaN".
 func (s *SeriesString) ValueString(row int, options ...Options) string {
 	return s.valFormatter(s.Value(row, options...))
 }
 
+// Prepend is used to set a value to the beginning of the
+// series. val can be a concrete data type or nil. Nil
+// represents the absence of a value.
 func (s *SeriesString) Prepend(val interface{}, options ...Options) {
 	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
@@ -117,6 +132,9 @@ func (s *SeriesString) Prepend(val interface{}, options ...Options) {
 	s.insert(0, val)
 }
 
+// Append is used to set a value to the end of the series.
+// val can be a concrete data type or nil. Nil represents
+// the absence of a value.
 func (s *SeriesString) Append(val interface{}, options ...Options) int {
 	var locked bool
 	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
@@ -130,6 +148,10 @@ func (s *SeriesString) Append(val interface{}, options ...Options) int {
 	return row
 }
 
+// Insert is used to set a value at an arbitrary row in
+// the series. All existing values from that row onwards
+// are shifted by 1. val can be a concrete data type or nil.
+// Nil represents the absence of a value.
 func (s *SeriesString) Insert(row int, val interface{}, options ...Options) {
 	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
@@ -145,6 +167,7 @@ func (s *SeriesString) insert(row int, val interface{}) {
 	s.Values[row] = s.valToPointer(val)
 }
 
+// Remove is used to delete the value of a particular row.
 func (s *SeriesString) Remove(row int, options ...Options) {
 	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
@@ -154,6 +177,9 @@ func (s *SeriesString) Remove(row int, options ...Options) {
 	s.Values = append(s.Values[:row], s.Values[row+1:]...)
 }
 
+// Update is used to update the value of a particular row.
+// val can be a concrete data type or nil. Nil represents
+// the absence of a value.
 func (s *SeriesString) Update(row int, val interface{}, options ...Options) {
 	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
@@ -171,6 +197,9 @@ func (s *SeriesString) valToPointer(v interface{}) *string {
 	}
 }
 
+// SetValueToStringFormatter is used to set a function
+// to convert the value of a particular row to a string
+// representation.
 func (s *SeriesString) SetValueToStringFormatter(f ValueToStringFormatter) {
 	if f == nil {
 		s.valFormatter = DefaultValueFormatter
@@ -179,6 +208,7 @@ func (s *SeriesString) SetValueToStringFormatter(f ValueToStringFormatter) {
 	s.valFormatter = f
 }
 
+// Swap is used to swap 2 values based on their row position.
 func (s *SeriesString) Swap(row1, row2 int, options ...Options) {
 	if row1 == row2 {
 		return
@@ -192,6 +222,7 @@ func (s *SeriesString) Swap(row1, row2 int, options ...Options) {
 	s.Values[row1], s.Values[row2] = s.Values[row2], s.Values[row1]
 }
 
+// IsEqualFunc returns true if a is equal to b.
 func (s *SeriesString) IsEqualFunc(a, b interface{}) bool {
 
 	if a == nil {
@@ -213,6 +244,7 @@ func (s *SeriesString) IsEqualFunc(a, b interface{}) bool {
 
 }
 
+// IsLessThanFunc returns true if a is less than b.
 func (s *SeriesString) IsLessThanFunc(a, b interface{}) bool {
 
 	if a == nil {
@@ -234,6 +266,7 @@ func (s *SeriesString) IsLessThanFunc(a, b interface{}) bool {
 
 }
 
+// Sort will sort the series.
 func (s *SeriesString) Sort(options ...Options) {
 
 	var sortDesc bool
@@ -278,14 +311,20 @@ func (s *SeriesString) Sort(options ...Options) {
 	})
 }
 
+// Lock will lock the Series allowing you to directly manipulate
+// the underlying slice with confidence.
 func (s *SeriesString) Lock() {
 	s.lock.Lock()
 }
 
+// Unlock will unlock the Series that was previously locked.
 func (s *SeriesString) Unlock() {
 	s.lock.Unlock()
 }
 
+// Copy will create a new copy of the series.
+// It is recommended that you lock the Series before attempting
+// to Copy.
 func (s *SeriesString) Copy(r ...Range) Series {
 
 	if len(r) == 0 {
