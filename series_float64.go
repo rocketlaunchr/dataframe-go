@@ -434,10 +434,11 @@ func (s *SeriesFloat64) String() string {
 			out = out + s.ValueString(row, Options{true, false}) + " "
 		}
 		return out + "]"
-	} else {
-		for row := range s.Values {
-			out = out + s.ValueString(row, Options{true, false}) + " "
-		}
-		return out + "]"
 	}
+
+	for row := range s.Values {
+		out = out + s.ValueString(row, Options{true, false}) + " "
+	}
+	return out + "]"
+
 }

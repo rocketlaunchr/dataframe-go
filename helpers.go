@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	// False is used convert a false (bool) to an int.
+	// FALSE is used convert a false (bool) to an int.
 	FALSE = 0
-	// True is used convert a true (bool) to an int.
+	// TRUE is used convert a true (bool) to an int.
 	TRUE = 1
 )
 
