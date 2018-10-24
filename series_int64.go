@@ -12,6 +12,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+// SeriesInt64 is used for series containing int64 data.
 type SeriesInt64 struct {
 	valFormatter ValueToStringFormatter
 
@@ -433,10 +434,10 @@ func (s *SeriesInt64) String() string {
 			out = out + s.ValueString(row, Options{true, false}) + " "
 		}
 		return out + "]"
-	} else {
-		for row := range s.Values {
-			out = out + s.ValueString(row, Options{true, false}) + " "
-		}
-		return out + "]"
 	}
+
+	for row := range s.Values {
+		out = out + s.ValueString(row, Options{true, false}) + " "
+	}
+	return out + "]"
 }

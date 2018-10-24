@@ -264,6 +264,8 @@ func (s *SeriesGeneric) IsLessThanFunc(a, b interface{}) bool {
 	return s.isLessThanFunc(a, b)
 }
 
+// SetIsEqualFunc sets a function which can be used to determine
+// if 2 values in the series are equal.
 func (s *SeriesGeneric) SetIsEqualFunc(f IsEqualFunc) {
 	if f == nil {
 		// Return to default
@@ -273,6 +275,8 @@ func (s *SeriesGeneric) SetIsEqualFunc(f IsEqualFunc) {
 	}
 }
 
+// SetIsLessThanFunc sets a function which can be used to determine
+// if a value is less than another in the series.
 func (s *SeriesGeneric) SetIsLessThanFunc(f IsLessThanFunc) {
 	if f == nil {
 		// Return to default
@@ -474,10 +478,10 @@ func (s *SeriesGeneric) String() string {
 			out = out + s.ValueString(row, Options{true, false}) + " "
 		}
 		return out + "]"
-	} else {
-		for row := range s.Values {
-			out = out + s.ValueString(row, Options{true, false}) + " "
-		}
-		return out + "]"
 	}
+
+	for row := range s.Values {
+		out = out + s.ValueString(row, Options{true, false}) + " "
+	}
+	return out + "]"
 }

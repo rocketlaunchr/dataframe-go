@@ -12,6 +12,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+// SeriesTime is used for series containing time.Time data.
 type SeriesTime struct {
 	valFormatter ValueToStringFormatter
 
@@ -429,10 +430,10 @@ func (s *SeriesTime) String() string {
 			out = out + s.ValueString(row, Options{true, false}) + " "
 		}
 		return out + "]"
-	} else {
-		for row := range s.Values {
-			out = out + s.ValueString(row, Options{true, false}) + " "
-		}
-		return out + "]"
 	}
+
+	for row := range s.Values {
+		out = out + s.ValueString(row, Options{true, false}) + " "
+	}
+	return out + "]"
 }
