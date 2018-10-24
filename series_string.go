@@ -11,6 +11,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+// SeriesString is used for series containing string data.
 type SeriesString struct {
 	valFormatter ValueToStringFormatter
 

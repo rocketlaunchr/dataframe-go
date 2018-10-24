@@ -2,6 +2,8 @@
 
 package dataframe
 
+// Options provides a way to set
+// various optional options.
 type Options struct {
 	// Don't apply lock
 	DontLock bool
@@ -15,6 +17,8 @@ type Options struct {
 // type stored by the series.
 type ValueToStringFormatter func(val interface{}) string
 
+// Series is a collection of data that could be of any type.
+// It is usually used with DataFrame.
 type Series interface {
 
 	// Name returns the series name.

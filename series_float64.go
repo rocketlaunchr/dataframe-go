@@ -12,6 +12,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+// SeriesFloat64 is used for series containing float64 data.
 type SeriesFloat64 struct {
 	valFormatter ValueToStringFormatter
 

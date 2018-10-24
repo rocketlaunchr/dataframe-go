@@ -7,9 +7,10 @@ import (
 )
 
 const (
-	// Constants to convert a bool to an int
+	// False is used convert a false (bool) to an int.
 	FALSE = 0
-	TRUE  = 1
+	// True is used convert a true (bool) to an int.
+	TRUE = 1
 )
 
 // B converts a boolean to an int.
