@@ -437,3 +437,7 @@ func (s *SeriesTime) String() string {
 	}
 	return out + "]"
 }
+
+func (s *SeriesTime) Abs(){
+
+}

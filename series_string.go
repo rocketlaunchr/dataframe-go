@@ -445,3 +445,7 @@ func (s *SeriesString) String() string {
 		return out + "]"
 	}
 }
+
+func (s *SeriesString) Abs(){
+
+}

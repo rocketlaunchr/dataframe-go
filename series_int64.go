@@ -441,3 +441,17 @@ func (s *SeriesInt64) String() string {
 	}
 	return out + "]"
 }
+
+func (s *SeriesInt64) Abs(){
+	for k, v := range s.Values {
+		if s.Values[k] == nil {
+			continue
+		}
+		s.Values[k] = s.valToPointer(abs(*v))
+	}
+}
+
+func abs(n int64) int64 {
+	y := n >> 63          // y ← x ⟫ 63
+	return (n ^ y) - y    // (x ⨁ y) - y
+}

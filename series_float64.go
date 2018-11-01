@@ -5,6 +5,7 @@ package dataframe
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"sync"
@@ -441,4 +442,10 @@ func (s *SeriesFloat64) String() string {
 	}
 	return out + "]"
 
+}
+
+func (s *SeriesFloat64) Abs()  {
+	for k, v := range s.Values {
+		s.Values[k] = s.valToPointer(math.Abs(*v))
+	}
 }

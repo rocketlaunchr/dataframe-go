@@ -485,3 +485,7 @@ func (s *SeriesGeneric) String() string {
 	}
 	return out + "]"
 }
+
+func (s *SeriesGeneric) Abs(){
+	
+}

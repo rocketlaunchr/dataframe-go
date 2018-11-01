@@ -451,23 +451,23 @@ func TestSeriesCopy(t *testing.T) {
 
 func TestSeriesAbs(t *testing.T) {
 
-	tRef := time.Date(2017, 1, 1, 5, 30, 12, 0, time.UTC)
+	//tRef := time.Date(2017, 1, 1, 5, 30, 12, 0, time.UTC)
 
 	// Create new series
 	init := []Series{
-		NewSeriesFloat64("test", &SeriesInit{1, 0}, nil, 1.0, -2.0, 3.0, nil),
+		NewSeriesFloat64("test", &SeriesInit{1, 0}, -10.0, 1.0, -2.0, 3.0, -95.325),
 		NewSeriesInt64("test", &SeriesInit{1, 0}, nil, 1, -2, 3, nil),
 		NewSeriesString("test", &SeriesInit{1, 0}, nil, "1", "2", "3", nil),
-		NewSeriesTime("test", &SeriesInit{1, 0}, nil, tRef, tRef.Add(24*time.Hour), tRef.Add(2*24*time.Hour), nil),
-		NewSeries("test", civil.Date{}, &SeriesInit{0, 1}, nil, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}, nil),
+//		NewSeriesTime("test", &SeriesInit{1, 0}, nil, tRef, tRef.Add(24*time.Hour), tRef.Add(2*24*time.Hour), nil),
+	//	NewSeries("test", civil.Date{}, &SeriesInit{0, 1}, nil, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}, nil),
 	}
 
 	expectedValues := [][]interface{}{
-		{"NaN", 1.0, 2.0, 3.0, "NaN"},
+		{10.0, 1.0, 2.0, 3.0, 95.325},
 		{"NaN", 1, 2, 3, "NaN"},
-		{"3", "2", "1", "NaN", "NaN"},
-		{tRef.Add(2 * 24 * time.Hour), tRef.Add(24 * time.Hour), tRef, "NaN", "NaN"},
-		{civil.Date{2018, time.May, 3}, civil.Date{2018, time.May, 2}, civil.Date{2018, time.May, 1}, "NaN", "NaN"},
+		{"NaN", "1", "2", "3", "NaN"},
+//		{"NaN", tRef,tRef.Add(2 * 24 * time.Hour), tRef.Add(24 * time.Hour), "NaN"},
+	//	{"NaN",civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}, "NaN"},
 	}
 
 	for i := range init {
