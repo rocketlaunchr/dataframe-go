@@ -97,4 +97,5 @@ type Series interface {
 	// It is recommended that you lock the Series before attempting
 	// to Copy.
 	Copy(r ...Range) Series
+	Abs()
 }
