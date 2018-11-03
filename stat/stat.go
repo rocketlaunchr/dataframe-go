@@ -1,25 +1,26 @@
 package stat
 
 import (
-	"github.com/rocketlaunchr/dataframe-go"
+	"github.com/kzoper/dataframe-go"
 	"math"
 )
 
-type Stat interface {
+type SeriesRational interface {
 	dataframe.Series
 	Abs()
 }
 
-type StFloat64 struct {
-	*dataframe.SeriesFloat64
+type SeriesFloat64 struct {
+	dataframe.SeriesFloat64
 }
 
 type SeriesInt64 struct {
-	*dataframe.SeriesInt64
+	dataframe.SeriesInt64
 }
 
-func (s *StFloat64) Abs() {
+func (s SeriesFloat64) Abs() {
 	for key, value := range s.Values {
+		if s.Values[key] == nil {continue}
 		val := math.Abs(*value)
 		s.Values[key] = &val
 	}
@@ -27,6 +28,7 @@ func (s *StFloat64) Abs() {
 
 func (s *SeriesInt64) Abs() {
 	for key, value := range s.Values {
+		if s.Values[key] == nil {continue}
 		val := *value
 		if val < 0 {
 			val = val * -1
