@@ -2,7 +2,7 @@ package stat
 
 import (
 	"fmt"
-	"github.com/kzoper/dataframe-go"
+	"github.com/rocketlaunchr/dataframe-go"
 	"testing"
 )
 
