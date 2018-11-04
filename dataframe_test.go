@@ -3,6 +3,7 @@
 package dataframe
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 
@@ -203,4 +204,49 @@ func TestSort(t *testing.T) {
 	}
 	df.Unlock()
 
+}
+
+func TestDataFrame_ToCSV(t *testing.T) {
+	// TODO remove Error
+	s1 := NewSeriesInt64("day", nil, 1, 2, 3, 4, 5, 6, 7, 8)
+	s2 := NewSeriesFloat64("sales", nil, 50.3, 23.4, 56.2, nil, nil, 84.2, 72, 89)
+	df := NewDataFrame(s1, s2)
+	var b bytes.Buffer
+	df.ToCSV(&b)
+	//exceptedStr := "day,sales\n1,50.3\n2,23.4\n3,56.2\n4,NaN\n5,NaN\n6,84.2\n7,72\n8,89"
+	exceptedStr := `day,sales
+1,50.3
+2,23.4
+3,56.2
+4,NaN
+5,NaN
+6,84.2
+7,72
+8,89`
+	//fmt.Println(b.String())
+	if b.String() != exceptedStr {
+		t.Errorf("\nExcept\n%v\n has\n%v", exceptedStr, b.String())
+	}
+
+}
+func TestDataFrame_FromCSV(t *testing.T) {
+	// TODO remove error
+	csvStr := "a,b,c,d\n1,2,3,4\n5,6,7,8\n2,4,6,8"
+
+	df, err := FromCSV(strings.NewReader(csvStr))
+	if err != nil {
+		t.Errorf("Error %v",err)
+	}
+	exceptStr := `+-----+--------+--------+--------+--------+
+|     |   A    |   B    |   C    |   D    |
++-----+--------+--------+--------+--------+
+| 0:  |   1    |   2    |   3    |   4    |
+| 1:  |   5    |   6    |   7    |   8    |
+| 2:  |   2    |   4    |   6    |   8    |
++-----+--------+--------+--------+--------+
+| 3X4 | STRING | STRING | STRING | STRING |
++-----+--------+--------+--------+--------+`
+	if df.String() != exceptStr {
+		t.Errorf("Except %s \n has \n%s",exceptStr,df.String())
+	}
 }

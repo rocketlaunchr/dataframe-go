@@ -2,12 +2,13 @@ package dataframe
 
 import (
 	"encoding/csv"
-	"github.com/pkg/errors"
+	"errors"
 	"io"
 	"log"
 )
 
-func (df *DataFrame) FromCSV(r io.Reader) error {
+func FromCSV(r io.Reader) (*DataFrame, error) {
+	var df *DataFrame
 	var series []Series
 	reader := csv.NewReader(r)
 	reader.ReuseRecord = true
@@ -22,7 +23,8 @@ func (df *DataFrame) FromCSV(r io.Reader) error {
 			for _, value := range line {
 				series = append(series, NewSeriesString(value, nil))
 			}
-			df = NewDataFrame(series...)
+			df1 := NewDataFrame(series...)
+			df = df1
 		} else {
 			var values []interface{}
 			for _, value := range line {
@@ -33,22 +35,24 @@ func (df *DataFrame) FromCSV(r io.Reader) error {
 
 	}
 	if len(series) == 0 {
-		return errors.New("csv data contains no rows")
+		return nil, errors.New("csv data contains no rows")
 	}
-	return nil
+	return df, nil
 }
 
 func (df *DataFrame) ToCSV(w io.Writer) {
+	df.Lock()
+	defer df.Unlock()
 	writer := csv.NewWriter(w)
 	defer writer.Flush()
-	
+
 	numOfSeries := len(df.Series)
 	numOfRows := df.Series[0].NRows()
 	writer.Write(df.Names())
 	for j := 0; j < numOfRows; j++ {
 		var res []string
 		for i := 0; i < numOfSeries; i++ {
-			res = append(res,df.Series[i].ValueString(j))
+			res = append(res, df.Series[i].ValueString(j))
 		}
 		writer.Write(res)
 	}
