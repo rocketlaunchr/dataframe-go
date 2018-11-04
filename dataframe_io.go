@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/ioutil"
 	"log"
 )
 
@@ -59,7 +60,37 @@ func (df *DataFrame) ToCSV(w io.Writer) {
 	}
 }
 
+func FromJSON  (r io.Reader) (*DataFrame, error) {
+	var df *DataFrame
+	var series []Series
+	byteValue, _ := ioutil.ReadAll(r)
+
+	var result [][]interface{}
+	err := json.Unmarshal(byteValue, &result)
+	if err != nil {
+		return nil,err
+	}
+
+	for _, line := range result {
+		if len(series) == 0 {
+			for _, value := range line {
+				series = append(series, NewSeriesString(value.(string), nil))
+			}
+			df1 := NewDataFrame(series...)
+			df = df1
+		} else {
+			df.Append(line...)
+		}
+	}
+	if len(series) == 0 {
+		return nil, errors.New("json data contains no rows")
+	}
+	return df, nil
+}
+
 func (df *DataFrame) ToJSON(w io.Writer){
+	df.Lock()
+	defer df.Unlock()
 	var out [][]string
 	numOfSeries := len(df.Series)
 	numOfRows := df.Series[0].NRows()
