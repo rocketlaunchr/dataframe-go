@@ -2,6 +2,7 @@ package dataframe
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"io"
 	"log"
@@ -56,4 +57,21 @@ func (df *DataFrame) ToCSV(w io.Writer) {
 		}
 		writer.Write(res)
 	}
+}
+
+func (df *DataFrame) ToJSON(w io.Writer){
+	var out [][]string
+	numOfSeries := len(df.Series)
+	numOfRows := df.Series[0].NRows()
+	out = append(out,df.Names())
+	for j := 0; j < numOfRows; j++ {
+		var res []string
+		for i := 0; i < numOfSeries; i++ {
+			res = append(res,df.Series[i].ValueString(j))
+		}
+		out = append(out,res)
+	}
+	bytes,_ := json.Marshal(out)
+
+	w.Write(bytes)
 }
