@@ -9,11 +9,24 @@ import (
 	"log"
 )
 
-func FromCSV(r io.Reader) (*DataFrame, error) {
+type CSVOptions struct {
+	Comma            rune
+	Comment          rune
+	TrimLeadingSpace bool
+	LazyQuotes       bool
+}
+
+func FromCSV(r io.Reader, options ...CSVOptions) (*DataFrame, error) {
 	var df *DataFrame
 	var series []Series
 	reader := csv.NewReader(r)
 	reader.ReuseRecord = true
+	if len(options) > 0 {
+		reader.Comma = options[0].Comma
+		reader.Comment = options[0].Comment
+		reader.TrimLeadingSpace = options[0].TrimLeadingSpace
+		reader.LazyQuotes = options[0].LazyQuotes
+	}
 	for {
 		line, err := reader.Read()
 		if err == io.EOF {
@@ -42,10 +55,13 @@ func FromCSV(r io.Reader) (*DataFrame, error) {
 	return df, nil
 }
 
-func (df *DataFrame) ToCSV(w io.Writer) {
+func (df *DataFrame) ToCSV(w io.Writer, options ...CSVOptions) {
 	df.Lock()
 	defer df.Unlock()
 	writer := csv.NewWriter(w)
+	if len(options) > 0 {
+		writer.Comma = options[0].Comma
+	}
 	defer writer.Flush()
 
 	numOfSeries := len(df.Series)
@@ -60,7 +76,7 @@ func (df *DataFrame) ToCSV(w io.Writer) {
 	}
 }
 
-func FromJSON  (r io.Reader) (*DataFrame, error) {
+func FromJSON(r io.Reader) (*DataFrame, error) {
 	var df *DataFrame
 	var series []Series
 	byteValue, _ := ioutil.ReadAll(r)
@@ -68,7 +84,7 @@ func FromJSON  (r io.Reader) (*DataFrame, error) {
 	var result [][]interface{}
 	err := json.Unmarshal(byteValue, &result)
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	for _, line := range result {
@@ -88,21 +104,21 @@ func FromJSON  (r io.Reader) (*DataFrame, error) {
 	return df, nil
 }
 
-func (df *DataFrame) ToJSON(w io.Writer){
+func (df *DataFrame) ToJSON(w io.Writer) {
 	df.Lock()
 	defer df.Unlock()
 	var out [][]string
 	numOfSeries := len(df.Series)
 	numOfRows := df.Series[0].NRows()
-	out = append(out,df.Names())
+	out = append(out, df.Names())
 	for j := 0; j < numOfRows; j++ {
 		var res []string
 		for i := 0; i < numOfSeries; i++ {
-			res = append(res,df.Series[i].ValueString(j))
+			res = append(res, df.Series[i].ValueString(j))
 		}
-		out = append(out,res)
+		out = append(out, res)
 	}
-	bytes,_ := json.Marshal(out)
+	bytes, _ := json.Marshal(out)
 
 	w.Write(bytes)
 }
