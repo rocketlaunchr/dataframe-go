@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"log"
 )
 
 type CSVOptions struct {
@@ -16,30 +15,19 @@ type CSVOptions struct {
 	LazyQuotes       bool
 }
 
-func FromCSV(r io.Reader, options ...CSVOptions) (*DataFrame, error) {
+func From2DStringSlice(inp [][]string) (*DataFrame, error) {
 	var df *DataFrame
-	var series []Series
-	reader := csv.NewReader(r)
-	reader.ReuseRecord = true
-	if len(options) > 0 {
-		reader.Comma = options[0].Comma
-		reader.Comment = options[0].Comment
-		reader.TrimLeadingSpace = options[0].TrimLeadingSpace
-		reader.LazyQuotes = options[0].LazyQuotes
+
+	if len(inp) == 0 {
+		return nil, errors.New("empty slice")
 	}
-	for {
-		line, err := reader.Read()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			log.Fatal(err)
-		}
-		if len(series) == 0 {
+	for key, line := range inp {
+		if key == 0 {
+			var series []Series
 			for _, value := range line {
 				series = append(series, NewSeriesString(value, nil))
 			}
-			df1 := NewDataFrame(series...)
-			df = df1
+			df = NewDataFrame(series...)
 		} else {
 			var values []interface{}
 			for _, value := range line {
@@ -49,8 +37,29 @@ func FromCSV(r io.Reader, options ...CSVOptions) (*DataFrame, error) {
 		}
 
 	}
-	if len(series) == 0 {
-		return nil, errors.New("csv data contains no rows")
+	return df, nil
+}
+
+func FromCSV(r io.Reader, options ...CSVOptions) (*DataFrame, error) {
+	var df *DataFrame
+
+	reader := csv.NewReader(r)
+	reader.ReuseRecord = true
+	if len(options) > 0 {
+		reader.Comma = options[0].Comma
+		reader.Comment = options[0].Comment
+		reader.TrimLeadingSpace = options[0].TrimLeadingSpace
+		reader.LazyQuotes = options[0].LazyQuotes
+	}	
+
+	inputSlice,err := reader.ReadAll()
+	if err != nil {
+		return nil,err
+	}
+
+	df, err = From2DStringSlice(inputSlice)
+	if err != nil {
+		return nil, err
 	}
 	return df, nil
 }
@@ -78,29 +87,30 @@ func (df *DataFrame) ToCSV(w io.Writer, options ...CSVOptions) {
 
 func FromJSON(r io.Reader) (*DataFrame, error) {
 	var df *DataFrame
-	var series []Series
+
 	byteValue, _ := ioutil.ReadAll(r)
 
 	var result [][]interface{}
+
 	err := json.Unmarshal(byteValue, &result)
 	if err != nil {
 		return nil, err
 	}
 
+	var inputSlice [][]string
 	for _, line := range result {
-		if len(series) == 0 {
-			for _, value := range line {
-				series = append(series, NewSeriesString(value.(string), nil))
-			}
-			df1 := NewDataFrame(series...)
-			df = df1
-		} else {
-			df.Append(line...)
+		var lineSlice []string
+		for _, value := range line {
+			lineSlice = append(lineSlice, value.(string))
 		}
+		inputSlice = append(inputSlice, lineSlice)
 	}
-	if len(series) == 0 {
-		return nil, errors.New("json data contains no rows")
+
+	df, err = From2DStringSlice(inputSlice)
+	if err != nil {
+		return nil, err
 	}
+
 	return df, nil
 }
 
