@@ -40,6 +40,23 @@ func From2DStringSlice(inp [][]string) (*DataFrame, error) {
 	return df, nil
 }
 
+func (df *DataFrame)To2DStringSlice() [][]string{
+	df.Lock()
+	defer df.Unlock()
+	var out [][]string
+	numOfSeries := len(df.Series)
+	numOfRows := df.Series[0].NRows()
+	out = append(out, df.Names())
+	for j := 0; j < numOfRows; j++ {
+		var res []string
+		for i := 0; i < numOfSeries; i++ {
+			res = append(res, df.Series[i].ValueString(j))
+		}
+		out = append(out, res)
+	}
+	return out
+}
+
 func FromCSV(r io.Reader, options ...CSVOptions) (*DataFrame, error) {
 	var df *DataFrame
 
@@ -65,24 +82,13 @@ func FromCSV(r io.Reader, options ...CSVOptions) (*DataFrame, error) {
 }
 
 func (df *DataFrame) ToCSV(w io.Writer, options ...CSVOptions) {
-	df.Lock()
-	defer df.Unlock()
 	writer := csv.NewWriter(w)
 	if len(options) > 0 {
 		writer.Comma = options[0].Comma
 	}
 	defer writer.Flush()
 
-	numOfSeries := len(df.Series)
-	numOfRows := df.Series[0].NRows()
-	writer.Write(df.Names())
-	for j := 0; j < numOfRows; j++ {
-		var res []string
-		for i := 0; i < numOfSeries; i++ {
-			res = append(res, df.Series[i].ValueString(j))
-		}
-		writer.Write(res)
-	}
+	writer.WriteAll(df.To2DStringSlice())
 }
 
 func FromJSON(r io.Reader) (*DataFrame, error) {
@@ -115,20 +121,7 @@ func FromJSON(r io.Reader) (*DataFrame, error) {
 }
 
 func (df *DataFrame) ToJSON(w io.Writer) {
-	df.Lock()
-	defer df.Unlock()
-	var out [][]string
-	numOfSeries := len(df.Series)
-	numOfRows := df.Series[0].NRows()
-	out = append(out, df.Names())
-	for j := 0; j < numOfRows; j++ {
-		var res []string
-		for i := 0; i < numOfSeries; i++ {
-			res = append(res, df.Series[i].ValueString(j))
-		}
-		out = append(out, res)
-	}
-	bytes, _ := json.Marshal(out)
+	bytes, _ := json.Marshal(df.To2DStringSlice())
 
 	w.Write(bytes)
 }
