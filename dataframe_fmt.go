@@ -81,3 +81,26 @@ func (df *DataFrame) Table(r ...Range) string {
 func (df *DataFrame) String() string {
 	return df.Table()
 }
+
+func (df *DataFrame) Head(n ...int){
+	end := 5
+	if len(n) > 0 {
+		end = n[0]
+	}
+	fmt.Println(df.Table(Range{
+		Start: nil,
+		End: &end,
+	}))
+}
+
+func (df *DataFrame) Tail(n ...int){
+	start := 5
+	if len(n) > 0 {
+		start = n[0]
+	}
+	st := df.NRows() - start
+	fmt.Println(df.Table(Range{
+		Start: &st,
+		End:   nil,
+	}))
+}
