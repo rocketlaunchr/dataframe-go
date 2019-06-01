@@ -44,14 +44,7 @@ func (df *DataFrame) Table(r ...Range) string {
 		footers = append(footers, aSeries.Type())
 	}
 
-	for row := 0; row < df.n; row++ {
-
-		if row > e {
-			break
-		}
-		if row < s {
-			continue
-		}
+	for row := s; row <= e; row++ {
 
 		sVals := []string{fmt.Sprintf("%d:", row)}
 
