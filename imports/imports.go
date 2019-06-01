@@ -16,8 +16,9 @@ import (
 
 // CSVLoadOption is likely to change.
 type CSVLoadOption struct {
+
 	// Comma is the field delimiter.
-	// The default value is ',' when CSVLoadOption is not used.
+	// The default value is ',' when CSVLoadOption is not provided.
 	// Comma must be a valid rune and must not be \r, \n,
 	// or the Unicode replacement character (0xFFFD).
 	Comma rune
