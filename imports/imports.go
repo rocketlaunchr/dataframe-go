@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
@@ -137,11 +138,12 @@ type JSONLoadOptions struct {
 // WARNING: The API may change in the future.
 func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataFrame, error) {
 
-	init := &dataframe.SeriesInit{}
+	var init *dataframe.SeriesInit
 
 	if len(options) > 0 {
 		// Count how many rows we have in order to preallocate underlying slices
 		if options[0].LargeDataSet {
+			init = &dataframe.SeriesInit{}
 			dec := json.NewDecoder(r)
 
 			tokenCount := 0
@@ -164,13 +166,14 @@ func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataF
 						tokenCount--
 						if tokenCount == 0 {
 							init.Size++
-							// init.Capacity++
 						}
 					}
 				}
 			}
 		}
 	}
+
+	knownFields := map[string]interface{}{} // These fields are determined by the first row
 
 	var row int
 	var df *dataframe.DataFrame
@@ -191,105 +194,254 @@ func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataF
 		vals := parseObject(raw, "")
 
 		if row == 1 {
-			// Create the initial dataframe
-			seriess := []dataframe.Series{}
-			nameToSeriesIdx := map[string]int{}
 
-			// Initialize the underlying series of dataframe.
-			if len(options) > 0 && len(options[0].DictateDataType) > 0 {
-				for k, v := range options[0].DictateDataType {
-					switch v.(type) {
-					case float64:
-						seriess = append(seriess, dataframe.NewSeriesFloat64(k, init))
-					case int64:
-						seriess = append(seriess, dataframe.NewSeriesInt64(k, init))
-					case string:
-						seriess = append(seriess, dataframe.NewSeriesString(k, init))
-					case time.Time:
-						seriess = append(seriess, dataframe.NewSeriesTime(k, init))
-					default:
-						seriess = append(seriess, dataframe.NewSeries(k, v, init))
+			// The first row determines which fields we use
+			knownFields = vals
+
+			// Create a series for each field (of the appropriate data type)
+			seriess := []dataframe.Series{}
+
+			for name := range vals {
+
+				// Check if we know what the datatype should be. Otherwise assume string
+				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
+
+					typ, exists := options[0].DictateDataType[name]
+					if !exists {
+						seriess = append(seriess, dataframe.NewSeriesString(name, init))
+						continue
 					}
-					nameToSeriesIdx[k] = len(seriess) - 1
+
+					switch typ.(type) {
+					case float64:
+						seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
+					case int64:
+						seriess = append(seriess, dataframe.NewSeriesInt64(name, init))
+					case string:
+						seriess = append(seriess, dataframe.NewSeriesString(name, init))
+					case time.Time:
+						seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+					default:
+						seriess = append(seriess, dataframe.NewSeries(name, typ, init))
+					}
+				} else {
+					seriess = append(seriess, dataframe.NewSeriesString(name, init))
 				}
+
 			}
+
+			// Create the dataframe
+			df = dataframe.NewDataFrame(seriess...)
+			if init == nil {
+				df.Append(make([]interface{}, len(df.Series))...)
+			}
+
+			// Store values of first row into dataframe
+			insertVals := map[string]interface{}{}
 
 			for name, val := range vals {
 
-				var strVal string
-				switch v := val.(type) {
-				case fmt.Stringer:
-					strVal = v.String()
-				default:
-					strVal = fmt.Sprintf("%v", v)
+				// Store values
+				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
+
+					// Check if a datatype is dictated
+					typ, exists := options[0].DictateDataType[name]
+					if !exists {
+						// Store value as a string
+						switch v := val.(type) {
+						case string:
+							insertVals[name] = v
+						case json.Number:
+							insertVals[name] = v.String()
+						case bool:
+							if v == true {
+								insertVals[name] = "1"
+							} else {
+								insertVals[name] = "0"
+							}
+						}
+					} else {
+						err := dictateForce(row, insertVals, name, typ, val)
+						if err != nil {
+							return nil, err
+						}
+					}
+				} else {
+					// Store value as a string
+
+					switch v := val.(type) {
+					case string:
+						insertVals[name] = v
+					case json.Number:
+						insertVals[name] = v.String()
+					case bool:
+						if v == true {
+							insertVals[name] = "1"
+						} else {
+							insertVals[name] = "0"
+						}
+					}
 				}
 
-				// Check if the series exists
-				colIdx, exists := nameToSeriesIdx[name]
-				if !exists {
-					seriess = append(seriess, dataframe.NewSeriesString(name, init, strVal))
-					continue
-				}
-
-				seriess[colIdx].Update(row-1, strVal, dataframe.Options{DontLock: true})
 			}
 
-			// Number can be float64, int64, string
+			if len(insertVals) > 0 {
+				if init == nil {
+					df.Append(make([]interface{}, len(df.Series))...)
+				}
+				df.UpdateRow(row-1, insertVals)
+			}
 
-			// for name, val := range vals {
-			// 	switch v := val.(type) {
-			// 	case string:
-			// 		seriess = append(seriess, dataframe.NewSeriesString(name, init, v))
-			// 	case json.Number:
-
-			// 	default:
-
-			// 	}
-			// }
-			df = dataframe.NewDataFrame(seriess...)
 		} else {
 
+			insertVals := map[string]interface{}{}
+
 			for name, val := range vals {
-				// Check if the series exists
-				col, err := df.NameToColumn(name)
-				if err != nil {
+
+				// Check if field is a known field
+				_, exists := knownFields[name]
+				if !exists {
+					// unknown field
 					if len(options) > 0 && options[0].ErrorOnUnknownFields {
 						return nil, fmt.Errorf("unknown field encountered. row: %d field: %s", row-1, name)
 					}
 					continue
 				}
-				df.Update(row-1, col, val)
+
+				// Store values
+				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
+
+					// Check if a datatype is dictated
+					typ, exists := options[0].DictateDataType[name]
+					if !exists {
+						// Store value as a string
+						switch v := val.(type) {
+						case string:
+							insertVals[name] = v
+						case json.Number:
+							insertVals[name] = v.String()
+						case bool:
+							if v == true {
+								insertVals[name] = "1"
+							} else {
+								insertVals[name] = "0"
+							}
+						}
+					} else {
+						switch typ.(type) {
+						case float64:
+							// Force v to float64
+							switch v := val.(type) {
+							case string:
+								f, err := strconv.ParseFloat(v, 64)
+								if err != nil {
+									return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, name)
+								}
+								insertVals[name] = f
+							case json.Number:
+								f, err := v.Float64()
+								if err != nil {
+									return nil, fmt.Errorf("can't force number to float64. row: %d field: %s", row-1, name)
+								}
+								insertVals[name] = f
+							case bool:
+								if v == true {
+									insertVals[name] = 1.0
+								} else {
+									insertVals[name] = 0.0
+								}
+							}
+						case int64:
+							// Force v to int64
+							switch v := val.(type) {
+							case string:
+								i, err := strconv.ParseInt(v, 10, 64)
+								if err != nil {
+									return nil, fmt.Errorf("can't force string to int64. row: %d field: %s", row-1, name)
+								}
+								insertVals[name] = i
+							case json.Number:
+								i, err := v.Int64()
+								if err != nil {
+									return nil, fmt.Errorf("can't force number to int64. row: %d field: %s", row-1, name)
+								}
+								insertVals[name] = i
+							case bool:
+								if v == true {
+									insertVals[name] = int64(1)
+								} else {
+									insertVals[name] = int64(0)
+								}
+							}
+						case string:
+							// Force v to string
+							switch v := val.(type) {
+							case string:
+								insertVals[name] = v
+							case json.Number:
+								insertVals[name] = v.String()
+							case bool:
+								if v == true {
+									insertVals[name] = "true"
+								} else {
+									insertVals[name] = "false"
+								}
+							}
+						case time.Time:
+							// Force v to time
+							switch v := val.(type) {
+							case string:
+								t, err := time.Parse(time.RFC3339, v)
+								if err != nil {
+									return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row-1, name)
+								}
+								insertVals[name] = t
+							case json.Number:
+								// Assume unix timestamp
+								sec, err := v.Int64()
+								if err != nil {
+									return nil, fmt.Errorf("can't force number to int64 (unix timestamp). row: %d field: %s", row-1, name)
+								}
+								insertVals[name] = time.Unix(sec, 0)
+							case nil:
+								// Do nothing
+							default:
+								return nil, fmt.Errorf("can't force %T to time.Time. row: %d field: %s", v, row-1, name)
+							}
+						default:
+							// Force v to generic
+							panic("TODO: Not implemented")
+						}
+					}
+				} else {
+					// Store value as a string
+
+					switch v := val.(type) {
+					case string:
+						insertVals[name] = v
+					case json.Number:
+						insertVals[name] = v.String()
+					case bool:
+						if v == true {
+							insertVals[name] = "1"
+						} else {
+							insertVals[name] = "0"
+						}
+					}
+				}
+
+				fmt.Println(name, spew.Sdump(val))
 			}
+			fmt.Println("--------", spew.Sdump(insertVals))
 
+			if len(insertVals) > 0 {
+				if init == nil {
+					df.Append(make([]interface{}, len(df.Series))...)
+				}
+				df.UpdateRow(row-1, insertVals)
+			}
 		}
-
-		fmt.Println(spew.Sdump(vals))
 	}
 
 	return df, nil
-}
-
-func parseObject(v map[string]interface{}, prefix string) map[string]interface{} {
-
-	out := map[string]interface{}{}
-
-	for k, t := range v {
-		var key string
-		if prefix == "" {
-			key = k
-		} else {
-			key = prefix + "." + k
-		}
-
-		switch v := t.(type) {
-		case map[string]interface{}:
-			for k, t := range parseObject(v, key) {
-				out[k] = t
-			}
-		default:
-			out[key] = t
-		}
-	}
-
-	return out
 }
