@@ -292,6 +292,43 @@ func (df *DataFrame) NameToColumn(seriesName string) (int, error) {
 	return 0, errors.New("no series contains name")
 }
 
+// ReorderColumns reorders the columns based on an ordered list of
+// column names. The length of newOrder must match the number of columns
+// in the dataframe. The column names in newOrder must be unique.
+func (df *DataFrame) ReorderColumns(newOrder []string) error {
+	df.lock.Lock()
+	defer df.lock.Unlock()
+
+	if len(newOrder) != len(df.Series) {
+		return errors.New("length of newOrder must match number of columns")
+	}
+
+	// Check if newOrder contains duplicates
+	fields := map[string]struct{}{}
+	for _, v := range newOrder {
+		fields[v] = struct{}{}
+	}
+
+	if len(fields) != len(df.Series) {
+		return errors.New("newOrder must not contain duplicate values")
+	}
+
+	series := []Series{}
+
+	for _, v := range newOrder {
+		idx, err := df.NameToColumn(v)
+		if err != nil {
+			return errors.New(err.Error() + " " + v)
+		}
+
+		series = append(series, df.Series[idx])
+	}
+
+	df.Series = series
+
+	return nil
+}
+
 // Swap is used to swap 2 values based on their row position.
 func (df *DataFrame) Swap(row1, row2 int) {
 	df.lock.Lock()
