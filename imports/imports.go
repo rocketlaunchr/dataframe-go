@@ -14,8 +14,8 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
-// CSVLoadOption is likely to change.
-type CSVLoadOption struct {
+// CSVLoadOptions is likely to change.
+type CSVLoadOptions struct {
 
 	// Comma is the field delimiter.
 	// The default value is ',' when CSVLoadOption is not provided.
@@ -44,8 +44,8 @@ type CSVLoadOption struct {
 }
 
 // LoadFromCSV will load data from a csv file.
-// API is likely to change.
-func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOption) (*dataframe.DataFrame, error) {
+// WARNING: The API may change in the future.
+func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFrame, error) {
 
 	seriess := []dataframe.Series{}
 	var df *dataframe.DataFrame
@@ -116,8 +116,9 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOption) (*dataframe.DataFram
 	return dataframe.NewDataFrame(seriess...), nil
 }
 
-// JSONLoadOption is likely to change.
-type JSONLoadOption struct {
+// JSONLoadOptions is likely to change.
+type JSONLoadOptions struct {
+
 	// LargeDataSet should be set to true for large datasets.
 	// It will set the capacity of the underlying slices of the dataframe by performing a basic parse
 	// of the full dataset before processing the data fully.
@@ -133,8 +134,8 @@ type JSONLoadOption struct {
 }
 
 // LoadFromJSON will load data from a json file.
-// The function is not implemented. Pull-request?
-func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOption) (*dataframe.DataFrame, error) {
+// WARNING: The API may change in the future.
+func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataFrame, error) {
 
 	init := &dataframe.SeriesInit{}
 
