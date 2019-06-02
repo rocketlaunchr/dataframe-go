@@ -388,15 +388,7 @@ func (s *SeriesFloat64) Table(r ...Range) string {
 	headers := []string{"", s.name} // row header is blank
 	footers := []string{fmt.Sprintf("%dx%d", len(s.Values), 1), s.Type()}
 
-	for row := 0; row < len(s.Values); row++ {
-
-		if row > end {
-			break
-		}
-		if row < start {
-			continue
-		}
-
+	for row := start; row <= end; row++ {
 		sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, Options{true, false})}
 		data = append(data, sVals)
 	}
