@@ -192,10 +192,20 @@ func (s *SeriesTime) Update(row int, val interface{}, options ...Options) {
 }
 
 func (s *SeriesTime) valToPointer(v interface{}) *time.Time {
-	if v == nil {
+	switch val := v.(type) {
+	case nil:
+		return nil
+	case *time.Time:
+		if val == nil {
+			return nil
+		}
+		return &[]time.Time{*val}[0]
+	case time.Time:
+		return &val
+	default:
+		_ = v.(time.Time) // Intentionally panic
 		return nil
 	}
-	return &[]time.Time{v.(time.Time)}[0]
 }
 
 // SetValueToStringFormatter is used to set a function
