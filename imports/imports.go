@@ -40,6 +40,10 @@ type CSVLoadOptions struct {
 	// of the full dataset before processing the data fully.
 	// Preallocating memory can provide speed improvements. Benchmarks should be performed for your use-case.
 	LargeDataSet bool
+
+	// DictateDataType is used to inform LoadFromJSON what the true underlying data type is for a given field name.
+	// The value for a given key must be of the data type of the data. For a string use "". For a int64 use int64(0).
+	DictateDataType map[string]interface{}
 }
 
 // LoadFromCSV will load data from a csv file.
