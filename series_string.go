@@ -191,10 +191,19 @@ func (s *SeriesString) Update(row int, val interface{}, options ...Options) {
 }
 
 func (s *SeriesString) valToPointer(v interface{}) *string {
-	if v == nil {
+	switch val := v.(type) {
+	case nil:
 		return nil
-	} else {
-		return &[]string{v.(string)}[0]
+	case *string:
+		if val == nil {
+			return nil
+		}
+		return &[]string{*val}[0]
+	case string:
+		return &val
+	default:
+		_ = v.(string) // Intentionally panic
+		return nil
 	}
 }
 

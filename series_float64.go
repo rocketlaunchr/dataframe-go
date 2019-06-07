@@ -192,14 +192,23 @@ func (s *SeriesFloat64) Update(row int, val interface{}, options ...Options) {
 }
 
 func (s *SeriesFloat64) valToPointer(v interface{}) *float64 {
-	if v == nil {
+	switch val := v.(type) {
+	case nil:
 		return nil
+	case *float64:
+		if val == nil {
+			return nil
+		}
+		return &[]float64{*val}[0]
+	case float64:
+		return &val
+	default:
+		f, err := strconv.ParseFloat(fmt.Sprintf("%v", v), 64)
+		if err != nil {
+			_ = v.(float64) // Intentionally panic
+		}
+		return &f
 	}
-	f, err := strconv.ParseFloat(fmt.Sprintf("%v", v), 64)
-	if err != nil {
-		_ = v.(float64)
-	}
-	return &f
 }
 
 // SetValueToStringFormatter is used to set a function

@@ -318,7 +318,7 @@ func (df *DataFrame) ReorderColumns(newOrder []string) error {
 	for _, v := range newOrder {
 		idx, err := df.NameToColumn(v)
 		if err != nil {
-			return errors.New(err.Error() + " " + v)
+			return errors.New(err.Error() + ": " + v)
 		}
 
 		series = append(series, df.Series[idx])
@@ -326,6 +326,20 @@ func (df *DataFrame) ReorderColumns(newOrder []string) error {
 
 	df.Series = series
 
+	return nil
+}
+
+// RemoveSeries will remove a series from the dataframe.
+func (df *DataFrame) RemoveSeries(seriesName string) error {
+	df.lock.Lock()
+	defer df.lock.Unlock()
+
+	idx, err := df.NameToColumn(seriesName)
+	if err != nil {
+		return errors.New(err.Error() + ": " + seriesName)
+	}
+
+	df.Series = append(df.Series[:idx], df.Series[idx+1:]...)
 	return nil
 }
 
