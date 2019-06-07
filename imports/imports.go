@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
@@ -61,9 +62,12 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 	cr := csv.NewReader(r)
 	cr.ReuseRecord = true
 	if len(options) > 0 {
+
 		cr.Comma = options[0].Comma
 		cr.Comment = options[0].Comment
-		cr.TrimLeadingSpace = options[0].TrimLeadingSpace
+		if options[0].TrimLeadingSpace {
+			cr.TrimLeadingSpace = options[0].TrimLeadingSpace
+		}
 
 		// Count how many rows we have in order to preallocate underlying slices
 		if options[0].LargeDataSet {
@@ -105,21 +109,22 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 				// If DictateDataType option is set
 				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
 					// Check is name is defined in DictateDataType
+					fmt.Print(options[0].DictateDataType[name]) // remember to remmove this
 					typ, exists := options[0].DictateDataType[name]
 					if !exists { // If not defined Create the DF field as default string type
 						seriess = append(seriess, dataframe.NewSeriesString(name, init))
 						continue
 					}
 
-					switch typ.(type) {
-					case float64:
+					switch strings.ToLower(typ.(string)) {
+					case "float":
 						seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
-					case int64:
+					case "int":
 						seriess = append(seriess, dataframe.NewSeriesInt64(name, init))
-					case string:
-						seriess = append(seriess, dataframe.NewSeriesString(name, init))
-					case time.Time:
+					case "time.Time":
 						seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+					case "string":
+						seriess = append(seriess, dataframe.NewSeriesString(name, init))
 					default:
 						seriess = append(seriess, dataframe.NewSeries(name, typ, init))
 					}
@@ -146,35 +151,52 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 						vals = append(vals, v)
 					} else { // If Field type is defined
 						// Type cast String 'v' to whatever type that was defined
-						switch typ.(type) { // switching based on defined type
-						case float64:
+						switch strings.ToLower(typ.(string)) { // switching based on defined type
+						// the Type Declatation inputs users enter is always string
+						// i.e. they define type in a string
+						case "float":
 							// Convert String V to float64
 							val, err := strconv.ParseFloat(v, 64)
 							if err != nil {
-								fmt.Printf("can't force string to float64. row: %d field: %s", count-1, fieldNames[index])
-								return nil, err
+								if v == "NA" {
+									val = 0.0
+								} else {
+									fmt.Printf("can't force string to float64. row: %d field: %s", count-1, fieldNames[index])
+									return nil, err
+								}
 							}
 							vals = append(vals, val)
-						case int64:
+						case "int":
 							// Convert String v to int64
 							val, err := strconv.ParseInt(v, 10, 64)
 							if err != nil {
-								fmt.Printf("can't force string to int64. row: %d field: %s", count-1, fieldNames[index])
-								return nil, err
+								if v == "NA" {
+									val = 0
+								} else {
+									fmt.Printf("can't force string to int64. row: %d field: %s", count-1, fieldNames[index])
+									return nil, err
+								}
 							}
 							vals = append(vals, val)
-						case bool:
-							val, err := strconv.ParseBool(v)
-							if err != nil {
-								fmt.Printf("can't force string to bool. row: %d field: %s", count-1, fieldNames[index])
-								return nil, err
-							}
-							if val == true {
-								vals = append(vals, "true")
+						case "bool":
+							var val string
+							if v == "NA" {
+								val = "--"
 							} else {
-								vals = append(vals, "false")
+								val1, err := strconv.ParseBool(v)
+								if err != nil {
+									fmt.Printf("can't force string to bool. row: %d field: %s", count-1, fieldNames[index])
+									return nil, err
+								}
+								if val1 == true {
+									val = "true"
+								} else {
+									val = "false"
+								}
 							}
-						case time.Time:
+							vals = append(vals, val)
+
+						case "time.Time":
 							val, err := time.Parse(time.RFC3339, v)
 							if err != nil {
 								fmt.Printf("can't force string to time.Time. row: %d field: %s", count-1, fieldNames[index])
