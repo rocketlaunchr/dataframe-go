@@ -94,13 +94,39 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 			return nil, err
 		}
 
+		// Read all field Nmes from First row
 		if count == 0 {
 			// Create the series
 			for _, name := range rec {
-				seriess = append(seriess, dataframe.NewSeriesString(name, init))
-
 				// Store name in fieldNames array
 				fieldNames = append(fieldNames, name)
+
+				// If DictateDataType option is set
+				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
+					// Check is name is defined in DictateDataType
+					typ, exists := options[0].DictateDataType[name]
+					if !exists { // If not defined Create the DF field as default string type
+						seriess = append(seriess, dataframe.NewSeriesString(name, init))
+						continue
+					}
+
+					switch typ.(type) {
+					case float64:
+						seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
+					case int64:
+						seriess = append(seriess, dataframe.NewSeriesInt64(name, init))
+					case string:
+						seriess = append(seriess, dataframe.NewSeriesString(name, init))
+					case time.Time:
+						seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+					default:
+						seriess = append(seriess, dataframe.NewSeries(name, typ, init))
+					}
+				} else {
+					// create field as String
+					seriess = append(seriess, dataframe.NewSeriesString(name, init))
+				}
+
 			}
 			df = dataframe.NewDataFrame(seriess...)
 		} else {
