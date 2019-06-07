@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
@@ -95,7 +96,7 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 		}
 
 		// Read all field Nmes from First row
-		if count == 0 {
+		if count == 0 { // Initializing Dataframe with field names
 			// Create the series
 			for _, name := range rec {
 				// Store name in fieldNames array
@@ -129,10 +130,67 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 
 			}
 			df = dataframe.NewDataFrame(seriess...)
-		} else {
+		} else { // Inserting of values to created Dataframe
 			vals := []interface{}{}
-			for _, v := range rec {
-				vals = append(vals, v)
+
+			for index, v := range rec {
+
+				// vals is supposed to be casted to the correct type by DictateDataType
+				// If DictateDataType option is set
+				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
+					// Check current column index has a dictated datatype
+					typ, exists := options[0].DictateDataType[fieldNames[index]]
+					// If column field type is not declared
+					if !exists { // If field is not defined
+						// Store input value as Default String
+						vals = append(vals, v)
+					} else { // If Field type is defined
+						// Type cast String 'v' to whatever type that was defined
+						switch typ.(type) { // switching based on defined type
+						case float64:
+							// Convert String V to float64
+							val, err := strconv.ParseFloat(v, 64)
+							if err != nil {
+								fmt.Printf("can't force string to float64. row: %d field: %s", count-1, fieldNames[index])
+								return nil, err
+							}
+							vals = append(vals, val)
+						case int64:
+							// Convert String v to int64
+							val, err := strconv.ParseInt(v, 10, 64)
+							if err != nil {
+								fmt.Printf("can't force string to int64. row: %d field: %s", count-1, fieldNames[index])
+								return nil, err
+							}
+							vals = append(vals, val)
+						case bool:
+							val, err := strconv.ParseBool(v)
+							if err != nil {
+								fmt.Printf("can't force string to bool. row: %d field: %s", count-1, fieldNames[index])
+								return nil, err
+							}
+							if val == true {
+								vals = append(vals, "true")
+							} else {
+								vals = append(vals, "false")
+							}
+						case time.Time:
+							val, err := time.Parse(time.RFC3339, v)
+							if err != nil {
+								fmt.Printf("can't force string to time.Time. row: %d field: %s", count-1, fieldNames[index])
+								return nil, err
+							}
+							vals = append(vals, val)
+						default: // assign directly as string without conversion
+							vals = append(vals, v)
+						}
+
+					}
+
+				} else { // Append Values as normal (Default String)
+					vals = append(vals, v)
+				}
+
 			}
 			if init == nil {
 				df.Append(vals...)
