@@ -54,6 +54,9 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 	var df *dataframe.DataFrame
 	var init *dataframe.SeriesInit
 
+	// Array to contain Field Names
+	fieldNames := []string{}
+
 	cr := csv.NewReader(r)
 	cr.ReuseRecord = true
 	if len(options) > 0 {
@@ -95,6 +98,9 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 			// Create the series
 			for _, name := range rec {
 				seriess = append(seriess, dataframe.NewSeriesString(name, init))
+
+				// Store name in fieldNames array
+				fieldNames = append(fieldNames, name)
 			}
 			df = dataframe.NewDataFrame(seriess...)
 		} else {
