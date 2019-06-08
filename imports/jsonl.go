@@ -108,7 +108,7 @@ func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataF
 						continue
 					}
 
-					switch typ.(type) {
+					switch T := typ.(type) {
 					case float64:
 						seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
 					case int64, bool:
@@ -117,6 +117,8 @@ func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataF
 						seriess = append(seriess, dataframe.NewSeriesString(name, init))
 					case time.Time:
 						seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+					case Converter:
+						seriess = append(seriess, dataframe.NewSeries(name, T.ConcreteType, init))
 					default:
 						seriess = append(seriess, dataframe.NewSeries(name, typ, init))
 					}
