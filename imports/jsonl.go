@@ -128,9 +128,6 @@ func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataF
 
 			// Create the dataframe
 			df = dataframe.NewDataFrame(seriess...)
-			if init == nil {
-				df.Append(make([]interface{}, len(df.Series))...)
-			}
 
 			// Store values of first row into dataframe
 			insertVals := map[string]interface{}{}
@@ -181,12 +178,10 @@ func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataF
 
 			}
 
-			if len(insertVals) > 0 {
-				if init == nil {
-					df.Append(make([]interface{}, len(df.Series))...)
-				}
-				df.UpdateRow(row-1, insertVals)
+			if init == nil {
+				df.Append(make([]interface{}, len(df.Series))...)
 			}
+			df.UpdateRow(row-1, insertVals)
 
 		} else {
 
@@ -247,12 +242,11 @@ func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataF
 				}
 			}
 
-			if len(insertVals) > 0 {
-				if init == nil {
-					df.Append(make([]interface{}, len(df.Series))...)
-				}
-				df.UpdateRow(row-1, insertVals)
+			if init == nil {
+				df.Append(make([]interface{}, len(df.Series))...)
 			}
+			df.UpdateRow(row-1, insertVals)
+
 		}
 	}
 
