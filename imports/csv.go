@@ -42,6 +42,12 @@ type CSVLoadOptions struct {
 	// The value for a given key must be of the data type of the data.
 	// eg. For a string use "". For a int64 use int64(0). What is relevant is the datatype and not the value itself.
 	DictateDataType map[string]interface{}
+
+	// NilValue allows you to set what string value in the CSV file should be interpreted as a nil value for
+	// the purposes of insertion.
+	//
+	// Common values are: NULL, \N, NaN, NA
+	NilValue *string
 }
 
 // LoadFromCSV will load data from a csv file.
