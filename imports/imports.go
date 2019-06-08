@@ -5,7 +5,6 @@ package imports
 import (
 	"encoding/csv"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -109,7 +108,7 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 	}
 
 	if count < 1 {
-		return nil, errors.New("csv data contains no rows")
+		return nil, dataframe.ErrNoRows
 	}
 
 	return dataframe.NewDataFrame(seriess...), nil
