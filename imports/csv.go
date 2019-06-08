@@ -4,7 +4,9 @@ package imports
 
 import (
 	"encoding/csv"
+	"fmt"
 	"io"
+	"strconv"
 	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
@@ -135,8 +137,71 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 		} else {
 
 			insertVals := []interface{}{}
-			for _, v := range rec {
-				insertVals = append(insertVals, v)
+			for idx, v := range rec {
+
+				// Check if v represents a nil value
+				if len(options) > 0 && options[0].NilValue != nil {
+					if v == *options[0].NilValue {
+						insertVals = append(insertVals, nil)
+						continue
+					}
+				}
+
+				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
+
+					name := df.Names()[idx]
+
+					// Check if a datatype is dictated
+					typ, exists := options[0].DictateDataType[name]
+					if !exists {
+						// Store value as a string
+						insertVals = append(insertVals, v)
+					} else {
+
+						switch typ.(type) {
+						case string:
+							insertVals = append(insertVals, v)
+						case bool:
+							if v == "TRUE" || v == "true" || v == "1" {
+								insertVals = append(insertVals, int64(1))
+							} else if v == "FALSE" || v == "false" || v == "0" {
+								insertVals = append(insertVals, int64(0))
+							} else {
+								return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, name)
+							}
+						case int64:
+							i, err := strconv.ParseInt(v, 10, 64)
+							if err != nil {
+								return nil, fmt.Errorf("can't force string to int64. row: %d field: %s", row-1, name)
+							}
+							insertVals = append(insertVals, i)
+						case float64:
+							f, err := strconv.ParseFloat(v, 64)
+							if err != nil {
+								return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, name)
+							}
+							insertVals = append(insertVals, f)
+						case time.Time:
+							t, err := time.Parse(time.RFC3339, v)
+							if err != nil {
+								// Assume unix timestamp
+								sec, err := strconv.ParseInt(v, 10, 64)
+								if err != nil {
+									return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row-1, name)
+								}
+								insertVals = append(insertVals, time.Unix(sec, 0))
+							}
+							insertVals = append(insertVals, t)
+						default:
+							insertVals = append(insertVals, v)
+						}
+					}
+
+				} else {
+					// Store value as a string
+					insertVals = append(insertVals, v)
+				}
+
 			}
 
 			if init == nil {
