@@ -58,6 +58,38 @@ func dictateForce(row int, insertVals map[string]interface{}, name string, typ i
 				insertVals[name] = 0.0
 			}
 		}
+	case bool:
+		// Force v to int64 (bools are treated as int64)
+		switch v := val.(type) {
+		case string:
+			if v == "TRUE" || v == "true" || v == "1" {
+				insertVals[name] = int64(1)
+			} else if v == "FALSE" || v == "false" || v == "0" {
+				insertVals[name] = int64(0)
+			} else {
+				return fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, name)
+			}
+		case json.Number:
+			// Check if float64
+			f, err := v.Float64()
+			if err != nil {
+				return fmt.Errorf("can't force number to bool. row: %d field: %s", row-1, name)
+			}
+
+			if f == 1 {
+				insertVals[name] = int64(1)
+			} else if f == 0 {
+				insertVals[name] = int64(0)
+			} else {
+				return fmt.Errorf("can't force number to bool. row: %d field: %s", row-1, name)
+			}
+		case bool:
+			if v == true {
+				insertVals[name] = int64(1)
+			} else {
+				insertVals[name] = int64(0)
+			}
+		}
 	case int64:
 		// Force v to int64
 		switch v := val.(type) {

@@ -115,7 +115,7 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 					switch typ.(type) {
 					case float64:
 						seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
-					case int64:
+					case int64, bool:
 						seriess = append(seriess, dataframe.NewSeriesInt64(name, init))
 					case string:
 						seriess = append(seriess, dataframe.NewSeriesString(name, init))
