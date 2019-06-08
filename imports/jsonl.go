@@ -21,7 +21,8 @@ type JSONLoadOptions struct {
 	LargeDataSet bool
 
 	// DictateDataType is used to inform LoadFromJSON what the true underlying data type is for a given field name.
-	// The value for a given key must be of the data type of the data. For a string use "". For a int64 use int64(0).
+	// The value for a given key must be of the data type of the data.
+	// eg. For a string use "". For a int64 use int64(0).
 	DictateDataType map[string]interface{}
 
 	// ErrorOnUnknownFields will generate an error if an unknown field is encountered after the first row.
@@ -255,5 +256,10 @@ func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataF
 		}
 	}
 
-	return df, nil
+	if df == nil {
+		return nil, dataframe.ErrNoRows
+	} else {
+		return df, nil
+	}
+
 }
