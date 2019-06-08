@@ -9,6 +9,17 @@ import (
 	"time"
 )
 
+// GenericDataConverter is used to convert input data into a generic data type.
+// This is required when importing data for a Generic Series ("NewSeries").
+type GenericDataConverter func(in interface{}) (interface{}, error)
+
+// Converter is used to convert input data into a generic data type.
+// This is required when importing data for a Generic Series ("NewSeries").
+type Converter struct {
+	ConcreteType  interface{}
+	ConverterFunc GenericDataConverter
+}
+
 func parseObject(v map[string]interface{}, prefix string) map[string]interface{} {
 
 	out := map[string]interface{}{}
@@ -35,7 +46,7 @@ func parseObject(v map[string]interface{}, prefix string) map[string]interface{}
 }
 
 func dictateForce(row int, insertVals map[string]interface{}, name string, typ interface{}, val interface{}) error {
-	switch typ.(type) {
+	switch T := typ.(type) {
 	case float64:
 		// Force v to float64
 		switch v := val.(type) {
@@ -147,6 +158,13 @@ func dictateForce(row int, insertVals map[string]interface{}, name string, typ i
 		default:
 			return fmt.Errorf("can't force %T to time.Time. row: %d field: %s", v, row-1, name)
 		}
+	case Converter:
+		// Force v to generic
+		cv, err := T.ConverterFunc(val)
+		if err != nil {
+			return fmt.Errorf("can't force %T to generic data type. row: %d field: %s", val, row-1, name)
+		}
+		insertVals[name] = cv
 	default:
 		// Force v to generic
 		panic("TODO: Not implemented")

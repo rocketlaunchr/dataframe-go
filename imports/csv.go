@@ -114,7 +114,7 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 						continue
 					}
 
-					switch typ.(type) {
+					switch T := typ.(type) {
 					case float64:
 						seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
 					case int64, bool:
@@ -123,6 +123,8 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 						seriess = append(seriess, dataframe.NewSeriesString(name, init))
 					case time.Time:
 						seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+					case Converter:
+						seriess = append(seriess, dataframe.NewSeries(name, T.ConcreteType, init))
 					default:
 						seriess = append(seriess, dataframe.NewSeries(name, typ, init))
 					}
@@ -158,7 +160,7 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 						insertVals = append(insertVals, v)
 					} else {
 
-						switch typ.(type) {
+						switch T := typ.(type) {
 						case string:
 							insertVals = append(insertVals, v)
 						case bool:
@@ -192,6 +194,12 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 								insertVals = append(insertVals, time.Unix(sec, 0))
 							}
 							insertVals = append(insertVals, t)
+						case Converter:
+							cv, err := T.ConverterFunc(v)
+							if err != nil {
+								return nil, fmt.Errorf("can't force string to generic data type. row: %d field: %s", row-1, name)
+							}
+							insertVals = append(insertVals, cv)
 						default:
 							insertVals = append(insertVals, v)
 						}
