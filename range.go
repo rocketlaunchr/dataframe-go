@@ -15,7 +15,9 @@ type Range struct {
 	End   *int
 }
 
-func (r *Range) limits(len int) (s int, e int, _ error) {
+// Limits is used to return the start and end limits of a Range
+// object for a given Dataframe or Series with len number of rows.
+func (r *Range) Limits(len int) (s int, e int, _ error) {
 
 	if len <= 0 {
 		return 0, 0, errors.New("limit undefined")
