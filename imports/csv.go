@@ -5,6 +5,7 @@ package imports
 import (
 	"encoding/csv"
 	"io"
+	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
@@ -47,8 +48,6 @@ type CSVLoadOptions struct {
 // WARNING: The API may change in the future.
 func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFrame, error) {
 
-	seriess := []dataframe.Series{}
-	var df *dataframe.DataFrame
 	var init *dataframe.SeriesInit
 
 	cr := csv.NewReader(r)
@@ -79,6 +78,8 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 	}
 
 	var row int
+	var df *dataframe.DataFrame
+
 	for {
 		rec, err := cr.Read()
 		if err != nil {
@@ -89,12 +90,44 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 		}
 
 		if row == 0 {
+			// First row contains headings
+
+			seriess := []dataframe.Series{}
+
 			// Create the series
 			for _, name := range rec {
-				seriess = append(seriess, dataframe.NewSeriesString(name, init))
+
+				// Check if we know what the datatype should be. Otherwise assume string
+				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
+
+					typ, exists := options[0].DictateDataType[name]
+					if !exists {
+						seriess = append(seriess, dataframe.NewSeriesString(name, init))
+						continue
+					}
+
+					switch typ.(type) {
+					case float64:
+						seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
+					case int64:
+						seriess = append(seriess, dataframe.NewSeriesInt64(name, init))
+					case string:
+						seriess = append(seriess, dataframe.NewSeriesString(name, init))
+					case time.Time:
+						seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+					default:
+						seriess = append(seriess, dataframe.NewSeries(name, typ, init))
+					}
+				} else {
+					seriess = append(seriess, dataframe.NewSeriesString(name, init))
+				}
+
 			}
+
+			// Create the dataframe
 			df = dataframe.NewDataFrame(seriess...)
 		} else {
+
 			vals := []interface{}{}
 			for _, v := range rec {
 				vals = append(vals, v)
@@ -109,9 +142,9 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 		row++
 	}
 
-	if row < 1 {
+	if df == nil {
 		return nil, dataframe.ErrNoRows
+	} else {
+		return df, nil
 	}
-
-	return dataframe.NewDataFrame(seriess...), nil
 }
