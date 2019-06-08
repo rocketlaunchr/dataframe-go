@@ -40,7 +40,7 @@ type CSVLoadOptions struct {
 
 	// DictateDataType is used to inform LoadFromCSV what the true underlying data type is for a given field name.
 	// The value for a given key must be of the data type of the data.
-	// eg. For a string use "". For a int64 use int64(0).
+	// eg. For a string use "". For a int64 use int64(0). What is relevant is the datatype and not the value itself.
 	DictateDataType map[string]interface{}
 }
 
@@ -128,14 +128,15 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 			df = dataframe.NewDataFrame(seriess...)
 		} else {
 
-			vals := []interface{}{}
+			insertVals := []interface{}{}
 			for _, v := range rec {
-				vals = append(vals, v)
+				insertVals = append(insertVals, v)
 			}
+
 			if init == nil {
-				df.Append(vals...)
+				df.Append(insertVals...)
 			} else {
-				df.UpdateRow(row-1, vals...)
+				df.UpdateRow(row-1, insertVals...)
 			}
 
 		}
