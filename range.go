@@ -33,7 +33,7 @@ func (r *Range) limits(len int) (s int, e int, _ error) {
 	}
 
 	if r.End == nil {
-		e = 0
+		e = len - 1
 	} else {
 		if *r.End < 0 {
 			// negative
