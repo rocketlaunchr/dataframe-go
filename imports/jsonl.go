@@ -3,6 +3,7 @@
 package imports
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -29,10 +30,10 @@ type JSONLoadOptions struct {
 	ErrorOnUnknownFields bool
 }
 
-// LoadFromJSON will load data from a json file.
+// LoadFromJSON will load data from a jsonl file.
 // The first row determines which fields will be imported for subsequent rows.
 // WARNING: The API may change in the future.
-func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataFrame, error) {
+func LoadFromJSON(ctx context.Context, r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataFrame, error) {
 
 	var init *dataframe.SeriesInit
 
@@ -44,6 +45,9 @@ func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataF
 
 			tokenCount := 0
 			for {
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
 
 				t, err := dec.Token()
 				if err != nil {
@@ -77,6 +81,10 @@ func LoadFromJSON(r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataF
 	dec := json.NewDecoder(r)
 	dec.UseNumber()
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		var raw map[string]interface{}
 		err := dec.Decode(&raw)
 		if err != nil {
