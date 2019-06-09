@@ -363,25 +363,26 @@ func (s *SeriesGeneric) Unlock() {
 // to Copy.
 func (s *SeriesGeneric) Copy(r ...Range) Series {
 
+	if len(s.Values) == 0 {
+		return &SeriesGeneric{
+			valFormatter:   s.valFormatter,
+			isEqualFunc:    s.isEqualFunc,
+			isLessThanFunc: s.isLessThanFunc,
+
+			concreteType: s.concreteType,
+
+			name:   s.name,
+			Values: []interface{}{},
+		}
+	}
+
 	if len(r) == 0 {
 		r = append(r, Range{})
 	}
 
-	var (
-		start int
-		end   int
-	)
-
-	if r[0].Start == nil {
-		start = 0
-	} else {
-		start = *r[0].Start
-	}
-
-	if r[0].End == nil {
-		end = len(s.Values) - 1
-	} else {
-		end = *r[0].End
+	start, end, err := r[0].Limits(len(s.Values))
+	if err != nil {
+		panic(err)
 	}
 
 	// Copy slice
@@ -410,31 +411,23 @@ func (s *SeriesGeneric) Table(r ...Range) string {
 		r = append(r, Range{})
 	}
 
-	var (
-		start int
-		end   int
-	)
-
-	if r[0].Start == nil {
-		start = 0
-	} else {
-		start = *r[0].Start
-	}
-
-	if r[0].End == nil {
-		end = len(s.Values) - 1
-	} else {
-		end = *r[0].End
-	}
-
 	data := [][]string{}
 
 	headers := []string{"", s.name} // row header is blank
 	footers := []string{fmt.Sprintf("%dx%d", len(s.Values), 1), s.Type()}
 
-	for row := start; row <= end; row++ {
-		sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, Options{true, false})}
-		data = append(data, sVals)
+	if len(s.Values) > 0 {
+
+		start, end, err := r[0].Limits(len(s.Values))
+		if err != nil {
+			panic(err)
+		}
+
+		for row := start; row <= end; row++ {
+			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, Options{true, false})}
+			data = append(data, sVals)
+		}
+
 	}
 
 	var buf bytes.Buffer
