@@ -3,6 +3,7 @@
 package imports
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -54,7 +55,7 @@ type CSVLoadOptions struct {
 
 // LoadFromCSV will load data from a csv file.
 // WARNING: The API may change in the future.
-func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFrame, error) {
+func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFrame, error) {
 
 	var init *dataframe.SeriesInit
 
@@ -69,6 +70,10 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 		if options[0].LargeDataSet {
 			init = &dataframe.SeriesInit{}
 			for {
+				if err := ctx.Err(); err != nil {
+					return nil, err
+				}
+
 				_, err := cr.Read()
 				if err != nil {
 					if err == io.EOF {
@@ -89,6 +94,10 @@ func LoadFromCSV(r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFra
 	var df *dataframe.DataFrame
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		rec, err := cr.Read()
 		if err != nil {
 			if err == io.EOF {

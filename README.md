@@ -155,7 +155,7 @@ Country,Date,Age,Amount,Id
 "United States",2012-02-01,32,321.31,54320
 Spain,2012-02-01,66,555.42,00241
 `
-df, err := imports.LoadFromCSV(strings.NewReader(csvStr))
+df, err := imports.LoadFromCSV(ctx, strings.NewReader(csvStr))
 
 OUTPUT:
 +-----+----------------+------------+--------+--------+--------+
