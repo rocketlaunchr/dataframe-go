@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
@@ -104,6 +105,8 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 		if err := rows.Scan(rowData...); err != nil {
 			return nil, err
 		}
+
+		fmt.Println(rowData)
 
 	}
 	if err := rows.Err(); err != nil {
