@@ -11,28 +11,12 @@ import (
 
 // Table will produce the dataframe in a table.
 func (df *DataFrame) Table(r ...Range) string {
+
 	df.lock.RLock()
 	defer df.lock.RUnlock()
 
 	if len(r) == 0 {
 		r = append(r, Range{})
-	}
-
-	var (
-		s int
-		e int
-	)
-
-	if r[0].Start == nil {
-		s = 0
-	} else {
-		s = *r[0].Start
-	}
-
-	if r[0].End == nil {
-		e = df.n - 1
-	} else {
-		e = *r[0].End
 	}
 
 	data := [][]string{}
@@ -44,15 +28,22 @@ func (df *DataFrame) Table(r ...Range) string {
 		footers = append(footers, aSeries.Type())
 	}
 
-	for row := s; row <= e; row++ {
-
-		sVals := []string{fmt.Sprintf("%d:", row)}
-
-		for _, aSeries := range df.Series {
-			sVals = append(sVals, aSeries.ValueString(row))
+	if df.n > 0 {
+		s, e, err := r[0].Limits(df.n)
+		if err != nil {
+			panic(err)
 		}
 
-		data = append(data, sVals)
+		for row := s; row <= e; row++ {
+
+			sVals := []string{fmt.Sprintf("%d:", row)}
+
+			for _, aSeries := range df.Series {
+				sVals = append(sVals, aSeries.ValueString(row))
+			}
+
+			data = append(data, sVals)
+		}
 	}
 
 	var buf bytes.Buffer
