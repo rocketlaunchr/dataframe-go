@@ -47,9 +47,15 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 			return err
 		}
 
-		df.Lock()
+		df.Lock()         // lock dataframe object
 		refreshCount := 0 // Set up refresh counter
 		for row := s; row <= e; row++ {
+
+			// check if error in ctx context
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+
 			refreshCount++
 			// flush after every 100 writes
 			if refreshCount == 100 {
@@ -67,7 +73,7 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 				if v == nil || strings.ToLower(v.(string)) == "nan" {
 					val = *NullString
 				} else {
-					val = v.(string)
+					val = v.(string) // Type assertion of interface to fetch string
 				}
 				sVals = append(sVals, val)
 			}
@@ -77,7 +83,7 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 				return err
 			}
 		}
-		df.Unlock()
+		df.Unlock() // unlock dataframe
 	}
 
 	// flush before exit
