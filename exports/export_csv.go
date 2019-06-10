@@ -58,7 +58,7 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 
 			refreshCount++
 			// flush after every 100 writes
-			if refreshCount == 100 {
+			if refreshCount > 100 { // flush in the 101th count
 				cw.Flush()
 				if err := cw.Error(); err != nil {
 					return err
