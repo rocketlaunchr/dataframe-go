@@ -1,8 +1,10 @@
 package exports
 
 import (
+	"context"
 	"encoding/csv"
 	"io"
+	"strings"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
@@ -16,61 +18,69 @@ type CSVExportOptions struct {
 }
 
 // ExportToCSV exports data object to CSV
-func ExportToCSV(w io.Writer, df *dataframe.DataFrame, options ...CSVExportOptions) error {
+func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...CSVExportOptions) error {
 	header := []string{}
-	records := [][]string{}
 
-	r := dataframe.Range{} // initial default range r
-	NullString := "NaN"    // Set default value for null strings
+	var r dataframe.Range  // initial default range r
+	var NullString *string // Set default value for null strings
 
 	cw := csv.NewWriter(w)
 
 	if len(options) > 0 {
 		cw.Comma = options[0].Separator
 		cw.UseCRLF = options[0].UseCRLF
-
-		if options[0].Range != r {
-			r = options[0].Range
-		}
-
-		if options[0].NullString != NullString {
-			NullString = options[0].NullString
-		}
+		r = options[0].Range
+		NullString = &options[0].NullString
 	}
 
 	for _, aSeries := range df.Series {
 		header = append(header, aSeries.Name())
 	}
-	records = append(records, header)
+	if err := cw.Write(header); err != nil {
+		return err
+	}
 
 	if df.NRows() > 0 {
+
 		s, e, err := r.Limits(df.NRows())
 		if err != nil {
 			return err
 		}
 
+		df.Lock()
+		refreshCount := 0 // Set up refresh counter
 		for row := s; row <= e; row++ {
-			sVals := []string{}
+			refreshCount++
+			// flush after every 100 writes
+			if refreshCount == 100 {
+				cw.Flush()
+				if err := cw.Error(); err != nil {
+					return err
+				}
+				refreshCount = 0 // reset refreshCount
+			}
 
+			sVals := []string{}
 			for _, aSeries := range df.Series {
-				val := aSeries.ValueString(row)
-				// if strings.ToLower(val) == "nan" || strings.ToLower(val) == "na" || strings.ToLower(val) == "null" {
-				// 	val = string(NullString)
-				// }
+				var val string
+				v := aSeries.Value(row)
+				if v == nil || strings.ToLower(v.(string)) == "nan" {
+					val = *NullString
+				} else {
+					val = v.(string)
+				}
 				sVals = append(sVals, val)
 			}
 
-			records = append(records, sVals)
+			// Write every row
+			if err := cw.Write(sVals); err != nil {
+				return err
+			}
 		}
+		df.Unlock()
 	}
 
-	// Writing csv to writer object
-	for _, record := range records {
-		if err := cw.Write(record); err != nil {
-			return err
-		}
-	}
-
+	// flush before exit
 	cw.Flush()
 	if err := cw.Error(); err != nil {
 		return err
