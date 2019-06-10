@@ -18,11 +18,15 @@ type CSVExportOptions struct {
 
 // ExportToCSV exports data object to CSV
 func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...CSVExportOptions) error {
+	// Lock Dataframe to 
+	df.Lock()         // lock dataframe object
+	defer df.Unlock() // unlock dataframe
+
 	header := []string{}
 
 	var r dataframe.Range // initial default range r
 
-	NullString := "NaN" // Default will be "NaN"
+	nullString := "NaN" // Default will be "NaN"
 
 	cw := csv.NewWriter(w)
 
@@ -31,7 +35,7 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 		cw.UseCRLF = options[0].UseCRLF
 		r = options[0].Range
 		if options[0].NullString != nil {
-			NullString = *options[0].NullString
+			nullString = *options[0].NullString
 		}
 	}
 
@@ -49,8 +53,6 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 			return err
 		}
 
-		df.Lock()         // lock dataframe object
-		defer df.Unlock() // unlock dataframe
 		refreshCount := 0 // Set up refresh counter
 		for row := s; row <= e; row++ {
 
@@ -73,7 +75,7 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 			for _, aSeries := range df.Series {
 				val := aSeries.Value(row)
 				if val == nil {
-					sVals = append(sVals, NullString)
+					sVals = append(sVals, nullString)
 				} else {
 					sVals = append(sVals, aSeries.ValueString(row, dataframe.Options{DontLock: true}))
 				}
