@@ -4,14 +4,13 @@ import (
 	"context"
 	"encoding/csv"
 	"io"
-	"strings"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
 // CSVExportOptions contains options for CSV
 type CSVExportOptions struct {
-	NullString string          //optional param to specify what nil values should be encoded as (i.e. NULL, \N, NaN, NA etc)
+	NullString *string         //optional param to specify what nil values should be encoded as (i.e. NULL, \N, NaN, NA etc)
 	Range      dataframe.Range // Range of data subsets to write from dataframe
 	Separator  rune            // Field delimiter (set to ',' by NewWriter)
 	UseCRLF    bool            // True to use \r\n as the line terminator
@@ -21,8 +20,9 @@ type CSVExportOptions struct {
 func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...CSVExportOptions) error {
 	header := []string{}
 
-	var r dataframe.Range  // initial default range r
-	var NullString *string // Set default value for null strings
+	var r dataframe.Range // initial default range r
+
+	NullString := "NaN" // Default will be "NaN"
 
 	cw := csv.NewWriter(w)
 
@@ -30,7 +30,9 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 		cw.Comma = options[0].Separator
 		cw.UseCRLF = options[0].UseCRLF
 		r = options[0].Range
-		NullString = &options[0].NullString
+		if options[0].NullString != nil {
+			NullString = *options[0].NullString
+		}
 	}
 
 	for _, aSeries := range df.Series {
@@ -48,6 +50,7 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 		}
 
 		df.Lock()         // lock dataframe object
+		defer df.Unlock() // unlock dataframe
 		refreshCount := 0 // Set up refresh counter
 		for row := s; row <= e; row++ {
 
@@ -68,14 +71,12 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 
 			sVals := []string{}
 			for _, aSeries := range df.Series {
-				var val string
-				v := aSeries.Value(row)
-				if v == nil || strings.ToLower(v.(string)) == "nan" || strings.ToLower(v.(string)) == "na" {
-					val = *NullString
+				val := aSeries.Value(row)
+				if val == nil {
+					sVals = append(sVals, NullString)
 				} else {
-					val = v.(string) // Type assertion of interface to fetch string
+					sVals = append(sVals, aSeries.ValueString(row, dataframe.Options{DontLock: true}))
 				}
-				sVals = append(sVals, val)
 			}
 
 			// Write every row
@@ -83,7 +84,7 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 				return err
 			}
 		}
-		df.Unlock() // unlock dataframe
+
 	}
 
 	// flush before exit
