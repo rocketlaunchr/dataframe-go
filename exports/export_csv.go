@@ -70,7 +70,7 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 			for _, aSeries := range df.Series {
 				var val string
 				v := aSeries.Value(row)
-				if v == nil || strings.ToLower(v.(string)) == "nan" {
+				if v == nil || strings.ToLower(v.(string)) == "nan" || strings.ToLower(v.(string)) == "na" {
 					val = *NullString
 				} else {
 					val = v.(string) // Type assertion of interface to fetch string
