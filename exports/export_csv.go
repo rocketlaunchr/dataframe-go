@@ -63,7 +63,7 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 				if err := cw.Error(); err != nil {
 					return err
 				}
-				refreshCount = 0 // reset refreshCount
+				refreshCount = 1 // reset refreshCount
 			}
 
 			sVals := []string{}
