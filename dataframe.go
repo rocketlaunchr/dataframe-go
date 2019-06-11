@@ -47,16 +47,9 @@ func NewDataFrame(se ...Series) *DataFrame {
 	return df
 }
 
-// NRowsOptions
-type NRowsOptions struct {
-	// Don't apply lock.
-	// the entire dataframe
-	DontLock bool
-}
-
 // NRows returns the number of rows of data.
 // Each series must contain the same number of rows.
-func (df *DataFrame) NRows(options ...NRowsOptions) int {
+func (df *DataFrame) NRows(options ...Options) int {
 	if len(options) > 0 && options[0].DontLock {
 		df.Unlock()
 		defer df.Lock()

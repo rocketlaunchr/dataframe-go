@@ -8,14 +8,14 @@ import (
 	"github.com/tealeg/xlsx"
 )
 
-// EXCELExportOptions contains optional settings for EXCEL exporter functions
-type EXCELExportOptions struct {
+// ExcelExportOptions contains optional settings for EXCEL exporter functions
+type ExcelExportOptions struct {
 	NullString *string
 	Range      dataframe.Range
 }
 
 // ExportToEXCEL exports df object to EXCEL
-func ExportToEXCEL(ctx context.Context, filePath string, df *dataframe.DataFrame, options ...EXCELExportOptions) error {
+func ExportToEXCEL(ctx context.Context, filePath string, df *dataframe.DataFrame, options ...ExcelExportOptions) error {
 
 	df.Lock()
 	defer df.Unlock()
@@ -37,8 +37,8 @@ func ExportToEXCEL(ctx context.Context, filePath string, df *dataframe.DataFrame
 		}
 	}
 
-	if df.NRows(dataframe.NRowsOptions{DontLock: true}) > 0 {
-		s, e, err := r.Limits(df.NRows(dataframe.NRowsOptions{DontLock: true}))
+	if df.NRows(dataframe.Options{DontLock: true}) > 0 {
+		s, e, err := r.Limits(df.NRows(dataframe.Options{DontLock: true}))
 		if err != nil {
 			return err
 		}
@@ -50,7 +50,7 @@ func ExportToEXCEL(ctx context.Context, filePath string, df *dataframe.DataFrame
 			return err
 		}
 
-		// Add first role to excel sheet
+		// Add first row to excel sheet
 		// for header fields
 		sheetRow = sheet.AddRow()
 		// Write Header fields first
