@@ -18,7 +18,8 @@ type CSVExportOptions struct {
 
 // ExportToCSV exports data object to CSV
 func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...CSVExportOptions) error {
-	// Lock Dataframe to 
+
+	// Lock Dataframe to
 	df.Lock()         // lock dataframe object
 	defer df.Unlock() // unlock dataframe
 
@@ -46,9 +47,9 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 		return err
 	}
 
-	if df.NRows() > 0 {
+	if df.NRows(dataframe.NRowsOptions{DontLock: true}) > 0 {
 
-		s, e, err := r.Limits(df.NRows())
+		s, e, err := r.Limits(len(df.Series))
 		if err != nil {
 			return err
 		}
