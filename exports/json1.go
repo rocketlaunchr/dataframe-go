@@ -34,6 +34,7 @@ func ExportToJSON(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opt
 		}
 	}
 
+	// only add the DontLock option when the dataframe, df is already in a locked state
 	if df.NRows(dataframe.NRowsOptions{DontLock: true}) > 0 {
 
 		s, e, err := r.Limits(df.NRows(dataframe.NRowsOptions{DontLock: true}))
