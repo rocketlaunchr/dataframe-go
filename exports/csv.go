@@ -48,9 +48,9 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 	}
 
 	// DontLock optional parameter is added because df has already been locked above
-	if df.NRows(dataframe.NRowsOptions{DontLock: true}) > 0 {
+	if df.NRows(dataframe.Options{DontLock: true}) > 0 {
 
-		s, e, err := r.Limits(df.NRows(dataframe.NRowsOptions{DontLock: true}))
+		s, e, err := r.Limits(df.NRows(dataframe.Options{DontLock: true}))
 		if err != nil {
 			return err
 		}
