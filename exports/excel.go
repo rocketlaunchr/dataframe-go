@@ -12,6 +12,7 @@ import (
 type ExcelExportOptions struct {
 	NullString *string
 	Range      dataframe.Range
+	WriteSheet *string
 }
 
 // ExportToEXCEL exports df object to EXCEL
@@ -27,13 +28,19 @@ func ExportToEXCEL(ctx context.Context, filePath string, df *dataframe.DataFrame
 	var cell *xlsx.Cell
 	// var err error
 
-	nullString := "NaN" // Default value
+	nullString := "NaN"    // Default value
+	writeSheet := "sheet1" // Write to default sheet 1 if a different one is not set
+
 	var r dataframe.Range
 
 	if len(options) > 0 {
 		r = options[0].Range
 		if options[0].NullString != nil {
 			nullString = *options[0].NullString
+		}
+
+		if options[0].WriteSheet != nil {
+			writeSheet = *options[0].WriteSheet
 		}
 	}
 
@@ -45,7 +52,7 @@ func ExportToEXCEL(ctx context.Context, filePath string, df *dataframe.DataFrame
 
 		// Instantiale new excel file and select sheet
 		file = xlsx.NewFile()
-		sheet, err := file.AddSheet("Sheet1")
+		sheet, err := file.AddSheet(writeSheet)
 		if err != nil {
 			return err
 		}
