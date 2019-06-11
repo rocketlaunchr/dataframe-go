@@ -47,9 +47,10 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 		return err
 	}
 
+	// DontLock optional parameter is added because df has already been locked above
 	if df.NRows(dataframe.NRowsOptions{DontLock: true}) > 0 {
 
-		s, e, err := r.Limits(len(df.Series))
+		s, e, err := r.Limits(df.NRows(dataframe.NRowsOptions{DontLock: true}))
 		if err != nil {
 			return err
 		}

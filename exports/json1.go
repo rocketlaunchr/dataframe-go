@@ -1,6 +1,7 @@
 package exports
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 
@@ -9,32 +10,58 @@ import (
 
 // JSONExportOptions contains options for JSON
 type JSONExportOptions struct {
-	Range dataframe.Range
+	NullString    *string
+	Range         dataframe.Range
+	SetEscapeHTML bool
 }
 
 // ExportToJSON exports data object to JSON
-func ExportToJSON(w io.Writer, df *dataframe.DataFrame, options ...JSONExportOptions) error {
+func ExportToJSON(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...JSONExportOptions) error {
+	df.Lock()
+	defer df.Unlock()
+
 	var r dataframe.Range
+	nullString := "NaN"
 
 	enc := json.NewEncoder(w)
 
-	records := []map[string]interface{}{}
-
 	if len(options) > 0 {
 
-		if options[0].Range != r {
-			r = options[0].Range
+		r = options[0].Range
+		enc.SetEscapeHTML(options[0].SetEscapeHTML)
+		if options[0].NullString != nil {
+			nullString = *options[0].NullString
 		}
-
 	}
 
-	// TODO: prepare df.Series into Name and value
-	// Struct interface
-	// to be encoded by enc.
+	if df.NRows(dataframe.NRowsOptions{DontLock: true}) > 0 {
 
-	for _, record := range records {
-		if err := enc.Encode(record); err != nil {
+		s, e, err := r.Limits(df.NRows(dataframe.NRowsOptions{DontLock: true}))
+		if err != nil {
 			return err
+		}
+
+		for row := s; row <= e; row++ {
+
+			// check if error in ctx context
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+
+			record := map[string]interface{}{}
+			for _, aSeries := range df.Series {
+				if aSeries.Value(row) == nil {
+					record[aSeries.Name()] = nullString
+				} else {
+					record[aSeries.Name()] = aSeries.Value(row)
+				}
+			}
+			// fmt.Print(record)
+
+			if err := enc.Encode(record); err != nil {
+				return err
+			}
+
 		}
 	}
 
