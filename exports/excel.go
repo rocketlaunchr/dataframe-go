@@ -2,9 +2,10 @@ package exports
 
 import (
 	"context"
-	"io"
+	"strings"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
+	"github.com/tealeg/xlsx"
 )
 
 // EXCELExportOptions contains optional settings for EXCEL exporter functions
@@ -13,11 +14,18 @@ type EXCELExportOptions struct {
 	Range      dataframe.Range
 }
 
-// ExportToEXCEl exports df object to EXCEL
-func ExportToEXCEl(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...EXCELExportOptions) error {
+// ExportToEXCEL exports df object to EXCEL
+func ExportToEXCEL(ctx context.Context, filePath string, df *dataframe.DataFrame, options ...EXCELExportOptions) error {
 
 	df.Lock()
 	defer df.Unlock()
+
+	// variables for excel sheet
+	var sheetRow *xlsx.Row
+	var file *xlsx.File
+	// var sheet *xlsx.Sheet
+	var cell *xlsx.Cell
+	// var err error
 
 	nullString := "NaN" // Default value
 	var r dataframe.Range
@@ -35,12 +43,57 @@ func ExportToEXCEl(ctx context.Context, w io.Writer, df *dataframe.DataFrame, op
 			return err
 		}
 
+		// Instantiale new excel file and select sheet
+		file = xlsx.NewFile()
+		sheet, err := file.AddSheet("Sheet1")
+		if err != nil {
+			return err
+		}
+
+		// Add first role to excel sheet
+		// for header fields
+		sheetRow = sheet.AddRow()
+		// Write Header fields first
+		for _, field := range df.Names() {
+			cell = sheetRow.AddCell() // set column cell
+			cell.Value = field        // assign field to cell
+		}
+
+		// Writing record in Rows
 		for row := s; row <= e; row++ {
 
+			// Add new role to excel sheet
+			sheetRow = sheet.AddRow()
 			// check if error in ctx context
 			if err := ctx.Err(); err != nil {
 				return err
 			}
+
+			// collecting rows
+			// sVals := []string{}
+			for _, aSeries := range df.Series {
+				val := aSeries.Value(row)
+				cell = sheetRow.AddCell()
+				if val == nil {
+					cell.Value = nullString
+				} else {
+					cell.Value = aSeries.ValueString(row)
+				}
+				// colCount := sheetRow.WriteSlice(&sVals, len(sVals))
+				// if colCount == -1 {
+				// 	fmt.Print()
+				// 	return errors.New("A valid array slice pointer was not passed in to Excel Write Function")
+				// }
+			}
+
+		}
+
+		// For consistent file extension naming
+		if strings.Contains(filePath, string('.')) {
+			filePath = strings.Split(filePath, ".")[0]
+		}
+		if err = file.Save(filePath + ".xlsx"); err != nil {
+			return err
 		}
 	}
 
