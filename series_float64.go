@@ -43,25 +43,24 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 		}
 	}
 
-	s.nilCount = uint(size) // initialize nilCount to size of series
 	s.values = make([]*float64, size, capacity)
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
-		if idx < size {
-			if s.values[idx] == nil && s.valToPointer(v) != nil {
-				s.nilCount--
-			}
-			if s.values[idx] != nil && s.valToPointer(v) == nil {
-				s.nilCount++
-			}
-			s.values[idx] = s.valToPointer(v)
-		} else {
-			if s.valToPointer(v) == nil {
-				s.nilCount++
-			}
-			s.values = append(s.values, s.valToPointer(v))
+		val := s.valToPointer(v)
+		if val == nil {
+			s.nilCount++
 		}
+
+		if idx < size {
+			s.values[idx] = val
+		} else {
+			s.values = append(s.values, val)
+		}
+	}
+
+	if len(vals) < size {
+		s.nilCount = s.nilCount + size - len(vals)
 	}
 
 	return s
