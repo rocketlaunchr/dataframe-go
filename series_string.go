@@ -177,11 +177,12 @@ func (s *SeriesString) insert(row int, val interface{}) {
 	s.values = append(s.values, nil)
 	copy(s.values[row+1:], s.values[row:])
 
-	if s.valToPointer(val) == nil {
+	v := s.valToPointer(val)
+	if v == nil {
 		s.nilCount++
 	}
 
-	s.values[row] = s.valToPointer(val)
+	s.values[row] = s.valToPointer(v)
 }
 
 // Remove is used to delete the value of a particular row.
