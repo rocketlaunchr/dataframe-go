@@ -430,3 +430,15 @@ func (s *SeriesInt64) String() string {
 	}
 	return out + "]"
 }
+
+// ContainsNil will return True or false
+// True if there are any Nil value
+// False if there are none
+func (s *SeriesInt64) ContainsNil() bool {
+	for _, val := range s.values {
+		if val == nil {
+			return true
+		}
+	}
+	return false
+}

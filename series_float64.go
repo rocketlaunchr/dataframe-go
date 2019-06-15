@@ -16,9 +16,10 @@ import (
 type SeriesFloat64 struct {
 	valFormatter ValueToStringFormatter
 
-	lock   sync.RWMutex
-	name   string
-	values []*float64
+	lock      sync.RWMutex
+	name      string
+	values    []*float64
+	nilCounts uint
 }
 
 // NewSeriesFloat64 creates a new series with the underlying type as float64
@@ -430,4 +431,16 @@ func (s *SeriesFloat64) String() string {
 	}
 	return out + "]"
 
+}
+
+// ContainsNil will return True or false
+// True if there are any Nil value
+// False if there are none
+func (s *SeriesFloat64) ContainsNil() bool {
+	for _, val := range s.values {
+		if val == nil {
+			return true
+		}
+	}
+	return false
 }
