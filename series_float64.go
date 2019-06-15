@@ -49,8 +49,17 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 
 	for idx, v := range vals {
 		if idx < size {
+			if s.values[idx] == nil && s.valToPointer(v) != nil {
+				s.nilCount--
+			}
+			if s.values[idx] != nil && s.valToPointer(v) == nil {
+				s.nilCount++
+			}
 			s.values[idx] = s.valToPointer(v)
 		} else {
+			if s.valToPointer(v) == nil {
+				s.nilCount++
+			}
 			s.values = append(s.values, s.valToPointer(v))
 		}
 	}
@@ -173,7 +182,7 @@ func (s *SeriesFloat64) insert(row int, val interface{}) {
 	// Whether we are inserting at the end
 	// Or at an Arbitrary Location
 	// There is always an increase in NRow
-	if val == nil {
+	if s.valToPointer(val) == nil {
 		s.nilCount++
 	}
 
@@ -203,14 +212,11 @@ func (s *SeriesFloat64) Update(row int, val interface{}, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	if s.values[row] == nil { // current value is nil
-		if val != nil {
-			s.nilCount--
-		}
-	} else { // current value is not nil
-		if val == nil {
-			s.nilCount++
-		}
+	if s.values[row] == nil && s.valToPointer(val) != nil { // current value is nil
+		s.nilCount--
+	}
+	if s.values[row] != nil && s.valToPointer(val) == nil { // current value is not nil
+		s.nilCount++
 	}
 
 	s.values[row] = s.valToPointer(val)

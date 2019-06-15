@@ -15,16 +15,18 @@ import (
 type SeriesString struct {
 	valFormatter ValueToStringFormatter
 
-	lock   sync.RWMutex
-	name   string
-	values []*string
+	lock     sync.RWMutex
+	name     string
+	values   []*string
+	nilCount uint
 }
 
 // NewSeriesString creates a new series with the underlying type as string
 func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *SeriesString {
 	s := &SeriesString{
-		name:   name,
-		values: []*string{},
+		name:     name,
+		values:   []*string{},
+		nilCount: 0,
 	}
 
 	var (
@@ -40,6 +42,7 @@ func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *Series
 		}
 	}
 
+	s.nilCount = uint(size)
 	s.values = make([]*string, size, capacity)
 	s.valFormatter = DefaultValueFormatter
 
