@@ -18,14 +18,14 @@ type SeriesInt64 struct {
 
 	lock   sync.RWMutex
 	name   string
-	Values []*int64
+	values []*int64
 }
 
 // NewSeriesInt64 creates a new series with the underlying type as int64
 func NewSeriesInt64(name string, init *SeriesInit, vals ...interface{}) *SeriesInt64 {
 	s := &SeriesInt64{
 		name:   name,
-		Values: []*int64{},
+		values: []*int64{},
 	}
 
 	var (
@@ -41,14 +41,14 @@ func NewSeriesInt64(name string, init *SeriesInit, vals ...interface{}) *SeriesI
 		}
 	}
 
-	s.Values = make([]*int64, size, capacity)
+	s.values = make([]*int64, size, capacity)
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
 		if idx < size {
-			s.Values[idx] = s.valToPointer(v)
+			s.values[idx] = s.valToPointer(v)
 		} else {
-			s.Values = append(s.Values, s.valToPointer(v))
+			s.values = append(s.values, s.valToPointer(v))
 		}
 	}
 
@@ -83,7 +83,7 @@ func (s *SeriesInt64) NRows(options ...Options) int {
 		defer s.lock.RUnlock()
 	}
 
-	return len(s.Values)
+	return len(s.values)
 }
 
 // Value returns the value of a particular row.
@@ -96,7 +96,7 @@ func (s *SeriesInt64) Value(row int, options ...Options) interface{} {
 		defer s.lock.RUnlock()
 	}
 
-	val := s.Values[row]
+	val := s.values[row]
 	if val == nil {
 		return nil
 	}
@@ -122,11 +122,11 @@ func (s *SeriesInt64) Prepend(val interface{}, options ...Options) {
 
 	// See: https://stackoverflow.com/questions/41914386/what-is-the-mechanism-of-using-append-to-prepend-in-go
 
-	if cap(s.Values) > len(s.Values) {
+	if cap(s.values) > len(s.values) {
 		// There is already extra capacity so copy current values by 1 spot
-		s.Values = s.Values[:len(s.Values)+1]
-		copy(s.Values[1:], s.Values)
-		s.Values[0] = s.valToPointer(val)
+		s.values = s.values[:len(s.values)+1]
+		copy(s.values[1:], s.values)
+		s.values[0] = s.valToPointer(val)
 		return
 	}
 
@@ -164,9 +164,9 @@ func (s *SeriesInt64) Insert(row int, val interface{}, options ...Options) {
 }
 
 func (s *SeriesInt64) insert(row int, val interface{}) {
-	s.Values = append(s.Values, nil)
-	copy(s.Values[row+1:], s.Values[row:])
-	s.Values[row] = s.valToPointer(val)
+	s.values = append(s.values, nil)
+	copy(s.values[row+1:], s.values[row:])
+	s.values[row] = s.valToPointer(val)
 }
 
 // Remove is used to delete the value of a particular row.
@@ -176,7 +176,7 @@ func (s *SeriesInt64) Remove(row int, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	s.Values = append(s.Values[:row], s.Values[row+1:]...)
+	s.values = append(s.values[:row], s.values[row+1:]...)
 }
 
 // Update is used to update the value of a particular row.
@@ -188,7 +188,7 @@ func (s *SeriesInt64) Update(row int, val interface{}, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	s.Values[row] = s.valToPointer(val)
+	s.values[row] = s.valToPointer(val)
 }
 
 func (s *SeriesInt64) valToPointer(v interface{}) *int64 {
@@ -233,7 +233,7 @@ func (s *SeriesInt64) Swap(row1, row2 int, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	s.Values[row1], s.Values[row2] = s.Values[row2], s.Values[row1]
+	s.values[row1], s.values[row2] = s.values[row2], s.values[row1]
 }
 
 // IsEqualFunc returns true if a is equal to b.
@@ -290,28 +290,28 @@ func (s *SeriesInt64) Sort(options ...Options) {
 		sortDesc = options[0].SortDesc
 	}
 
-	sort.SliceStable(s.Values, func(i, j int) (ret bool) {
+	sort.SliceStable(s.values, func(i, j int) (ret bool) {
 		defer func() {
 			if sortDesc {
 				ret = !ret
 			}
 		}()
 
-		if s.Values[i] == nil {
-			if s.Values[j] == nil {
+		if s.values[i] == nil {
+			if s.values[j] == nil {
 				// both are nil
 				return true
 			}
 			return true
 		}
 
-		if s.Values[j] == nil {
+		if s.values[j] == nil {
 			// i has value and j is nil
 			return false
 		}
 		// Both are not nil
-		ti := *s.Values[i]
-		tj := *s.Values[j]
+		ti := *s.values[i]
+		tj := *s.values[j]
 
 		return ti < tj
 	})
@@ -333,11 +333,11 @@ func (s *SeriesInt64) Unlock() {
 // to Copy.
 func (s *SeriesInt64) Copy(r ...Range) Series {
 
-	if len(s.Values) == 0 {
+	if len(s.values) == 0 {
 		return &SeriesInt64{
 			valFormatter: s.valFormatter,
 			name:         s.name,
-			Values:       []*int64{},
+			values:       []*int64{},
 		}
 	}
 
@@ -345,19 +345,19 @@ func (s *SeriesInt64) Copy(r ...Range) Series {
 		r = append(r, Range{})
 	}
 
-	start, end, err := r[0].Limits(len(s.Values))
+	start, end, err := r[0].Limits(len(s.values))
 	if err != nil {
 		panic(err)
 	}
 
 	// Copy slice
-	x := s.Values[start : end+1]
+	x := s.values[start : end+1]
 	newSlice := append(x[:0:0], x...)
 
 	return &SeriesInt64{
 		valFormatter: s.valFormatter,
 		name:         s.name,
-		Values:       newSlice,
+		values:       newSlice,
 	}
 }
 
@@ -374,11 +374,11 @@ func (s *SeriesInt64) Table(r ...Range) string {
 	data := [][]string{}
 
 	headers := []string{"", s.name} // row header is blank
-	footers := []string{fmt.Sprintf("%dx%d", len(s.Values), 1), s.Type()}
+	footers := []string{fmt.Sprintf("%dx%d", len(s.values), 1), s.Type()}
 
-	if len(s.Values) > 0 {
+	if len(s.values) > 0 {
 
-		start, end, err := r[0].Limits(len(s.Values))
+		start, end, err := r[0].Limits(len(s.values))
 		if err != nil {
 			panic(err)
 		}
@@ -410,7 +410,7 @@ func (s *SeriesInt64) String() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	count := len(s.Values)
+	count := len(s.values)
 
 	out := "[ "
 
@@ -425,7 +425,7 @@ func (s *SeriesInt64) String() string {
 		return out + "]"
 	}
 
-	for row := range s.Values {
+	for row := range s.values {
 		out = out + s.ValueString(row, Options{true, false}) + " "
 	}
 	return out + "]"
