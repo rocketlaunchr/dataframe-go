@@ -97,4 +97,7 @@ type Series interface {
 	// It is recommended that you lock the Series before attempting
 	// to Copy.
 	Copy(r ...Range) Series
+
+	// ContainsNil will return whether or not the series contains any nil values.
+	ContainsNil() bool
 }
