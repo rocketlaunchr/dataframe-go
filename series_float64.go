@@ -16,17 +16,18 @@ import (
 type SeriesFloat64 struct {
 	valFormatter ValueToStringFormatter
 
-	lock      sync.RWMutex
-	name      string
-	values    []*float64
-	nilCounts uint
+	lock     sync.RWMutex
+	name     string
+	values   []*float64
+	nilCount uint
 }
 
 // NewSeriesFloat64 creates a new series with the underlying type as float64
 func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *SeriesFloat64 {
 	s := &SeriesFloat64{
-		name:   name,
-		values: []*float64{},
+		name:     name,
+		values:   []*float64{},
+		nilCount: 0,
 	}
 
 	var (
@@ -42,6 +43,7 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 		}
 	}
 
+	s.nilCount = uint(size) // initialize nilCount to size of series
 	s.values = make([]*float64, size, capacity)
 	s.valFormatter = DefaultValueFormatter
 
@@ -167,6 +169,14 @@ func (s *SeriesFloat64) Insert(row int, val interface{}, options ...Options) {
 func (s *SeriesFloat64) insert(row int, val interface{}) {
 	s.values = append(s.values, nil)
 	copy(s.values[row+1:], s.values[row:])
+
+	// Whether we are inserting at the end
+	// Or at an Arbitrary Location
+	// There is always an increase in NRow
+	if val == nil {
+		s.nilCount++
+	}
+
 	s.values[row] = s.valToPointer(val)
 }
 
@@ -175,6 +185,10 @@ func (s *SeriesFloat64) Remove(row int, options ...Options) {
 	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
+	}
+
+	if s.values[row] == nil {
+		s.nilCount--
 	}
 
 	s.values = append(s.values[:row], s.values[row+1:]...)
@@ -187,6 +201,16 @@ func (s *SeriesFloat64) Update(row int, val interface{}, options ...Options) {
 	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
+	}
+
+	if s.values[row] == nil { // current value is nil
+		if val != nil {
+			s.nilCount--
+		}
+	} else { // current value is not nil
+		if val == nil {
+			s.nilCount++
+		}
 	}
 
 	s.values[row] = s.valToPointer(val)
@@ -339,6 +363,7 @@ func (s *SeriesFloat64) Copy(r ...Range) Series {
 			valFormatter: s.valFormatter,
 			name:         s.name,
 			values:       []*float64{},
+			nilCount:     s.nilCount,
 		}
 	}
 
@@ -359,6 +384,7 @@ func (s *SeriesFloat64) Copy(r ...Range) Series {
 		valFormatter: s.valFormatter,
 		name:         s.name,
 		values:       newSlice,
+		nilCount:     s.nilCount,
 	}
 }
 
@@ -437,10 +463,6 @@ func (s *SeriesFloat64) String() string {
 // True if there are any Nil value
 // False if there are none
 func (s *SeriesFloat64) ContainsNil() bool {
-	for _, val := range s.values {
-		if val == nil {
-			return true
-		}
-	}
-	return false
+
+	return s.nilCount > 0
 }

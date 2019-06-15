@@ -21,9 +21,10 @@ type SeriesGeneric struct {
 
 	concreteType interface{} // The underlying data type
 
-	lock   sync.RWMutex
-	name   string
-	values []interface{}
+	lock     sync.RWMutex
+	name     string
+	values   []interface{}
+	nilCount uint
 }
 
 // NewSeries creates a new generic series.
@@ -40,6 +41,7 @@ func NewSeries(name string, concreteType interface{}, init *SeriesInit, vals ...
 		name:         name,
 		concreteType: concreteType,
 		values:       []interface{}{},
+		nilCount:     0,
 	}
 
 	var (
@@ -55,6 +57,7 @@ func NewSeries(name string, concreteType interface{}, init *SeriesInit, vals ...
 		}
 	}
 
+	s.nilCount = uint(size)
 	s.values = make([]interface{}, size, capacity)
 	s.valFormatter = DefaultValueFormatter
 
@@ -195,6 +198,7 @@ func (s *SeriesGeneric) insert(row int, val interface{}) {
 	copy(s.values[row+1:], s.values[row:])
 
 	if val == nil {
+		s.nilCount++
 		s.values[row] = nil
 	} else {
 		if err := s.checkValue(val); err != nil {
@@ -211,6 +215,10 @@ func (s *SeriesGeneric) Remove(row int, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
+	if s.values[row] == nil {
+		s.nilCount--
+	}
+
 	s.values = append(s.values[:row], s.values[row+1:]...)
 }
 
@@ -221,6 +229,16 @@ func (s *SeriesGeneric) Update(row int, val interface{}, options ...Options) {
 	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		s.lock.Lock()
 		defer s.lock.Unlock()
+	}
+
+	if s.values[row] == nil { // current value is nil
+		if val != nil {
+			s.nilCount--
+		}
+	} else { // current value is not nil
+		if val == nil {
+			s.nilCount++
+		}
 	}
 
 	if val == nil {
@@ -371,8 +389,9 @@ func (s *SeriesGeneric) Copy(r ...Range) Series {
 
 			concreteType: s.concreteType,
 
-			name:   s.name,
-			values: []interface{}{},
+			name:     s.name,
+			values:   []interface{}{},
+			nilCount: s.nilCount,
 		}
 	}
 
@@ -396,8 +415,9 @@ func (s *SeriesGeneric) Copy(r ...Range) Series {
 
 		concreteType: s.concreteType,
 
-		name:   s.name,
-		values: newSlice,
+		name:     s.name,
+		values:   newSlice,
+		nilCount: s.nilCount,
 	}
 }
 
@@ -475,10 +495,6 @@ func (s *SeriesGeneric) String() string {
 // True if there are any Nil value
 // False if there are none
 func (s *SeriesGeneric) ContainsNil() bool {
-	for _, val := range s.values {
-		if val == nil {
-			return true
-		}
-	}
-	return false
+
+	return s.nilCount > 0
 }
