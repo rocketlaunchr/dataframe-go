@@ -130,7 +130,7 @@ func TestSeriesOperations(t *testing.T) {
 		s.Remove(1)
 	}
 
-	// Test Values
+	// Test values
 	expectedValues := [][]interface{}{
 		{3.0, 2.0, 4.0},
 		{3, 2, 4},
