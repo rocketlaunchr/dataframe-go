@@ -57,7 +57,6 @@ func NewSeries(name string, concreteType interface{}, init *SeriesInit, vals ...
 		}
 	}
 
-	s.nilCount = uint(size)
 	s.values = make([]interface{}, size, capacity)
 	s.valFormatter = DefaultValueFormatter
 
@@ -66,6 +65,8 @@ func NewSeries(name string, concreteType interface{}, init *SeriesInit, vals ...
 			if err := s.checkValue(v); err != nil {
 				panic(err)
 			}
+		} else {
+			s.nilCount++
 		}
 
 		if idx < size {
@@ -73,6 +74,10 @@ func NewSeries(name string, concreteType interface{}, init *SeriesInit, vals ...
 		} else {
 			s.values = append(s.values, v)
 		}
+	}
+
+	if len(vals) < size {
+		s.nilCount = s.nilCount + size - len(vals)
 	}
 
 	return s

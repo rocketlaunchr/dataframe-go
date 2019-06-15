@@ -43,16 +43,24 @@ func NewSeriesInt64(name string, init *SeriesInit, vals ...interface{}) *SeriesI
 		}
 	}
 
-	s.nilCount = uint(size)
 	s.values = make([]*int64, size, capacity)
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
-		if idx < size {
-			s.values[idx] = s.valToPointer(v)
-		} else {
-			s.values = append(s.values, s.valToPointer(v))
+		val := s.valToPointer(v)
+		if val == nil {
+			s.nilCount++
 		}
+
+		if idx < size {
+			s.values[idx] = val
+		} else {
+			s.values = append(s.values, val)
+		}
+	}
+
+	if len(vals) < size {
+		s.nilCount = s.nilCount + size - len(vals)
 	}
 
 	return s
@@ -173,7 +181,7 @@ func (s *SeriesInt64) insert(row int, val interface{}) {
 	// Whether we are inserting at the end
 	// Or at an Arbitrary Location
 	// There is always an increase in NRow
-	if val == nil {
+	if s.valToPointer(val) == nil {
 		s.nilCount++
 	}
 
@@ -203,10 +211,10 @@ func (s *SeriesInt64) Update(row int, val interface{}, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	if s.values[row] == nil && val != nil { // current value is nil
+	if s.values[row] == nil && s.valToPointer(val) != nil { // current value is nil
 		s.nilCount--
 	}
-	if s.values[row] != nil && val == nil { // current value is not nil
+	if s.values[row] != nil && s.valToPointer(val) == nil { // current value is not nil
 		s.nilCount++
 	}
 
