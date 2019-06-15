@@ -207,13 +207,15 @@ func (s *SeriesString) Update(row int, val interface{}, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	if s.values[row] == nil && s.valToPointer(val) != nil {
+	newVal := s.valToPointer(val)
+
+	if s.values[row] == nil && newVal != nil {
 		s.nilCount--
-	}
-	if s.values[row] != nil && s.valToPointer(val) == nil {
+	} else if s.values[row] != nil && newVal == nil {
 		s.nilCount++
 	}
-	s.values[row] = s.valToPointer(val)
+
+	s.values[row] = newVal
 }
 
 func (s *SeriesString) valToPointer(v interface{}) *string {
