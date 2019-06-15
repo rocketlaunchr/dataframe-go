@@ -18,7 +18,7 @@ type SeriesString struct {
 	lock     sync.RWMutex
 	name     string
 	values   []*string
-	nilCount uint
+	nilCount int
 }
 
 // NewSeriesString creates a new series with the underlying type as string
@@ -438,14 +438,9 @@ func (s *SeriesString) String() string {
 	}
 }
 
-// ContainsNil will return True or false
-// True if there are any Nil value
-// False if there are none
+// ContainsNil will return whether or not the series contains any nil values.
 func (s *SeriesString) ContainsNil() bool {
-	for _, val := range s.values {
-		if val == nil {
-			return true
-		}
-	}
-	return false
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.nilCount > 0
 }
