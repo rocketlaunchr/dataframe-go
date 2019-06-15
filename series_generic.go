@@ -21,9 +21,10 @@ type SeriesGeneric struct {
 
 	concreteType interface{} // The underlying data type
 
-	lock   sync.RWMutex
-	name   string
-	Values []interface{}
+	lock     sync.RWMutex
+	name     string
+	values   []interface{}
+	nilCount int
 }
 
 // NewSeries creates a new generic series.
@@ -39,7 +40,8 @@ func NewSeries(name string, concreteType interface{}, init *SeriesInit, vals ...
 		isEqualFunc:  DefaultIsEqualFunc,
 		name:         name,
 		concreteType: concreteType,
-		Values:       []interface{}{},
+		values:       []interface{}{},
+		nilCount:     0,
 	}
 
 	var (
@@ -55,7 +57,7 @@ func NewSeries(name string, concreteType interface{}, init *SeriesInit, vals ...
 		}
 	}
 
-	s.Values = make([]interface{}, size, capacity)
+	s.values = make([]interface{}, size, capacity)
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
@@ -63,13 +65,19 @@ func NewSeries(name string, concreteType interface{}, init *SeriesInit, vals ...
 			if err := s.checkValue(v); err != nil {
 				panic(err)
 			}
+		} else {
+			s.nilCount++
 		}
 
 		if idx < size {
-			s.Values[idx] = v
+			s.values[idx] = v
 		} else {
-			s.Values = append(s.Values, v)
+			s.values = append(s.values, v)
 		}
+	}
+
+	if len(vals) < size {
+		s.nilCount = s.nilCount + size - len(vals)
 	}
 
 	return s
@@ -103,7 +111,7 @@ func (s *SeriesGeneric) NRows(options ...Options) int {
 		defer s.lock.RUnlock()
 	}
 
-	return len(s.Values)
+	return len(s.values)
 }
 
 // Value returns the value of a particular row.
@@ -116,7 +124,7 @@ func (s *SeriesGeneric) Value(row int, options ...Options) interface{} {
 		defer s.lock.RUnlock()
 	}
 
-	val := s.Values[row]
+	val := s.values[row]
 	if val == nil {
 		return nil
 	}
@@ -142,17 +150,17 @@ func (s *SeriesGeneric) Prepend(val interface{}, options ...Options) {
 
 	// See: https://stackoverflow.com/questions/41914386/what-is-the-mechanism-of-using-append-to-prepend-in-go
 
-	if cap(s.Values) > len(s.Values) {
+	if cap(s.values) > len(s.values) {
 		// There is already extra capacity so copy current values by 1 spot
-		s.Values = s.Values[:len(s.Values)+1]
-		copy(s.Values[1:], s.Values)
+		s.values = s.values[:len(s.values)+1]
+		copy(s.values[1:], s.values)
 		if val == nil {
-			s.Values[0] = nil
+			s.values[0] = nil
 		} else {
 			if err := s.checkValue(val); err != nil {
 				panic(err)
 			}
-			s.Values[0] = val
+			s.values[0] = val
 		}
 		return
 	}
@@ -191,16 +199,17 @@ func (s *SeriesGeneric) Insert(row int, val interface{}, options ...Options) {
 }
 
 func (s *SeriesGeneric) insert(row int, val interface{}) {
-	s.Values = append(s.Values, nil)
-	copy(s.Values[row+1:], s.Values[row:])
+	s.values = append(s.values, nil)
+	copy(s.values[row+1:], s.values[row:])
 
 	if val == nil {
-		s.Values[row] = nil
+		s.nilCount++
+		s.values[row] = nil
 	} else {
 		if err := s.checkValue(val); err != nil {
 			panic(err)
 		}
-		s.Values[row] = val
+		s.values[row] = val
 	}
 }
 
@@ -211,7 +220,11 @@ func (s *SeriesGeneric) Remove(row int, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	s.Values = append(s.Values[:row], s.Values[row+1:]...)
+	if s.values[row] == nil {
+		s.nilCount--
+	}
+
+	s.values = append(s.values[:row], s.values[row+1:]...)
 }
 
 // Update is used to update the value of a particular row.
@@ -223,13 +236,19 @@ func (s *SeriesGeneric) Update(row int, val interface{}, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
+	if s.values[row] == nil && val != nil {
+		s.nilCount--
+	} else if s.values[row] != nil && val == nil {
+		s.nilCount++
+	}
+
 	if val == nil {
-		s.Values[row] = nil
+		s.values[row] = nil
 	} else {
 		if err := s.checkValue(val); err != nil {
 			panic(err)
 		}
-		s.Values[row] = val
+		s.values[row] = val
 	}
 }
 
@@ -306,15 +325,15 @@ func (s *SeriesGeneric) Sort(options ...Options) {
 		sortDesc = options[0].SortDesc
 	}
 
-	sort.SliceStable(s.Values, func(i, j int) (ret bool) {
+	sort.SliceStable(s.values, func(i, j int) (ret bool) {
 		defer func() {
 			if sortDesc {
 				ret = !ret
 			}
 		}()
 
-		left := s.Values[i]
-		right := s.Values[j]
+		left := s.values[i]
+		right := s.values[j]
 
 		if left == nil {
 			if right == nil {
@@ -344,7 +363,7 @@ func (s *SeriesGeneric) Swap(row1, row2 int, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	s.Values[row1], s.Values[row2] = s.Values[row2], s.Values[row1]
+	s.values[row1], s.values[row2] = s.values[row2], s.values[row1]
 }
 
 // Lock will lock the Series allowing you to directly manipulate
@@ -363,7 +382,7 @@ func (s *SeriesGeneric) Unlock() {
 // to Copy.
 func (s *SeriesGeneric) Copy(r ...Range) Series {
 
-	if len(s.Values) == 0 {
+	if len(s.values) == 0 {
 		return &SeriesGeneric{
 			valFormatter:   s.valFormatter,
 			isEqualFunc:    s.isEqualFunc,
@@ -371,8 +390,9 @@ func (s *SeriesGeneric) Copy(r ...Range) Series {
 
 			concreteType: s.concreteType,
 
-			name:   s.name,
-			Values: []interface{}{},
+			name:     s.name,
+			values:   []interface{}{},
+			nilCount: s.nilCount,
 		}
 	}
 
@@ -380,13 +400,13 @@ func (s *SeriesGeneric) Copy(r ...Range) Series {
 		r = append(r, Range{})
 	}
 
-	start, end, err := r[0].Limits(len(s.Values))
+	start, end, err := r[0].Limits(len(s.values))
 	if err != nil {
 		panic(err)
 	}
 
 	// Copy slice
-	x := s.Values[start : end+1]
+	x := s.values[start : end+1]
 	newSlice := append(x[:0:0], x...)
 
 	return &SeriesGeneric{
@@ -396,8 +416,9 @@ func (s *SeriesGeneric) Copy(r ...Range) Series {
 
 		concreteType: s.concreteType,
 
-		name:   s.name,
-		Values: newSlice,
+		name:     s.name,
+		values:   newSlice,
+		nilCount: s.nilCount,
 	}
 }
 
@@ -414,11 +435,11 @@ func (s *SeriesGeneric) Table(r ...Range) string {
 	data := [][]string{}
 
 	headers := []string{"", s.name} // row header is blank
-	footers := []string{fmt.Sprintf("%dx%d", len(s.Values), 1), s.Type()}
+	footers := []string{fmt.Sprintf("%dx%d", len(s.values), 1), s.Type()}
 
-	if len(s.Values) > 0 {
+	if len(s.values) > 0 {
 
-		start, end, err := r[0].Limits(len(s.Values))
+		start, end, err := r[0].Limits(len(s.values))
 		if err != nil {
 			panic(err)
 		}
@@ -450,7 +471,7 @@ func (s *SeriesGeneric) String() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	count := len(s.Values)
+	count := len(s.values)
 
 	out := "[ "
 
@@ -465,8 +486,15 @@ func (s *SeriesGeneric) String() string {
 		return out + "]"
 	}
 
-	for row := range s.Values {
+	for row := range s.values {
 		out = out + s.ValueString(row, Options{true, false}) + " "
 	}
 	return out + "]"
+}
+
+// ContainsNil will return whether or not the series contains any nil values.
+func (s *SeriesGeneric) ContainsNil() bool {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.nilCount > 0
 }
