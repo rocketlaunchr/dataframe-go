@@ -148,11 +148,6 @@ func (s *SeriesInt64) Append(val interface{}, options ...Options) int {
 		locked = true
 	}
 
-	// Creating a new value row
-	if val == nil {
-		s.nilCount++
-	}
-
 	row := s.NRows(Options{DontLock: locked})
 	s.insert(row, val)
 	return row
@@ -168,23 +163,20 @@ func (s *SeriesInt64) Insert(row int, val interface{}, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	// The arbitrary row already contains a value
-	if s.values[row] == nil {
-		if val != nil {
-			s.nilCount--
-		}
-	} else {
-		if val == nil {
-			s.nilCount++
-		}
-	}
-
 	s.insert(row, val)
 }
 
 func (s *SeriesInt64) insert(row int, val interface{}) {
 	s.values = append(s.values, nil)
 	copy(s.values[row+1:], s.values[row:])
+
+	// Whether we are inserting at the end
+	// Or at an Arbitrary Location
+	// There is always an increase in NRow
+	if val == nil {
+		s.nilCount++
+	}
+
 	s.values[row] = s.valToPointer(val)
 }
 
@@ -211,14 +203,11 @@ func (s *SeriesInt64) Update(row int, val interface{}, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	if s.values[row] == nil { // current value is nil
-		if val != nil {
-			s.nilCount--
-		}
-	} else { // current value is not nil
-		if val == nil {
-			s.nilCount++
-		}
+	if s.values[row] == nil && val != nil { // current value is nil
+		s.nilCount--
+	}
+	if s.values[row] != nil && val == nil { // current value is not nil
+		s.nilCount++
 	}
 
 	s.values[row] = s.valToPointer(val)

@@ -231,14 +231,11 @@ func (s *SeriesGeneric) Update(row int, val interface{}, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	if s.values[row] == nil { // current value is nil
-		if val != nil {
-			s.nilCount--
-		}
-	} else { // current value is not nil
-		if val == nil {
-			s.nilCount++
-		}
+	if s.values[row] == nil && val != nil { // current value is nil
+		s.nilCount--
+	}
+	if s.values[row] != nil && val == nil { // current value is not nil
+		s.nilCount++
 	}
 
 	if val == nil {
