@@ -16,16 +16,18 @@ import (
 type SeriesTime struct {
 	valFormatter ValueToStringFormatter
 
-	lock   sync.RWMutex
-	name   string
-	values []*time.Time
+	lock     sync.RWMutex
+	name     string
+	values   []*time.Time
+	nilCount uint
 }
 
 // NewSeriesTime creates a new series with the underlying type as time.Time
 func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTime {
 	s := &SeriesTime{
-		name:   name,
-		values: []*time.Time{},
+		name:     name,
+		values:   []*time.Time{},
+		nilCount: 0,
 	}
 
 	var (
@@ -41,13 +43,23 @@ func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTi
 		}
 	}
 
+	s.nilCount = uint(size)
 	s.values = make([]*time.Time, size, capacity)
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
 		if idx < size {
+			if s.values[idx] == nil && s.valToPointer(v) != nil {
+				s.nilCount--
+			}
+			if s.values[idx] != nil && s.valToPointer(v) == nil {
+				s.nilCount++
+			}
 			s.values[idx] = s.valToPointer(v)
 		} else {
+			if s.valToPointer(v) == nil {
+				s.nilCount++
+			}
 			s.values = append(s.values, s.valToPointer(v))
 		}
 	}
@@ -166,6 +178,10 @@ func (s *SeriesTime) Insert(row int, val interface{}, options ...Options) {
 func (s *SeriesTime) insert(row int, val interface{}) {
 	s.values = append(s.values, nil)
 	copy(s.values[row+1:], s.values[row:])
+
+	if s.valToPointer(val) == nil {
+		s.nilCount++
+	}
 	s.values[row] = s.valToPointer(val)
 }
 
@@ -176,6 +192,9 @@ func (s *SeriesTime) Remove(row int, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
+	if s.values[row] == nil {
+		s.nilCount--
+	}
 	s.values = append(s.values[:row], s.values[row+1:]...)
 }
 
@@ -188,6 +207,12 @@ func (s *SeriesTime) Update(row int, val interface{}, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
+	if s.values[row] == nil && s.valToPointer(val) != nil {
+		s.nilCount--
+	}
+	if s.values[row] != nil && s.valToPointer(val) == nil {
+		s.nilCount++
+	}
 	s.values[row] = s.valToPointer(val)
 }
 
@@ -335,6 +360,7 @@ func (s *SeriesTime) Copy(r ...Range) Series {
 			valFormatter: s.valFormatter,
 			name:         s.name,
 			values:       []*time.Time{},
+			nilCount:     s.nilCount,
 		}
 	}
 
@@ -355,6 +381,7 @@ func (s *SeriesTime) Copy(r ...Range) Series {
 		valFormatter: s.valFormatter,
 		name:         s.name,
 		values:       newSlice,
+		nilCount:     s.nilCount,
 	}
 }
 
@@ -432,10 +459,6 @@ func (s *SeriesTime) String() string {
 // True if there are any Nil value
 // False if there are none
 func (s *SeriesTime) ContainsNil() bool {
-	for _, val := range s.values {
-		if val == nil {
-			return true
-		}
-	}
-	return false
+
+	return s.nilCount > 0
 }
