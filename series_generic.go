@@ -24,7 +24,7 @@ type SeriesGeneric struct {
 	lock     sync.RWMutex
 	name     string
 	values   []interface{}
-	nilCount uint
+	nilCount int
 }
 
 // NewSeries creates a new generic series.
@@ -488,10 +488,9 @@ func (s *SeriesGeneric) String() string {
 	return out + "]"
 }
 
-// ContainsNil will return True or false
-// True if there are any Nil value
-// False if there are none
+// ContainsNil will return whether or not the series contains any nil values.
 func (s *SeriesGeneric) ContainsNil() bool {
-
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	return s.nilCount > 0
 }

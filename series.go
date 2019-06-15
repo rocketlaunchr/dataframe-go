@@ -98,6 +98,6 @@ type Series interface {
 	// to Copy.
 	Copy(r ...Range) Series
 
-	// ContainsNil returns true is nilCounter series variable is greater than 0
+	// ContainsNil will return whether or not the series contains any nil values.
 	ContainsNil() bool
 }

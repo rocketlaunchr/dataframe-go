@@ -16,9 +16,10 @@ import (
 type SeriesTime struct {
 	valFormatter ValueToStringFormatter
 
-	lock   sync.RWMutex
-	name   string
-	values []*time.Time
+	lock     sync.RWMutex
+	name     string
+	values   []*time.Time
+	nilCount int
 }
 
 // NewSeriesTime creates a new series with the underlying type as time.Time
@@ -428,14 +429,9 @@ func (s *SeriesTime) String() string {
 	return out + "]"
 }
 
-// ContainsNil will return True or false
-// True if there are any Nil value
-// False if there are none
+// ContainsNil will return whether or not the series contains any nil values.
 func (s *SeriesTime) ContainsNil() bool {
-	for _, val := range s.values {
-		if val == nil {
-			return true
-		}
-	}
-	return false
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.nilCount > 0
 }

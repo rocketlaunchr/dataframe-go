@@ -19,7 +19,7 @@ type SeriesFloat64 struct {
 	lock     sync.RWMutex
 	name     string
 	values   []*float64
-	nilCount uint
+	nilCount int
 }
 
 // NewSeriesFloat64 creates a new series with the underlying type as float64
@@ -465,10 +465,9 @@ func (s *SeriesFloat64) String() string {
 
 }
 
-// ContainsNil will return True or false
-// True if there are any Nil value
-// False if there are none
+// ContainsNil will return whether or not the series contains any nil values.
 func (s *SeriesFloat64) ContainsNil() bool {
-
+	s.lock.RLock()
+	defer s.lock.RUnlock()
 	return s.nilCount > 0
 }
