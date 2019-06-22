@@ -3,9 +3,11 @@ package dataframe
 import (
 	"context"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"runtime"
+	"sort"
 	"sync"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -112,22 +114,44 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 	}
 
 	// // Convert rows found to Range slice
-	// var rows []int
-	// for i := 0; i < nCores; i++ {
-	// 	var count int
-	// 	count = count + len(mapRows[i])
-	// }
-	// rows = make(int, 0, count)
-
-	// // Store found rows into 1 int
-	// for i := 0; i < nCores; i++ {
-	// 	foundRows := mapRows[i]
-
-	// }
+	var rows []int
 
 	out := []Range{}
 
 	fmt.Println("mapRows", spew.Sdump(mapRows))
 
-	return out, err
+	for _, values := range mapRows {
+		rows = append(rows, values...)
+	}
+	sort.Ints(rows)
+	fmt.Println("rows", rows)
+
+OUTER:
+	for i := 0; i <= len(rows); i++ {
+		v1 := rows[i]
+
+		j := i + 1
+		for {
+			if j >= len(rows) {
+				// j doesn't exist
+				v2 := rows[j-1]
+				out = append(out, Range{Start: &v1, End: &v2})
+				break OUTER
+			} else {
+				// j does exist
+				v2 := rows[j]
+				prevVal := rows[j-1]
+
+				if v2 != prevVal+1 {
+					out = append(out, Range{Start: &v1, End: &prevVal})
+					i = j - 1
+					break
+				}
+				j++
+				continue
+			}
+		}
+	}
+
+	return out, nil
 }
