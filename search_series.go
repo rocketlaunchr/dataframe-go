@@ -63,15 +63,15 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 		g.Go(func() error {
 			defer wg.Done()
 
-			// checking for error in context
-			// this will be repositioned
-			if err := ctx.Err(); err != nil {
-				return err
-			}
 			// [CONCURRENT FUNCTION TO BE IMPLEMENTED]
 			for row := rowStart; row <= rowStop; row++ {
 				// val := s.Value(row)
 
+				// checking for error in context
+				// this will be repositioned
+				if err := ctx.Err(); err != nil {
+					return err
+				}
 			}
 			return nil
 		})
