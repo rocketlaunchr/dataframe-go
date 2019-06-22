@@ -43,14 +43,19 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 	divMargin := rangeCount / cpuNum
 
 	var wg sync.WaitGroup
-	rowStart := start             // point to a starting row
+	rowStart := start
+	var diff int                  // point to a starting row
 	for i := 0; i < cpuNum; i++ { // Run concurrent loop according to num of cpu cores
 		// increment waitgroup counter
 		wg.Add(1)
 
-		rowStop := (rowStart + divMargin)
-		// to make sure we don't run out of row index range
-		rowStop = rowStop % s.NRows()
+		rowStop := rowStart + divMargin
+
+		// cut out excess row counts
+		if rowStop > s.NRows() {
+			diff = rowStop - s.NRows()
+			rowStop = rowStop - diff
+		}
 
 		// launch goroutine function here
 		g, ctx := errgroup.WithContext(ctx)
