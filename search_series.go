@@ -48,7 +48,9 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 		// increment waitgroup counter
 		wg.Add(1)
 
-		rowStop := rowStart + divMargin
+		rowStop := (rowStart + divMargin)
+		// to make sure we don't run out of row index range
+		rowStop = rowStop % s.NRows()
 
 		// launch goroutine function here
 		g, ctx := errgroup.WithContext(ctx)
