@@ -111,7 +111,20 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 		// If no error happened (from context cancellation), then return full results with no error.
 	}
 
-	// Convert rows found to Range slice
+	// // Convert rows found to Range slice
+	// var rows []int
+	// for i := 0; i < nCores; i++ {
+	// 	var count int
+	// 	count = count + len(mapRows[i])
+	// }
+	// rows = make(int, 0, count)
+
+	// // Store found rows into 1 int
+	// for i := 0; i < nCores; i++ {
+	// 	foundRows := mapRows[i]
+
+	// }
+
 	out := []Range{}
 
 	fmt.Println("mapRows", spew.Sdump(mapRows))
