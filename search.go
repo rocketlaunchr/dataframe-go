@@ -121,7 +121,7 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 	}
 	rows = make([]int, 0, count)
 
-	// Store found rows into 1 int
+	// Store found rows into []int
 	for i := 0; i < nCores; i++ {
 		foundRows := mapRows[i]
 		rows = append(rows, foundRows...)
