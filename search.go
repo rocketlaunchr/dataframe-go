@@ -17,10 +17,10 @@ import (
 //
 // Example:
 //
-//  s1 := dataframe.NewSeriesInt64("day", nil, 11, 10, 9, 8, 7, 6, 5, 23, 25, 2, 1, 5, 4)
+//  s1 := dataframe.NewSeriesInt64("", nil, 11, 10, 9, 8, 7, 6, 5, 23, 25, 2, 1, 5, 4)
 //
 //  fmt.Println(dataframe.Search(ctx, s1, int64(4), int64(6)))
-//  Output: [5 6 11 12]
+//  // Output: [5 6 11 12]
 //
 func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range) ([]int, error) {
 
