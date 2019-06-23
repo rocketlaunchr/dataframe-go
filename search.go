@@ -14,6 +14,14 @@ import (
 // It will find all values that are between lower and upper bounds (inclusive).
 // It will return a slice containing the rows which contain values within the bounds.
 // If Search is canceled, an incomplete list of the values "found so far" is returned.
+//
+// Example:
+//
+//  s1 := dataframe.NewSeriesInt64("day", nil, 11, 10, 9, 8, 7, 6, 5, 23, 25, 2, 1, 5, 4)
+//
+//  fmt.Println(dataframe.Search(ctx, s1, int64(4), int64(6)))
+//  Output: [5 6 11 12]
+//
 func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range) ([]int, error) {
 
 	s.Lock()
