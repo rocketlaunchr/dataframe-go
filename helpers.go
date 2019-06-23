@@ -5,6 +5,7 @@ package dataframe
 import (
 	"errors"
 	"fmt"
+	"sort"
 )
 
 // ErrNoRows signifies that the Series, Dataframe or import data
@@ -44,4 +45,48 @@ func BoolValueFormatter(v interface{}) string {
 		_ = v.(bool) // Intentionally panic
 		return ""
 	}
+}
+
+// IntToRange is used to convert slice/array of Ints
+// To it's equivalent slice of Range
+//
+// Example:
+//
+// [2,4,5,6,8,10,11,45,46] converted to => [2-2, 4-6, 8-8, 10 - 11, 45 - 46]
+// output will be in Range datatype form as declared in Dataframe package
+func IntToRange(arr []int) []Range {
+
+	out := []Range{}
+
+	// Just making sure array is sorted
+	sort.Ints(arr)
+
+OUTER:
+	for i := 0; i < len(arr); i++ {
+		v1 := arr[i]
+
+		j := i + 1
+		for {
+			if j >= len(arr) {
+				// j doesn't exist
+				v2 := arr[j-1]
+				out = append(out, Range{Start: &v1, End: &v2})
+				break OUTER
+			} else {
+				// j does exist
+				v2 := arr[j]
+				prevVal := arr[j-1]
+
+				if v2 != prevVal+1 {
+					out = append(out, Range{Start: &v1, End: &prevVal})
+					i = j - 1
+					break
+				}
+				j++
+				continue
+			}
+		}
+	}
+
+	return out
 }
