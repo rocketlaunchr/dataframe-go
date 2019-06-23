@@ -2,21 +2,19 @@ package dataframe
 
 import (
 	"context"
-	"fmt"
 	"golang.org/x/sync/errgroup"
 	"runtime"
 	"sync"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 // Search is used to find particular values in a given Series.
 // It will find all values that are between lower and upper bounds (inclusive).
-// It will return the index ranges for those values.
-func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range) ([]Range, error) {
+// It will return a slice containing the rows which contain values within the bounds.
+// If Search is canceled, an incomplete list of the values "found so far" is returned.
+func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range) ([]int, error) {
 
 	s.Lock()
 	defer s.Unlock()
@@ -106,28 +104,20 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 	}
 
 	err = g.Wait()
-	if err != nil {
-		// Remember to return this error with the "found so far" results.
-		// If no error happened (from context cancellation), then return full results with no error.
+
+	// Convert rows found to Range slice
+	var rows []int
+	var count int
+	for i := 0; i < nCores; i++ {
+		count = count + len(mapRows[i])
+	}
+	rows = make([]int, 0, count)
+
+	// Store found rows into 1 int
+	for i := 0; i < nCores; i++ {
+		foundRows := mapRows[i]
+		rows = append(rows, foundRows...)
 	}
 
-	// // Convert rows found to Range slice
-	// var rows []int
-	// for i := 0; i < nCores; i++ {
-	// 	var count int
-	// 	count = count + len(mapRows[i])
-	// }
-	// rows = make(int, 0, count)
-
-	// // Store found rows into 1 int
-	// for i := 0; i < nCores; i++ {
-	// 	foundRows := mapRows[i]
-
-	// }
-
-	out := []Range{}
-
-	fmt.Println("mapRows", spew.Sdump(mapRows))
-
-	return out, err
+	return rows, err
 }
