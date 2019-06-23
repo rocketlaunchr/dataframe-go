@@ -15,7 +15,7 @@ import (
 // Search is used to find particular values in a given Series.
 // It will find all values that are between lower and upper bounds (inclusive).
 // It will return a slice containing the rows which contain values within the bounds.
-// If Search is canceled, an incomplete list of the values "found so far" is returned.
+// If Search is canceled, an incomplete list of the rows "found so far" is returned.
 //
 // Example:
 //
