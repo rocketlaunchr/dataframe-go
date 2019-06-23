@@ -56,7 +56,7 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 			subStart = i * div
 			subEnd = (i+1)*div - 1
 		} else {
-			// last code
+			// last core
 			subStart = i * div
 			subEnd = end
 		}
