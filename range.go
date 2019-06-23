@@ -15,6 +15,42 @@ type Range struct {
 	End   *int
 }
 
+// NRows returns the number of rows contained by Range.
+// If End is nil, then len must be provided.
+func (r *Range) NRows(len *int) (int, error) {
+
+	if len == nil {
+		if r.End == nil {
+			return 0, errors.New("End is nil so len must be provided")
+		}
+
+		var s int
+
+		if r.Start != nil {
+			s = *r.Start
+		}
+
+		if s < 0 || *r.End < 0 {
+			return 0, errors.New("range invalid")
+		}
+
+		if *r.End < s {
+			return 0, errors.New("range invalid")
+		}
+
+		return *r.End - s + 1, nil
+
+	} else {
+		s, e, err := r.Limits(*len)
+		if err != nil {
+			return 0, err
+		}
+
+		return e - s + 1, nil
+	}
+
+}
+
 // Limits is used to return the start and end limits of a Range
 // object for a given Dataframe or Series with len number of rows.
 func (r *Range) Limits(len int) (s int, e int, _ error) {
@@ -60,8 +96,7 @@ func (r *Range) Limits(len int) (s int, e int, _ error) {
 	return
 }
 
-// RangeFinite returns a Range that has a
-// finite span.
+// RangeFinite returns a Range that has a finite span.
 func RangeFinite(start, end int) Range {
 	return Range{
 		Start: &start,
