@@ -33,12 +33,17 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 		r = append(r, Range{})
 	}
 
+	fullRowCount := s.NRows(Options{DontLock: true})
+	if fullRowCount == 0 {
+		return []int{}, nil
+	}
+
 	var equalCheck bool
 	if cmp.Equal(lower, upper, cmpopts.IgnoreUnexported()) {
 		equalCheck = true
 	}
 
-	start, end, err := r[0].Limits(s.NRows(Options{DontLock: true}))
+	start, end, err := r[0].Limits(fullRowCount)
 	if err != nil {
 		return nil, err
 	}
