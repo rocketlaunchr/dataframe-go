@@ -1,24 +1,31 @@
+// Copyright 2018 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+
 package dataframe
 
 import (
 	"context"
-	"fmt"
 	"runtime"
-	"sort"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 // Search is used to find particular values in a given Series.
 // It will find all values that are between lower and upper bounds (inclusive).
-// It will return the index ranges for those values.
-func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range) ([]Range, error) {
+// It will return a slice containing the rows which contain values within the bounds.
+// If Search is canceled, an incomplete list of the rows "found so far" is returned.
+//
+// Example:
+//
+//  s1 := dataframe.NewSeriesInt64("", nil, 11, 10, 9, 8, 7, 6, 5, 23, 25, 2, 1, 5, 4)
+//
+//  fmt.Println(dataframe.Search(ctx, s1, int64(4), int64(6)))
+//  // Output: [5 6 11 12]
+//
+func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range) ([]int, error) {
 
 	s.Lock()
 	defer s.Unlock()
@@ -27,12 +34,17 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 		r = append(r, Range{})
 	}
 
+	fullRowCount := s.NRows(Options{DontLock: true})
+	if fullRowCount == 0 {
+		return []int{}, nil
+	}
+
 	var equalCheck bool
 	if cmp.Equal(lower, upper, cmpopts.IgnoreUnexported()) {
 		equalCheck = true
 	}
 
-	start, end, err := r[0].Limits(s.NRows(Options{DontLock: true}))
+	start, end, err := r[0].Limits(fullRowCount)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +64,7 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 			subStart = i * div
 			subEnd = (i+1)*div - 1
 		} else {
-			// last code
+			// last core
 			subStart = i * div
 			subEnd = end
 		}
@@ -108,50 +120,20 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 	}
 
 	err = g.Wait()
-	if err != nil {
-		// Remember to return this error with the "found so far" results.
-		// If no error happened (from context cancellation), then return full results with no error.
-	}
 
-	// // Convert rows found to Range slice
+	// Convert rows found to Range slice
 	var rows []int
-
-	out := []Range{}
-
-	fmt.Println("mapRows", spew.Sdump(mapRows))
-
-	for _, values := range mapRows {
-		rows = append(rows, values...)
+	var count int
+	for i := 0; i < nCores; i++ {
+		count = count + len(mapRows[i])
 	}
-	sort.Ints(rows)
-	fmt.Println("rows", rows)
+	rows = make([]int, 0, count)
 
-OUTER:
-	for i := 0; i <= len(rows); i++ {
-		v1 := rows[i]
-
-		j := i + 1
-		for {
-			if j >= len(rows) {
-				// j doesn't exist
-				v2 := rows[j-1]
-				out = append(out, Range{Start: &v1, End: &v2})
-				break OUTER
-			} else {
-				// j does exist
-				v2 := rows[j]
-				prevVal := rows[j-1]
-
-				if v2 != prevVal+1 {
-					out = append(out, Range{Start: &v1, End: &prevVal})
-					i = j - 1
-					break
-				}
-				j++
-				continue
-			}
-		}
+	// Store found rows into []int
+	for i := 0; i < nCores; i++ {
+		foundRows := mapRows[i]
+		rows = append(rows, foundRows...)
 	}
 
-	return out, nil
+	return rows, err
 }
