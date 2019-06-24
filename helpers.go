@@ -5,7 +5,6 @@ package dataframe
 import (
 	"errors"
 	"fmt"
-	"sort"
 )
 
 // ErrNoRows signifies that the Series, Dataframe or import data
@@ -47,35 +46,36 @@ func BoolValueFormatter(v interface{}) string {
 	}
 }
 
-// IntToRange is used to convert slice/array of Ints
-// To it's equivalent slice of Range
+// IntsToRanges will convert an already (asc) ordered list of ints to a slice of Ranges.
 //
 // Example:
 //
-// [2,4,5,6,8,10,11,45,46] converted to => [2-2, 4-6, 8-8, 10 - 11, 45 - 46]
-// output will be in Range datatype form as declared in Dataframe package
-func IntToRange(arr []int) []Range {
+//  import "sort"
+//  ints := []int{2,4,5,6,8,10,11,45,46}
+//  sort.Ints(ints)
+//
+//  fmt.Println(IntsToRanges(ints))
+//  // Output: R{2,2}, R{4,6}, R{8,8}, R{10,11}, R{45,46}
+//
+func IntsToRanges(ints []int) []Range {
 
 	out := []Range{}
 
-	// Just making sure array is sorted
-	sort.Ints(arr)
-
 OUTER:
-	for i := 0; i < len(arr); i++ {
-		v1 := arr[i]
+	for i := 0; i < len(ints); i++ {
+		v1 := ints[i]
 
 		j := i + 1
 		for {
-			if j >= len(arr) {
+			if j >= len(ints) {
 				// j doesn't exist
-				v2 := arr[j-1]
+				v2 := ints[j-1]
 				out = append(out, Range{Start: &v1, End: &v2})
 				break OUTER
 			} else {
 				// j does exist
-				v2 := arr[j]
-				prevVal := arr[j-1]
+				v2 := ints[j]
+				prevVal := ints[j-1]
 
 				if v2 != prevVal+1 {
 					out = append(out, Range{Start: &v1, End: &prevVal})
