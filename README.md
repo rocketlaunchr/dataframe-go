@@ -183,7 +183,7 @@ OUTPUT:
 
 Out of the box, there is support for `string`, `time.Time`, `float64` and `int64`. Automatic support exists for `float32` and all types of integers. There is a convenience function provided for dealing with `bool`.
 
-There may be times that you want to use your own custom data types. That is what the **Generic Series** is for.
+There may be times that you want to use your own custom data types. You can either implement your own `Series` type or use the **Generic Series**.
 
 ## civil.Date
 
