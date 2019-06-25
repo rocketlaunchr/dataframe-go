@@ -4,9 +4,10 @@ package dataframe
 
 import (
 	"context"
-	"golang.org/x/sync/errgroup"
 	"runtime"
 	"sync"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
