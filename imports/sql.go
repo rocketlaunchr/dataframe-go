@@ -7,6 +7,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
@@ -61,36 +63,49 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 
 	// Create the dataframe
 	seriess := []dataframe.Series{}
-	for i, ct := range cols { // ct is ColumnType
+	for _, ct := range cols { // ct is ColumnType
 		name := ct.Name()
 		typ := ct.DatabaseTypeName()
 
-		// Check if data type is dictated
+		// Check if data type is dictated and use if available
 		if options != nil && len(options.DictateDataType) > 0 {
-			if typ, exists := options.DictateDataType[name]; exists {
-				// TODO:
+			if dtyp, exists := options.DictateDataType[name]; exists {
 
-				_ = typ
-				_ = i
+				switch T := dtyp.(type) {
+				case float64:
+					seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
+				case int64, bool:
+					seriess = append(seriess, dataframe.NewSeriesInt64(name, init))
+				case string:
+					seriess = append(seriess, dataframe.NewSeriesString(name, init))
+				case time.Time:
+					seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+				case Converter:
+					seriess = append(seriess, dataframe.NewSeries(name, T.ConcreteType, init))
+				default:
+					seriess = append(seriess, dataframe.NewSeries(name, typ, init))
+				}
 
 				continue
 			}
 		}
-
 		// Use typ if info is available
 		switch typ {
 		case "VARCHAR", "TEXT", "NVARCHAR":
 			seriess = append(seriess, dataframe.NewSeriesString(name, init))
-		case "DECIMAL": // float64??? float32???
+		case "FLOAT", "FLOAT4", "FLOAT8", "DECIMAL", "NUMERIC": // float64 float32
 			seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
-		case "BOOL", "INT", "BIGINT":
+		case "BOOL", "INT", "TINYINT", "INT2", "INT4", "INT8", "MEDIUMINT", "SMALLINT", "BIGINT":
 			seriess = append(seriess, dataframe.NewSeriesInt64(name, init))
+		case "DATETIME", "TIMESTAMP":
+			seriess = append(seriess, dataframe.NewSeriesTime(name, init))
 		case "":
 			// Assume string
 			seriess = append(seriess, dataframe.NewSeriesString(name, init))
-		default:
+		default: // assume string if info is not available
 			seriess = append(seriess, dataframe.NewSeriesString(name, init))
 		}
+
 	}
 	df = dataframe.NewDataFrame(seriess...)
 
@@ -106,7 +121,111 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 			return nil, err
 		}
 
-		fmt.Println(rowData)
+		insertVals := []interface{}{}
+		for colID, elem := range rowData {
+
+			colType := cols[colID].DatabaseTypeName()
+			fieldName := cols[colID].Name()
+
+			val := string(*elem.(*[]byte))
+
+			if options != nil && len(options.DictateDataType) > 0 {
+				if dtyp, exists := options.DictateDataType[fieldName]; exists {
+
+					switch T := dtyp.(type) {
+					case float64:
+						f, err := strconv.ParseFloat(val, 64)
+						if err != nil {
+							return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row, fieldName)
+						}
+						insertVals = append(insertVals, f)
+					case int64:
+						n, err := strconv.ParseInt(val, 10, 64)
+						if err != nil {
+							return nil, fmt.Errorf("can't force string to Int. row: %d field: %s", row, fieldName)
+						}
+						insertVals = append(insertVals, n)
+					case string:
+						insertVals = append(insertVals, val)
+					case bool:
+						if val == "true" || val == "TRUE" || val == "1" {
+							insertVals = append(insertVals, int64(1))
+						} else if val == "false" || val == "FALSE" || val == "0" {
+							insertVals = append(insertVals, int64(0))
+						} else {
+							return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row, fieldName)
+						}
+					case time.Time:
+						t, err := time.Parse(time.RFC3339, val)
+						if err != nil {
+							// Assume unix timestamp
+							sec, err := strconv.ParseInt(val, 10, 64)
+							if err != nil {
+								return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row, fieldName)
+							}
+							insertVals = append(insertVals, time.Unix(sec, 0))
+						}
+						insertVals = append(insertVals, t)
+					case Converter:
+						cv, err := T.ConverterFunc(val)
+						if err != nil {
+							return nil, fmt.Errorf("can't force string to generic data type. row: %d field: %s", row, fieldName)
+						}
+						insertVals = append(insertVals, cv)
+					default:
+						insertVals = append(insertVals, val)
+					}
+
+					continue
+				}
+			}
+
+			switch colType {
+			case "VARCHAR", "TEXT", "NVARCHAR": // string type is default
+				insertVals = append(insertVals, val)
+			case "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "FLOAT4", "FLOAT8": // float64??? float32??? // in decimal type
+				f, err := strconv.ParseFloat(val, 64)
+				if err != nil {
+					return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row, fieldName)
+				}
+				insertVals = append(insertVals, f)
+			case "INT", "TINYINT", "INT2", "INT4", "INT8", "MEDIUMINT", "SMALLINT", "BIGINT": // case int AS represented in mysql / postgresql
+				n, err := strconv.ParseInt(val, 10, 64)
+				if err != nil {
+					return nil, fmt.Errorf("can't force string to Int. row: %d field: %s", row, fieldName)
+				}
+				insertVals = append(insertVals, n)
+			case "BOOL":
+				if val == "true" || val == "TRUE" || val == "1" {
+					insertVals = append(insertVals, int64(1))
+				} else if val == "false" || val == "FALSE" || val == "0" {
+					insertVals = append(insertVals, int64(0))
+				} else {
+					return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row, fieldName)
+				}
+			case "DATETIME", "TIMESTAMP", "TIMESTAMPTZ":
+				t, err := time.Parse(time.RFC3339, val)
+				if err != nil {
+					// Assume unix timestamp
+					sec, err := strconv.ParseInt(val, 10, 64)
+					if err != nil {
+						return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row, fieldName)
+					}
+					insertVals = append(insertVals, time.Unix(sec, 0))
+				}
+				insertVals = append(insertVals, t)
+			default:
+				// Assume string
+				insertVals = append(insertVals, val)
+			}
+
+		}
+
+		if init == nil {
+			df.Append(insertVals...)
+		} else {
+			df.UpdateRow(row, insertVals...)
+		}
 
 	}
 	if err := rows.Err(); err != nil {
@@ -115,21 +234,19 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 
 	if df == nil {
 		return nil, dataframe.ErrNoRows
-	} else {
-		// Remove unused preallocated rows from dataframe
-		if init != nil {
-			excess := init.Size - df.NRows()
-			for {
-				if excess <= 0 {
-					break
-				}
-				df.Remove(df.NRows() - 1) // remove current last row
-				excess--
-			}
-		}
-		return df, nil
 	}
 
-	panic("TODO: LoadFromSQL not implemented")
+	// Remove unused preallocated rows from dataframe
+	if init != nil {
+		excess := init.Size - df.NRows()
+		for {
+			if excess <= 0 {
+				break
+			}
+			df.Remove(df.NRows() - 1) // remove current last row
+			excess--
+		}
+	}
+	return df, nil
 
 }
