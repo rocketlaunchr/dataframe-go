@@ -91,9 +91,9 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 		}
 		// Use typ if info is available
 		switch typ {
-		case "VARCHAR", "TEXT", "NVARCHAR":
+		case "VARCHAR", "TEXT", "NVARCHAR", "MEDIUMTEXT", "LONGTEXT": // "BLOB", "MEDIUMBLOB", "LONGBLOB",
 			seriess = append(seriess, dataframe.NewSeriesString(name, init))
-		case "FLOAT", "FLOAT4", "FLOAT8", "DECIMAL", "NUMERIC": // float64 float32
+		case "FLOAT", "FLOAT4", "FLOAT8", "DOUBLE", "DECIMAL", "NUMERIC": // float64 float32
 			seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
 		case "BOOL", "INT", "TINYINT", "INT2", "INT4", "INT8", "MEDIUMINT", "SMALLINT", "BIGINT":
 			seriess = append(seriess, dataframe.NewSeriesInt64(name, init))
@@ -186,7 +186,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 				}
 			}
 			switch colType {
-			case "VARCHAR", "TEXT", "NVARCHAR": // string type is default
+			case "VARCHAR", "TEXT", "NVARCHAR", "MEDIUMTEXT", "LONGTEXT": // "BLOB", "MEDIUMBLOB", "LONGBLOB"
 				insertVals[fieldName] = val
 			case "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "FLOAT4", "FLOAT8": // float64??? float32??? // in decimal type
 				f, err := strconv.ParseFloat(val, 64)
