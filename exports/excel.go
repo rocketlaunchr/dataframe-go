@@ -22,7 +22,7 @@ type ExcelExportOptions struct {
 }
 
 // ExportToEXCEL exports df object to EXCEL
-func ExportToEXCEL(ctx context.Context, filePath string, df *dataframe.DataFrame, options ...ExcelExportOptions) error {
+func ExportToEXCEL(ctx context.Context, outputFilePath string, df *dataframe.DataFrame, options ...ExcelExportOptions) error {
 
 	df.Lock()
 	defer df.Unlock()
@@ -96,12 +96,12 @@ func ExportToEXCEL(ctx context.Context, filePath string, df *dataframe.DataFrame
 			}
 
 		}
-
+		var fileName string
 		// For consistent file extension naming
-		if strings.Contains(filePath, string('.')) {
-			filePath = strings.Split(filePath, ".")[0]
+		if strings.Contains(outputFilePath, string('.')) {
+			fileName = strings.Split(outputFilePath, ".")[0]
 		}
-		if err = file.Save(filePath + ".xlsx"); err != nil {
+		if err = file.Save(fileName + ".xlsx"); err != nil {
 			return err
 		}
 	}
