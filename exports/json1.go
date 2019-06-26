@@ -10,7 +10,10 @@ import (
 
 // JSONExportOptions contains options for JSON
 type JSONExportOptions struct {
-	NullString    *string
+	// optional param to specify what nil values should be encoded
+	// as (i.e. NULL, \N, NaN, NA etc)
+	NullString *string
+	// Range of data subsets to write from dataframe
 	Range         dataframe.Range
 	SetEscapeHTML bool
 }
@@ -57,7 +60,6 @@ func ExportToJSON(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opt
 					record[aSeries.Name()] = aSeries.Value(row)
 				}
 			}
-			// fmt.Print(record)
 
 			if err := enc.Encode(record); err != nil {
 				return err
