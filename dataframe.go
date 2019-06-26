@@ -59,9 +59,9 @@ func (df *DataFrame) NRows(options ...Options) int {
 
 }
 
-// ValuesOptions is used to modify the behaviour of Values()
+// ValuesOptions is used to modify the behaviour of Values().
 type ValuesOptions struct {
-	// InitialRow represents the starting value for iterating
+	// InitialRow represents the starting value for iterating.
 	InitialRow int
 
 	// Step represents by how much each iteration should step by.
@@ -71,11 +71,26 @@ type ValuesOptions struct {
 	Step int
 
 	// Don't apply read lock. This is useful if you intend to Write lock
-	// the entire dataframe
+	// the entire dataframe.
 	DontReadLock bool
 }
 
-// Values will return an iterator that can be used to iterate through all the values
+// Values will return an iterator that can be used to iterate through all the values.
+//
+// Example:
+//
+//  iterator := df.Values(dataframe.ValuesOptions{0, 1, true})
+//
+//  df.Lock()
+//  for {
+//     row, vals := iterator()
+//     if row == nil {
+//        break
+//     }
+//     fmt.Println(*row, vals)
+//  }
+//  df.Unlock()
+//
 func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interface{}]interface{}) {
 
 	var row int
@@ -226,7 +241,7 @@ func (df *DataFrame) Remove(row int) {
 }
 
 // Update is used to update a specific entry.
-// col can the name of the series or the column number
+// col can the name of the series or the column number.
 func (df *DataFrame) Update(row int, col interface{}, val interface{}) {
 	df.lock.Lock()
 	defer df.lock.Unlock()
@@ -243,7 +258,7 @@ func (df *DataFrame) Update(row int, col interface{}, val interface{}) {
 	df.Series[col.(int)].Update(row, val)
 }
 
-// UpdateRow will update an entire row
+// UpdateRow will update an entire row.
 func (df *DataFrame) UpdateRow(row int, vals ...interface{}) {
 	df.lock.Lock()
 	defer df.lock.Unlock()

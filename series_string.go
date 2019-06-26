@@ -266,19 +266,17 @@ func (s *SeriesString) IsEqualFunc(a, b interface{}) bool {
 	if a == nil {
 		if b == nil {
 			return true
-		} else {
-			return false
 		}
-	} else {
-		if b == nil {
-			return false
-		} else {
-			s1 := a.(string)
-			s2 := b.(string)
-
-			return s1 == s2
-		}
+		return false
 	}
+
+	if b == nil {
+		return false
+	}
+	s1 := a.(string)
+	s2 := b.(string)
+
+	return s1 == s2
 
 }
 
@@ -288,19 +286,17 @@ func (s *SeriesString) IsLessThanFunc(a, b interface{}) bool {
 	if a == nil {
 		if b == nil {
 			return true
-		} else {
-			return true
 		}
-	} else {
-		if b == nil {
-			return false
-		} else {
-			s1 := a.(string)
-			s2 := b.(string)
-
-			return s1 < s2
-		}
+		return true
 	}
+
+	if b == nil {
+		return false
+	}
+	s1 := a.(string)
+	s2 := b.(string)
+
+	return s1 < s2
 
 }
 
@@ -331,21 +327,20 @@ func (s *SeriesString) Sort(options ...Options) {
 			if s.values[j] == nil {
 				// both are nil
 				return true
-			} else {
-				return true
 			}
-		} else {
-			if s.values[j] == nil {
-				// i has value and j is nil
-				return false
-			} else {
-				// Both are not nil
-				ti := *s.values[i]
-				tj := *s.values[j]
-
-				return ti < tj
-			}
+			return true
 		}
+
+		if s.values[j] == nil {
+			// i has value and j is nil
+			return false
+		}
+		// Both are not nil
+		ti := *s.values[i]
+		tj := *s.values[j]
+
+		return ti < tj
+
 	})
 }
 
