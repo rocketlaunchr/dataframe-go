@@ -97,7 +97,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 			seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
 		case "BOOL", "INT", "TINYINT", "INT2", "INT4", "INT8", "MEDIUMINT", "SMALLINT", "BIGINT":
 			seriess = append(seriess, dataframe.NewSeriesInt64(name, init))
-		case "DATETIME", "TIMESTAMP":
+		case "DATETIME", "TIMESTAMP", "TIMESTAMPTZ":
 			seriess = append(seriess, dataframe.NewSeriesTime(name, init))
 		case "":
 			// Assume string
@@ -129,6 +129,12 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 
 			val := string(*elem.(*[]byte))
 
+			// check if val is null
+			if val == "" {
+				insertVals = append(insertVals, nil)
+				continue
+			}
+
 			if options != nil && len(options.DictateDataType) > 0 {
 				if dtyp, exists := options.DictateDataType[fieldName]; exists {
 
@@ -136,13 +142,13 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 					case float64:
 						f, err := strconv.ParseFloat(val, 64)
 						if err != nil {
-							return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row, fieldName)
+							return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, fieldName)
 						}
 						insertVals = append(insertVals, f)
 					case int64:
 						n, err := strconv.ParseInt(val, 10, 64)
 						if err != nil {
-							return nil, fmt.Errorf("can't force string to Int. row: %d field: %s", row, fieldName)
+							return nil, fmt.Errorf("can't force string to Int. row: %d field: %s", row-1, fieldName)
 						}
 						insertVals = append(insertVals, n)
 					case string:
@@ -153,7 +159,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 						} else if val == "false" || val == "FALSE" || val == "0" {
 							insertVals = append(insertVals, int64(0))
 						} else {
-							return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row, fieldName)
+							return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, fieldName)
 						}
 					case time.Time:
 						t, err := time.Parse(time.RFC3339, val)
@@ -161,7 +167,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 							// Assume unix timestamp
 							sec, err := strconv.ParseInt(val, 10, 64)
 							if err != nil {
-								return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row, fieldName)
+								return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row-1, fieldName)
 							}
 							insertVals = append(insertVals, time.Unix(sec, 0))
 						}
@@ -169,7 +175,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 					case Converter:
 						cv, err := T.ConverterFunc(val)
 						if err != nil {
-							return nil, fmt.Errorf("can't force string to generic data type. row: %d field: %s", row, fieldName)
+							return nil, fmt.Errorf("can't force string to generic data type. row: %d field: %s", row-1, fieldName)
 						}
 						insertVals = append(insertVals, cv)
 					default:
@@ -179,20 +185,20 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 					continue
 				}
 			}
-
+			fmt.Printf("%v, %T\n", val, val)
 			switch colType {
 			case "VARCHAR", "TEXT", "NVARCHAR": // string type is default
 				insertVals = append(insertVals, val)
 			case "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "FLOAT4", "FLOAT8": // float64??? float32??? // in decimal type
 				f, err := strconv.ParseFloat(val, 64)
 				if err != nil {
-					return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row, fieldName)
+					return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, fieldName)
 				}
 				insertVals = append(insertVals, f)
 			case "INT", "TINYINT", "INT2", "INT4", "INT8", "MEDIUMINT", "SMALLINT", "BIGINT": // case int AS represented in mysql / postgresql
 				n, err := strconv.ParseInt(val, 10, 64)
 				if err != nil {
-					return nil, fmt.Errorf("can't force string to Int. row: %d field: %s", row, fieldName)
+					return nil, fmt.Errorf("can't force string to Int. row: %d field: %s", row-1, fieldName)
 				}
 				insertVals = append(insertVals, n)
 			case "BOOL":
@@ -201,7 +207,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 				} else if val == "false" || val == "FALSE" || val == "0" {
 					insertVals = append(insertVals, int64(0))
 				} else {
-					return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row, fieldName)
+					return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, fieldName)
 				}
 			case "DATETIME", "TIMESTAMP", "TIMESTAMPTZ":
 				t, err := time.Parse(time.RFC3339, val)
@@ -209,7 +215,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 					// Assume unix timestamp
 					sec, err := strconv.ParseInt(val, 10, 64)
 					if err != nil {
-						return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row, fieldName)
+						return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row-1, fieldName)
 					}
 					insertVals = append(insertVals, time.Unix(sec, 0))
 				}
