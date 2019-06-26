@@ -10,8 +10,14 @@ import (
 
 // ExcelExportOptions contains optional settings for EXCEL exporter functions
 type ExcelExportOptions struct {
+	// optional param to specify what nil values should be encoded
+	// as (i.e. NULL, \N, NaN, NA etc)
 	NullString *string
-	Range      dataframe.Range
+	// Range of data subsets to write from dataframe
+	Range dataframe.Range
+	// Used to Specify the Specific Sheet page
+	// To Write to in the Excel workspace
+	// e.g sheet1, sheet2...
 	WriteSheet *string
 }
 
@@ -86,11 +92,7 @@ func ExportToEXCEL(ctx context.Context, filePath string, df *dataframe.DataFrame
 				} else {
 					cell.Value = aSeries.ValueString(row)
 				}
-				// colCount := sheetRow.WriteSlice(&sVals, len(sVals))
-				// if colCount == -1 {
-				// 	fmt.Print()
-				// 	return errors.New("A valid array slice pointer was not passed in to Excel Write Function")
-				// }
+
 			}
 
 		}

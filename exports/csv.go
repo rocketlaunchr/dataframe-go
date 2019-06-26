@@ -10,10 +10,15 @@ import (
 
 // CSVExportOptions contains options for CSV
 type CSVExportOptions struct {
-	NullString *string         //optional param to specify what nil values should be encoded as (i.e. NULL, \N, NaN, NA etc)
-	Range      dataframe.Range // Range of data subsets to write from dataframe
-	Separator  rune            // Field delimiter (set to ',' by NewWriter)
-	UseCRLF    bool            // True to use \r\n as the line terminator
+	//optional param to specify what nil values should be encoded
+	// as (i.e. NULL, \N, NaN, NA etc)
+	NullString *string
+	// Range of data subsets to write from dataframe
+	Range dataframe.Range
+	// Field delimiter (set to ',' by NewWriter)
+	Separator rune
+	// Set to True to use \r\n as the line terminator
+	UseCRLF bool
 }
 
 // ExportToCSV exports data object to CSV
