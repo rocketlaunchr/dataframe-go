@@ -121,7 +121,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 			return nil, err
 		}
 
-		insertVals := []interface{}{}
+		insertVals := map[string]interface{}{}
 		for colID, elem := range rowData {
 
 			colType := cols[colID].DatabaseTypeName()
@@ -131,7 +131,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 
 			// check if val is null
 			if val == "" {
-				insertVals = append(insertVals, nil)
+				insertVals[fieldName] = nil
 				continue
 			}
 
@@ -144,20 +144,20 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 						if err != nil {
 							return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, fieldName)
 						}
-						insertVals = append(insertVals, f)
+						insertVals[fieldName] = f
 					case int64:
 						n, err := strconv.ParseInt(val, 10, 64)
 						if err != nil {
 							return nil, fmt.Errorf("can't force string to Int. row: %d field: %s", row-1, fieldName)
 						}
-						insertVals = append(insertVals, n)
+						insertVals[fieldName] = n
 					case string:
-						insertVals = append(insertVals, val)
+						insertVals[fieldName] = val
 					case bool:
 						if val == "true" || val == "TRUE" || val == "1" {
-							insertVals = append(insertVals, int64(1))
+							insertVals[fieldName] = int64(1)
 						} else if val == "false" || val == "FALSE" || val == "0" {
-							insertVals = append(insertVals, int64(0))
+							insertVals[fieldName] = int64(0)
 						} else {
 							return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, fieldName)
 						}
@@ -169,43 +169,42 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 							if err != nil {
 								return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row-1, fieldName)
 							}
-							insertVals = append(insertVals, time.Unix(sec, 0))
+							insertVals[fieldName] = time.Unix(sec, 0)
 						}
-						insertVals = append(insertVals, t)
+						insertVals[fieldName] = t
 					case Converter:
 						cv, err := T.ConverterFunc(val)
 						if err != nil {
 							return nil, fmt.Errorf("can't force string to generic data type. row: %d field: %s", row-1, fieldName)
 						}
-						insertVals = append(insertVals, cv)
+						insertVals[fieldName] = cv
 					default:
-						insertVals = append(insertVals, val)
+						insertVals[fieldName] = val
 					}
 
 					continue
 				}
 			}
-			fmt.Printf("%v, %T\n", val, val)
 			switch colType {
 			case "VARCHAR", "TEXT", "NVARCHAR": // string type is default
-				insertVals = append(insertVals, val)
+				insertVals[fieldName] = val
 			case "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "FLOAT4", "FLOAT8": // float64??? float32??? // in decimal type
 				f, err := strconv.ParseFloat(val, 64)
 				if err != nil {
 					return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, fieldName)
 				}
-				insertVals = append(insertVals, f)
+				insertVals[fieldName] = f
 			case "INT", "TINYINT", "INT2", "INT4", "INT8", "MEDIUMINT", "SMALLINT", "BIGINT": // case int AS represented in mysql / postgresql
 				n, err := strconv.ParseInt(val, 10, 64)
 				if err != nil {
 					return nil, fmt.Errorf("can't force string to Int. row: %d field: %s", row-1, fieldName)
 				}
-				insertVals = append(insertVals, n)
+				insertVals[fieldName] = n
 			case "BOOL":
 				if val == "true" || val == "TRUE" || val == "1" {
-					insertVals = append(insertVals, int64(1))
+					insertVals[fieldName] = int64(1)
 				} else if val == "false" || val == "FALSE" || val == "0" {
-					insertVals = append(insertVals, int64(0))
+					insertVals[fieldName] = int64(0)
 				} else {
 					return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, fieldName)
 				}
@@ -217,21 +216,20 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 					if err != nil {
 						return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row-1, fieldName)
 					}
-					insertVals = append(insertVals, time.Unix(sec, 0))
+					insertVals[fieldName] = time.Unix(sec, 0)
 				}
-				insertVals = append(insertVals, t)
+				insertVals[fieldName] = t
 			default:
 				// Assume string
-				insertVals = append(insertVals, val)
+				insertVals[fieldName] = val
 			}
 
 		}
 
 		if init == nil {
-			df.Append(insertVals...)
-		} else {
-			df.UpdateRow(row, insertVals...)
+			df.Append(make([]interface{}, len(df.Series))...)
 		}
+		df.UpdateRow(row-1, insertVals)
 
 	}
 	if err := rows.Err(); err != nil {
