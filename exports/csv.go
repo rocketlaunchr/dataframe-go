@@ -80,8 +80,8 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 
 			sVals := []string{}
 			for _, aSeries := range df.Series {
-				val := aSeries.Value(row)                                        // df returns null for empty string fields
-				if val == nil || val == "NAN" || val == "nan" || val == "null" { // and NAN for empty number fields
+				val := aSeries.Value(row)
+				if val == nil {
 					sVals = append(sVals, nullString)
 				} else {
 					sVals = append(sVals, aSeries.ValueString(row, dataframe.Options{DontLock: true}))
