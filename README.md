@@ -141,7 +141,11 @@ OUTPUT:
 7 map[day:8 0:8 sales:89 1:89]
 ```
 
-## Importing csv
+## Importing Data
+
+The `imports` sub-package has support to import from csv, jsonl and directly from a sql database.
+
+### CSV
 
 ```go
 csvStr := `
@@ -174,6 +178,11 @@ OUTPUT:
 +-----+----------------+------------+--------+--------+--------+
 
 ```
+
+## Exporting Data
+
+The `exports` sub-package has support for exporting to csv, jsonl and MS Excel.
+
 
 ## Optimizations
 
