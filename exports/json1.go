@@ -8,56 +8,73 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
-// JSONExportOptions contains options for JSON
+// JSONExportOptions contains options for ExportToJSON function.
 type JSONExportOptions struct {
-	// optional param to specify what nil values should be encoded
-	// as (i.e. NULL, \N, NaN, NA etc)
+
+	// NullString is used to set what nil values should be encoded to.
+	// Common options are strings: NULL, \N, NaN, NA.
+	// If not set, then null (non-string) is used.
 	NullString *string
-	// Range of data subsets to write from dataframe
-	Range         dataframe.Range
+
+	// Range is used to export a subset of rows from the dataframe.
+	Range dataframe.Range
+
+	// SetEscapeHTML specifies whether problematic HTML characters should be escaped inside JSON quoted strings.
+	// See: https://golang.org/pkg/encoding/json/#Encoder.SetEscapeHTML
 	SetEscapeHTML bool
 }
 
-// ExportToJSON exports data object to JSON
+// ExportToJSON exports a dataframe in the jsonl format.
+// Each line represents a row from the dataframe.
+//
+// See: http://jsonlines.org/ for more information.
 func ExportToJSON(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...JSONExportOptions) error {
+
 	df.Lock()
 	defer df.Unlock()
 
 	var r dataframe.Range
-	nullString := "NaN"
+	var null *string // default is null
 
 	enc := json.NewEncoder(w)
 
 	if len(options) > 0 {
 
 		r = options[0].Range
+
 		enc.SetEscapeHTML(options[0].SetEscapeHTML)
+
 		if options[0].NullString != nil {
-			nullString = *options[0].NullString
+			null = options[0].NullString
 		}
 	}
 
-	// only add the DontLock option when the dataframe, df is already in a locked state
-	if df.NRows(dataframe.Options{DontLock: true}) > 0 {
+	nRows := df.NRows(dataframe.Options{DontLock: true})
 
-		s, e, err := r.Limits(df.NRows(dataframe.Options{DontLock: true}))
+	if nRows > 0 {
+
+		s, e, err := r.Limits(nRows)
 		if err != nil {
 			return err
 		}
 
 		for row := s; row <= e; row++ {
 
-			// check if error in ctx context
 			if err := ctx.Err(); err != nil {
 				return err
 			}
 
 			record := map[string]interface{}{}
 			for _, aSeries := range df.Series {
-				if aSeries.Value(row) == nil {
-					record[aSeries.Name()] = nullString
+
+				fieldName := aSeries.Name()
+
+				val := aSeries.Value(row)
+
+				if val == nil && null != nil {
+					record[fieldName] = null
 				} else {
-					record[aSeries.Name()] = aSeries.Value(row)
+					record[fieldName] = val
 				}
 			}
 
