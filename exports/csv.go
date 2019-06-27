@@ -8,29 +8,34 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
-// CSVExportOptions contains options for CSV
+// CSVExportOptions contains options for ExportToCSV function.
 type CSVExportOptions struct {
-	//optional param to specify what nil values should be encoded
-	// as (i.e. NULL, \N, NaN, NA etc)
+
+	// NullString is used to set what nil values should be encoded to.
+	// Common options are NULL, \N, NaN, NA.
 	NullString *string
-	// Range of data subsets to write from dataframe
+
+	// Range is used to export a subset of rows from the dataframe.
 	Range dataframe.Range
-	// Field delimiter (set to ',' by NewWriter)
+
+	// Separator is the field delimiter. A common option is ',', which is
+	// the default if CSVExportOptions is not provided.
 	Separator rune
-	// Set to True to use \r\n as the line terminator
+
+	// UseCRLF determines the line terminator.
+	// When true, it is set to \r\n.
 	UseCRLF bool
 }
 
-// ExportToCSV exports data object to CSV
+// ExportToCSV exports a dataframe to a CSV file.
 func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...CSVExportOptions) error {
 
-	// Lock Dataframe to
-	df.Lock()         // lock dataframe object
-	defer df.Unlock() // unlock dataframe
+	df.Lock()
+	defer df.Unlock()
 
 	header := []string{}
 
-	var r dataframe.Range // initial default range r
+	var r dataframe.Range
 
 	nullString := "NaN" // Default will be "NaN"
 
@@ -52,30 +57,30 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 		return err
 	}
 
-	// DontLock optional parameter is added because df has already been locked above
-	if df.NRows(dataframe.Options{DontLock: true}) > 0 {
+	nRows := df.NRows(dataframe.Options{DontLock: true})
 
-		s, e, err := r.Limits(df.NRows(dataframe.Options{DontLock: true}))
+	if nRows > 0 {
+
+		s, e, err := r.Limits(nRows)
 		if err != nil {
 			return err
 		}
 
-		refreshCount := 0 // Set up refresh counter
+		flushCount := 0
 		for row := s; row <= e; row++ {
 
-			// check if error in ctx context
 			if err := ctx.Err(); err != nil {
 				return err
 			}
 
-			refreshCount++
+			flushCount++
 			// flush after every 100 writes
-			if refreshCount > 100 { // flush in the 101th count
+			if flushCount > 100 { // flush in the 101th count
 				cw.Flush()
 				if err := cw.Error(); err != nil {
 					return err
 				}
-				refreshCount = 1 // reset refreshCount
+				flushCount = 1
 			}
 
 			sVals := []string{}
