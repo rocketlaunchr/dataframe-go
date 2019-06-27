@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
@@ -158,6 +159,12 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 					}
 				}
 
+				// Check if v is any of the following invalid signs
+				if strings.ToLower(v) == "nan" || strings.ToLower(v) == "null" {
+					insertVals = append(insertVals, nil)
+					continue
+				}
+
 				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
 
 					name := df.Names()[idx]
@@ -233,7 +240,8 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 
 	if df == nil {
 		return nil, dataframe.ErrNoRows
-	} else {
-		return df, nil
 	}
+
+	return df, nil
+
 }
