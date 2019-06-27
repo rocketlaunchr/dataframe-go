@@ -131,14 +131,11 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 			var val *string
 
 			raw := elem.(*[]byte)
-			if raw == nil { // check if raw is nil
-				val = nil
-			} else {
+			if raw != nil {
 				val = &[]string{string(*raw)}[0]
 			}
 
-			// check if val is empty string
-			if *val == "" {
+			if val == nil {
 				insertVals[fieldName] = nil
 				continue
 			}
