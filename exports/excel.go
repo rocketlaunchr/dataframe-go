@@ -2,37 +2,37 @@ package exports
 
 import (
 	"context"
-	"strings"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 	"github.com/tealeg/xlsx"
 )
 
-// ExcelExportOptions contains optional settings for EXCEL exporter functions
+// ExcelExportOptions contains options for ExportToExcel function.
 type ExcelExportOptions struct {
-	// optional param to specify what nil values should be encoded
-	// as (i.e. NULL, \N, NaN, NA etc)
+
+	// NullString is used to set what nil values should be encoded to.
+	// Common options are NULL, \N, NaN, NA.
 	NullString *string
-	// Range of data subsets to write from dataframe
+
+	// Range is used to export a subset of rows from the dataframe.
 	Range dataframe.Range
-	// Used to Specify the Specific Sheet page
-	// To Write to in the Excel workspace
-	// e.g sheet1, sheet2...
+
+	// WriteSheet is used to specify a sheet name.
+	// When not set, it defaults to "sheet1"
 	WriteSheet *string
 }
 
-// ExportToEXCEL exports df object to EXCEL
-func ExportToEXCEL(ctx context.Context, outputFilePath string, df *dataframe.DataFrame, options ...ExcelExportOptions) error {
+// ExportToExcel exports a dataframe to a excel file.
+func ExportToExcel(ctx context.Context, outputFilePath string, df *dataframe.DataFrame, options ...ExcelExportOptions) error {
 
 	df.Lock()
 	defer df.Unlock()
 
-	// variables for excel sheet
-	var sheetRow *xlsx.Row
-	var file *xlsx.File
-	// var sheet *xlsx.Sheet
-	var cell *xlsx.Cell
-	// var err error
+	var (
+		sheetRow *xlsx.Row
+		file     *xlsx.File
+		cell     *xlsx.Cell
+	)
 
 	nullString := "NaN"    // Default value
 	writeSheet := "sheet1" // Write to default sheet 1 if a different one is not set
@@ -41,6 +41,7 @@ func ExportToEXCEL(ctx context.Context, outputFilePath string, df *dataframe.Dat
 
 	if len(options) > 0 {
 		r = options[0].Range
+
 		if options[0].NullString != nil {
 			nullString = *options[0].NullString
 		}
@@ -50,13 +51,15 @@ func ExportToEXCEL(ctx context.Context, outputFilePath string, df *dataframe.Dat
 		}
 	}
 
-	if df.NRows(dataframe.Options{DontLock: true}) > 0 {
-		s, e, err := r.Limits(df.NRows(dataframe.Options{DontLock: true}))
+	nRows := df.NRows(dataframe.Options{DontLock: true})
+
+	if nRows > 0 {
+
+		s, e, err := r.Limits(nRows)
 		if err != nil {
 			return err
 		}
 
-		// Instantiale new excel file and select sheet
 		file = xlsx.NewFile()
 		sheet, err := file.AddSheet(writeSheet)
 		if err != nil {
@@ -75,12 +78,13 @@ func ExportToEXCEL(ctx context.Context, outputFilePath string, df *dataframe.Dat
 		// Writing record in Rows
 		for row := s; row <= e; row++ {
 
-			// Add new role to excel sheet
-			sheetRow = sheet.AddRow()
 			// check if error in ctx context
 			if err := ctx.Err(); err != nil {
 				return err
 			}
+
+			// Add new role to excel sheet
+			sheetRow = sheet.AddRow()
 
 			// collecting rows
 			// sVals := []string{}
@@ -94,14 +98,11 @@ func ExportToEXCEL(ctx context.Context, outputFilePath string, df *dataframe.Dat
 				}
 
 			}
+		}
 
-		}
-		var fileName string
-		// For consistent file extension naming
-		if strings.Contains(outputFilePath, string('.')) {
-			fileName = strings.Split(outputFilePath, ".")[0]
-		}
-		if err = file.Save(fileName + ".xlsx"); err != nil {
+		// Save file
+		err = file.Save(outputFilePath)
+		if err != nil {
 			return err
 		}
 	}
