@@ -20,7 +20,7 @@ type SQLLoadOptions struct {
 	// The maximum number of rows supported (on a 64-bit machine) is 9,223,372,036,854,775,807 (half of 64 bit range).
 	// Preallocating memory can provide speed improvements. Benchmarks should be performed for your use-case.
 	//
-	// WARNING: Some databases may allow for full 64 bit range.
+	// WARNING: Some databases may allow tables to contain more rows than the maximum supported.
 	KnownRowCount *int
 
 	// DictateDataType is used to inform LoadFromSQL what the true underlying data type is for a given field name.
@@ -89,11 +89,12 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 				continue
 			}
 		}
+
 		// Use typ if info is available
 		switch typ {
-		case "VARCHAR", "TEXT", "NVARCHAR", "MEDIUMTEXT", "LONGTEXT": // "BLOB", "MEDIUMBLOB", "LONGBLOB",
+		case "VARCHAR", "TEXT", "NVARCHAR", "MEDIUMTEXT", "LONGTEXT":
 			seriess = append(seriess, dataframe.NewSeriesString(name, init))
-		case "FLOAT", "FLOAT4", "FLOAT8", "DOUBLE", "DECIMAL", "NUMERIC": // float64 float32
+		case "FLOAT", "FLOAT4", "FLOAT8", "DOUBLE", "DECIMAL", "NUMERIC":
 			seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
 		case "BOOL", "INT", "TINYINT", "INT2", "INT4", "INT8", "MEDIUMINT", "SMALLINT", "BIGINT":
 			seriess = append(seriess, dataframe.NewSeriesInt64(name, init))
@@ -185,16 +186,17 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 					continue
 				}
 			}
+
 			switch colType {
-			case "VARCHAR", "TEXT", "NVARCHAR", "MEDIUMTEXT", "LONGTEXT": // "BLOB", "MEDIUMBLOB", "LONGBLOB"
+			case "VARCHAR", "TEXT", "NVARCHAR", "MEDIUMTEXT", "LONGTEXT":
 				insertVals[fieldName] = val
-			case "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "FLOAT4", "FLOAT8": // float64??? float32??? // in decimal type
+			case "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "FLOAT4", "FLOAT8":
 				f, err := strconv.ParseFloat(val, 64)
 				if err != nil {
 					return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, fieldName)
 				}
 				insertVals[fieldName] = f
-			case "INT", "TINYINT", "INT2", "INT4", "INT8", "MEDIUMINT", "SMALLINT", "BIGINT": // case int AS represented in mysql / postgresql
+			case "INT", "TINYINT", "INT2", "INT4", "INT8", "MEDIUMINT", "SMALLINT", "BIGINT":
 				n, err := strconv.ParseInt(val, 10, 64)
 				if err != nil {
 					return nil, fmt.Errorf("can't force string to Int. row: %d field: %s", row-1, fieldName)
