@@ -26,35 +26,34 @@ func (r *Range) NRows(length ...int) (int, error) {
 		}
 
 		return e - s + 1, nil
-	} else {
-		if r.End == nil {
-			return 0, errors.New("End is nil so length must be provided")
-		}
-
-		var s int
-
-		if r.Start != nil {
-			s = *r.Start
-		}
-
-		if s < 0 || *r.End < 0 {
-			return 0, errors.New("range invalid")
-		}
-
-		if *r.End < s {
-			return 0, errors.New("range invalid")
-		}
-
-		return *r.End - s + 1, nil
 	}
 
+	if r.End == nil {
+		return 0, errors.New("End is nil so length must be provided")
+	}
+
+	var s int
+
+	if r.Start != nil {
+		s = *r.Start
+	}
+
+	if s < 0 || *r.End < 0 {
+		return 0, errors.New("range invalid")
+	}
+
+	if *r.End < s {
+		return 0, errors.New("range invalid")
+	}
+
+	return *r.End - s + 1, nil
 }
 
 // Limits is used to return the start and end limits of a Range
-// object for a given Dataframe or Series with len number of rows.
-func (r *Range) Limits(len int) (s int, e int, _ error) {
+// object for a given Dataframe or Series with length number of rows.
+func (r *Range) Limits(length int) (s int, e int, _ error) {
 
-	if len <= 0 {
+	if length <= 0 {
 		return 0, 0, errors.New("limit undefined")
 	}
 
@@ -63,18 +62,18 @@ func (r *Range) Limits(len int) (s int, e int, _ error) {
 	} else {
 		if *r.Start < 0 {
 			// negative
-			s = len + *r.Start
+			s = length + *r.Start
 		} else {
 			s = *r.Start
 		}
 	}
 
 	if r.End == nil {
-		e = len - 1
+		e = length - 1
 	} else {
 		if *r.End < 0 {
 			// negative
-			e = len + *r.End
+			e = length + *r.End
 		} else {
 			e = *r.End
 		}
@@ -88,7 +87,7 @@ func (r *Range) Limits(len int) (s int, e int, _ error) {
 		return 0, 0, errors.New("range invalid")
 	}
 
-	if s >= len || e >= len {
+	if s >= length || e >= length {
 		return 0, 0, errors.New("range invalid")
 	}
 

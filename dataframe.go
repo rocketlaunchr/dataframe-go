@@ -61,6 +61,7 @@ func (df *DataFrame) NRows(options ...Options) int {
 
 // ValuesOptions is used to modify the behaviour of Values().
 type ValuesOptions struct {
+
 	// InitialRow represents the starting value for iterating.
 	InitialRow int
 
