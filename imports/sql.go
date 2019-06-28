@@ -131,7 +131,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 			var val *string
 
 			raw := elem.(*[]byte)
-			if raw != nil {
+			if !(raw == nil || *raw == nil) {
 				val = &[]string{string(*raw)}[0]
 			}
 
