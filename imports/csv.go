@@ -236,5 +236,4 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 	}
 
 	return df, nil
-
 }

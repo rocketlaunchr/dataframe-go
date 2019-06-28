@@ -49,7 +49,7 @@ func ExportToJSON(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opt
 		}
 	}
 
-	nRows := df.NRows(dataframe.Options{DontLock: true})
+	nRows := df.NRows(dataframe.DontLock)
 
 	if nRows > 0 {
 
