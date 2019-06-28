@@ -22,6 +22,7 @@ type shuffler interface {
 }
 
 // Shuffle will randomly shuffle the rows in a Dataframe or Series.
+// If a Range is provided, only the rows within the range are shuffled.
 // s will be locked for the duration of the operation.
 // The function will panic if s is not a Dataframe or Series.
 //
