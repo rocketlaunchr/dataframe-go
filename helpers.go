@@ -45,3 +45,6 @@ func BoolValueFormatter(v interface{}) string {
 		return ""
 	}
 }
+
+// DontLock is short-hand for various functions that permit disabling locking.
+var DontLock = Options{DontLock: true}
