@@ -40,8 +40,10 @@ func Reverse(ctx context.Context, s common, r ...dataframe.Range) error {
 	rRows, _ := r[0].NRows(nRows)
 
 	for i := rRows/2 - 1; i >= 0; i-- {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		opp := rRows - 1 - i
-
 		s.Swap(i+start, opp+start, dataframe.DontLock)
 	}
 
