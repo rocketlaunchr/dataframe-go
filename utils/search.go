@@ -58,15 +58,13 @@ func Search(ctx context.Context, s dataframe.Series, lower, upper interface{}, r
 	subRanges := []dataframe.Range{}
 
 	for i := 0; i < nCores; i++ {
-		var subStart int
+		subStart := i * div
 		var subEnd int
 
 		if i != nCores-1 {
-			subStart = i * div
 			subEnd = (i+1)*div - 1
 		} else {
 			// last core
-			subStart = i * div
 			subEnd = end
 		}
 
