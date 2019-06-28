@@ -57,7 +57,7 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 		return err
 	}
 
-	nRows := df.NRows(dataframe.Options{DontLock: true})
+	nRows := df.NRows(dataframe.DontLock)
 
 	if nRows > 0 {
 
@@ -89,7 +89,7 @@ func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, opti
 				if val == nil {
 					sVals = append(sVals, nullString)
 				} else {
-					sVals = append(sVals, aSeries.ValueString(row, dataframe.Options{DontLock: true}))
+					sVals = append(sVals, aSeries.ValueString(row, dataframe.DontLock))
 				}
 			}
 

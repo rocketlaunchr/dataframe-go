@@ -51,7 +51,7 @@ func ExportToExcel(ctx context.Context, outputFilePath string, df *dataframe.Dat
 		}
 	}
 
-	nRows := df.NRows(dataframe.Options{DontLock: true})
+	nRows := df.NRows(dataframe.DontLock)
 
 	if nRows > 0 {
 

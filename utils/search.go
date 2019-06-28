@@ -35,7 +35,7 @@ func Search(ctx context.Context, s dataframe.Series, lower, upper interface{}, r
 		r = append(r, dataframe.Range{})
 	}
 
-	fullRowCount := s.NRows(dataframe.Options{DontLock: true})
+	fullRowCount := s.NRows(dataframe.DontLock)
 	if fullRowCount == 0 {
 		return []int{}, nil
 	}
@@ -101,7 +101,7 @@ func Search(ctx context.Context, s dataframe.Series, lower, upper interface{}, r
 					return err
 				}
 
-				val := s.Value(row, dataframe.Options{DontLock: true})
+				val := s.Value(row, dataframe.DontLock)
 
 				// Check if val is in range
 				if equalCheck {
