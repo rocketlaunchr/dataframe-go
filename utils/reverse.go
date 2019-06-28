@@ -15,6 +15,9 @@ type common interface {
 	Swap(row1, row2 int, options ...dataframe.Options)
 }
 
+// Reverse will reverse the order of a Dataframe or Series.
+// If a Range is provided, only the rows within the range are reversed.
+// s will be locked for the duration of the operation.
 func Reverse(ctx context.Context, s common, r ...dataframe.Range) error {
 
 	s.Lock()
