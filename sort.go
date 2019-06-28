@@ -58,7 +58,7 @@ func (s *sorter) Less(i, j int) bool {
 }
 
 func (s *sorter) Swap(i, j int) {
-	s.df.swap(i, j)
+	s.df.Swap(i, j, DontLock)
 }
 
 // Sort is used to sort the data according to different keys

@@ -257,6 +257,6 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 			excess--
 		}
 	}
-	return df, nil
 
+	return df, nil
 }

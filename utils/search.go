@@ -1,16 +1,17 @@
 // Copyright 2018 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
-package dataframe
+package utils
 
 import (
 	"context"
+	"golang.org/x/sync/errgroup"
 	"runtime"
 	"sync"
 
-	"golang.org/x/sync/errgroup"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
+	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
 // Search is used to find particular values in a given Series.
@@ -25,16 +26,16 @@ import (
 //  fmt.Println(dataframe.Search(ctx, s1, int64(4), int64(6)))
 //  // Output: [5 6 11 12]
 //
-func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range) ([]int, error) {
+func Search(ctx context.Context, s dataframe.Series, lower, upper interface{}, r ...dataframe.Range) ([]int, error) {
 
 	s.Lock()
 	defer s.Unlock()
 
 	if len(r) == 0 {
-		r = append(r, Range{})
+		r = append(r, dataframe.Range{})
 	}
 
-	fullRowCount := s.NRows(Options{DontLock: true})
+	fullRowCount := s.NRows(dataframe.DontLock)
 	if fullRowCount == 0 {
 		return []int{}, nil
 	}
@@ -54,22 +55,20 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 	// Group search range equally amongst each core
 	div := (end - start + 1) / nCores
 
-	subRanges := []Range{}
+	subRanges := []dataframe.Range{}
 
 	for i := 0; i < nCores; i++ {
-		var subStart int
+		subStart := i * div
 		var subEnd int
 
 		if i != nCores-1 {
-			subStart = i * div
 			subEnd = (i+1)*div - 1
 		} else {
 			// last core
-			subStart = i * div
 			subEnd = end
 		}
 
-		subRanges = append(subRanges, Range{
+		subRanges = append(subRanges, dataframe.Range{
 			Start: &subStart,
 			End:   &subEnd,
 		})
@@ -100,7 +99,7 @@ func Search(ctx context.Context, s Series, lower, upper interface{}, r ...Range)
 					return err
 				}
 
-				val := s.Value(row, Options{DontLock: true})
+				val := s.Value(row, dataframe.DontLock)
 
 				// Check if val is in range
 				if equalCheck {

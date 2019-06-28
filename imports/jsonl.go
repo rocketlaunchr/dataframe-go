@@ -262,8 +262,7 @@ func LoadFromJSON(ctx context.Context, r io.ReadSeeker, options ...JSONLoadOptio
 
 	if df == nil {
 		return nil, dataframe.ErrNoRows
-	} else {
-		return df, nil
 	}
 
+	return df, nil
 }

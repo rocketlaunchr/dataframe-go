@@ -61,6 +61,7 @@ func (df *DataFrame) NRows(options ...Options) int {
 
 // ValuesOptions is used to modify the behaviour of Values().
 type ValuesOptions struct {
+
 	// InitialRow represents the starting value for iterating.
 	InitialRow int
 
@@ -242,9 +243,11 @@ func (df *DataFrame) Remove(row int) {
 
 // Update is used to update a specific entry.
 // col can the name of the series or the column number.
-func (df *DataFrame) Update(row int, col interface{}, val interface{}) {
-	df.lock.Lock()
-	defer df.lock.Unlock()
+func (df *DataFrame) Update(row int, col interface{}, val interface{}, options ...Options) {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+		df.lock.Lock()
+		defer df.lock.Unlock()
+	}
 
 	switch name := col.(type) {
 	case string:
@@ -362,14 +365,12 @@ func (df *DataFrame) RemoveSeries(seriesName string) error {
 }
 
 // Swap is used to swap 2 values based on their row position.
-func (df *DataFrame) Swap(row1, row2 int) {
-	df.lock.Lock()
-	defer df.lock.Unlock()
+func (df *DataFrame) Swap(row1, row2 int, options ...Options) {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+		df.lock.Lock()
+		defer df.lock.Unlock()
+	}
 
-	df.swap(row1, row2)
-}
-
-func (df *DataFrame) swap(row1, row2 int) {
 	for idx := range df.Series {
 		df.Series[idx].Swap(row1, row2)
 	}
