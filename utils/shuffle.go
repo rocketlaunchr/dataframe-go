@@ -24,6 +24,8 @@ type shuffler interface {
 // Shuffle will randomly shuffle the rows in a Dataframe or Series.
 // s will be locked for the duration of the operation.
 // The function will panic if s is not a Dataframe or Series.
+//
+// WARNING: Context cancelation may cause a panic in some circumstances.
 func Shuffle(ctx context.Context, s shuffler, r ...dataframe.Range) error {
 
 	s.Lock()
@@ -45,6 +47,9 @@ func Shuffle(ctx context.Context, s shuffler, r ...dataframe.Range) error {
 
 	if start == 0 && end == nRows-1 {
 		rand.Shuffle(nRows, func(i, j int) {
+			if err := ctx.Err(); err != nil {
+				panic(err)
+			}
 			s.Swap(i, j, dataframe.DontLock)
 		})
 		return nil
@@ -62,10 +67,17 @@ func Shuffle(ctx context.Context, s shuffler, r ...dataframe.Range) error {
 	}
 
 	rand.Shuffle(cpy.NRows(dataframe.DontLock), func(i, j int) {
+		if err := ctx.Err(); err != nil {
+			panic(err)
+		}
 		cpy.Swap(i, j, dataframe.DontLock)
 	})
 
 	for i, j := start, 0; i < end+1; i, j = i+1, j+1 {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
 		switch t := s.(type) {
 		case dataframe.Series:
 			t.Update(i, cpy.(dataframe.Series).Value(j, dataframe.DontLock), dataframe.DontLock)
