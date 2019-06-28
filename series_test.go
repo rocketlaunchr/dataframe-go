@@ -235,7 +235,7 @@ func TestSeriesSwap(t *testing.T) {
 		s := init[i]
 
 		s.Lock()
-		s.Swap(0, 2, Options{DontLock: true})
+		s.Swap(0, 2, DontLock)
 		s.Unlock()
 
 		exVals := expectedValues[i]
