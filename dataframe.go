@@ -101,9 +101,7 @@ func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interfac
 
 	if len(options) > 0 {
 		dontReadLock = options[0].DontReadLock
-	}
 
-	if len(options) > 0 {
 		row = options[0].InitialRow
 		step = options[0].Step
 		if step == 0 {
@@ -242,7 +240,7 @@ func (df *DataFrame) Remove(row int) {
 }
 
 // Update is used to update a specific entry.
-// col can the name of the series or the column number.
+// col can be the name of the series or the column number.
 func (df *DataFrame) Update(row int, col interface{}, val interface{}, options ...Options) {
 	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
 		df.lock.Lock()
