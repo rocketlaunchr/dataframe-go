@@ -39,6 +39,10 @@ func Reverse(ctx context.Context, s common, r ...dataframe.Range) error {
 
 	rRows, _ := r[0].NRows(nRows)
 
+	if rRows == 1 || rRows == 0 {
+		return nil
+	}
+
 	for i := rRows/2 - 1; i >= 0; i-- {
 		if err := ctx.Err(); err != nil {
 			return err

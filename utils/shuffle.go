@@ -44,6 +44,10 @@ func Shuffle(ctx context.Context, s common, r ...dataframe.Range) (rErr error) {
 
 	rRows, _ := r[0].NRows(nRows)
 
+	if rRows == 1 || rRows == 0 {
+		return nil
+	}
+
 	rand.Shuffle(rRows, func(i, j int) {
 		if err := ctx.Err(); err != nil {
 			panic(err)
