@@ -184,9 +184,43 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 }
 
 func sqlInsert(ctx context.Context, db execContexter, tableName string, batchData []map[string]*string) error {
+	var query string
 
 	fmt.Println("batchData", spew.Sdump(batchData))
 	fmt.Println("------------")
+
+	// Prepare Table Fields for insert query
+	tableFields := []string{}
+	for colName := range batchData[0] {
+		tableFields = append(tableFields, colName)
+	}
+
+	fieldPlaceHolder := joinSliceToString(tableFields, false)
+
+	query = query + "INSERT INTO " + tableName + "(" + fieldPlaceHolder + ") VALUES"
+
+	// Prepare Values For Sql Insert
+	for _, data := range batchData {
+		values := []string{}
+		// var valuesString string
+		for _, field := range tableFields {
+			values = append(values, *data[field])
+		}
+
+		valuesString := joinSliceToString(values, true)
+
+		query = query + "(" + valuesString + "),"
+
+	}
+
+	// ready query statement
+	query = strings.TrimSuffix(query, ",") + ";"
+	fmt.Println(query)
+
+	_, err := db.ExecContext(ctx, query)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -195,16 +229,21 @@ func sqlInsert(ctx context.Context, db execContexter, tableName string, batchDat
 // To a comma separated list of string values
 func joinSliceToString(fields []string, withQuotes bool) string {
 	var fieldsStr string
+
 	if withQuotes {
 		for _, v := range fields {
-			if v == "null" {
-				fieldsStr = fieldsStr + " " + v + ","
+			if v == "NULL" || v == "\\N" || v == "NaN" || v == "NA" {
+				fieldsStr = fieldsStr + " " + "null" + ","
 				continue
 			}
 			fieldsStr = fieldsStr + " '" + v + "',"
 		}
 	} else { // without quotes
 		for _, v := range fields {
+			if v == "NULL" || v == "\\N" || v == "NaN" || v == "NA" {
+				fieldsStr = fieldsStr + " " + "null" + ","
+				continue
+			}
 			fieldsStr = fieldsStr + " " + v + ","
 		}
 	}
