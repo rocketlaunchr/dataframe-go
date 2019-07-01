@@ -2,6 +2,7 @@ package exports
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -19,6 +20,10 @@ const (
 	PostgreSQL Database = 0
 	MySQL      Database = 1
 )
+
+type execContexter interface {
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+}
 
 // SQLExportOptions contains options for ExportToSQL function.
 type SQLExportOptions struct {
@@ -63,7 +68,7 @@ type PrimaryKey struct {
 // ExportToSQL exports a dataframe to a SQL Database.
 // It is assumed to be a PostgreSQL database (for placeholder purposes), unless
 // otherwise set to MySQL using the Options.
-func ExportToSQL(ctx context.Context, db dataframe.ExecContexter, df *dataframe.DataFrame, tableName string, options ...SQLExportOptions) error {
+func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame, tableName string, options ...SQLExportOptions) error {
 
 	df.Lock()
 	defer df.Unlock()
@@ -100,20 +105,7 @@ func ExportToSQL(ctx context.Context, db dataframe.ExecContexter, df *dataframe.
 		if database != PostgreSQL && database != MySQL {
 			return errors.New("invalid database")
 		}
-	}
-
-	dbtype, err := dataframe.GetDatabaseType(ctx, db, tableName)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	if dbtype == "postgres" {
-		database = PostgreSQL
-	} else if dbtype == "mysql" {
-		database = MySQL
-	} else {
-		return errors.New("Invalid Database")
-	}
+	}	
 
 	nRows := df.NRows(dataframe.DontLock)
 	if nRows == 0 {
@@ -228,7 +220,7 @@ func ExportToSQL(ctx context.Context, db dataframe.ExecContexter, df *dataframe.
 	return nil
 }
 
-func sqlInsert(ctx context.Context, db dataframe.ExecContexter, database Database, tableName string, columnNames []string, batchData []interface{}) error {
+func sqlInsert(ctx context.Context, db execContexter, database Database, tableName string, columnNames []string, batchData []interface{}) error {
 	// var query string
 
 	fmt.Println("columnNames", spew.Sdump(columnNames))
