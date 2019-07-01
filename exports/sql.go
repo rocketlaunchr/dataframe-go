@@ -143,22 +143,64 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 
 	// Iterate over rows
 
-	iterator := df.Values(dataframe.ValuesOptions{InitialRow: start, Step: 1, DontReadLock: true})
+	// iterator := df.Values(dataframe.ValuesOptions{InitialRow: start, Step: 1, DontReadLock: true})
 
 	var (
 		batchData  []interface{}
 		batchCount uint
 	)
 
-	for {
+	// for {
+	// 	// context has been canceled
+	// 	if err := ctx.Err(); err != nil {
+	// 		return err
+	// 	}
+
+	// 	row, vals := iterator()
+	// 	if row == nil || *row > end {
+	// 		break
+	// 	}
+
+	// 	batchCount = batchCount + 1
+
+	// 	// Insert primary key
+	// 	if pk != nil {
+	// 		if pk.Value != nil {
+	// 			batchData = append(batchData, pk.Value(*row, nRows))
+	// 		} else {
+	// 			batchData = append(batchData, nil)
+	// 		}
+	// 	}
+
+	// 	for k, val := range vals {
+	// 		switch colIdx := k.(type) {
+	// 		case int:
+	// 			seriesName := df.Series[colIdx].Name()
+
+	// 			colName, exists := seriesToColumn[seriesName]
+	// 			if exists && colName == nil {
+	// 				// Ignore column
+	// 				continue
+	// 			}
+
+	// 			var ival *string
+	// 			if val == nil {
+	// 				if null != nil {
+	// 					ival = null
+	// 				}
+	// 			} else {
+	// 				ival = &[]string{df.Series[colIdx].ValueString(*row, dataframe.DontLock)}[0]
+	// 			}
+
+	// 			batchData = append(batchData, ival)
+	// 		}
+	// 	}
+
+	for row := start; row <= end; row++ {
+
 		// context has been canceled
 		if err := ctx.Err(); err != nil {
 			return err
-		}
-
-		row, vals := iterator()
-		if row == nil || *row > end {
-			break
 		}
 
 		batchCount = batchCount + 1
@@ -166,34 +208,34 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 		// Insert primary key
 		if pk != nil {
 			if pk.Value != nil {
-				batchData = append(batchData, pk.Value(*row, nRows))
+				batchData = append(batchData, pk.Value(row, nRows))
 			} else {
 				batchData = append(batchData, nil)
 			}
 		}
 
-		for k, val := range vals {
-			switch colIdx := k.(type) {
-			case int:
-				seriesName := df.Series[colIdx].Name()
+		for _, series := range df.Series {
+			// var val interface{}
+			val := series.Value(row, dataframe.DontLock)
 
-				colName, exists := seriesToColumn[seriesName]
-				if exists && colName == nil {
-					// Ignore column
-					continue
-				}
+			seriesName := series.Name()
 
-				var ival *string
-				if val == nil {
-					if null != nil {
-						ival = null
-					}
-				} else {
-					ival = &[]string{df.Series[colIdx].ValueString(*row, dataframe.DontLock)}[0]
-				}
-
-				batchData = append(batchData, ival)
+			colName, exists := seriesToColumn[seriesName]
+			if exists && colName == nil {
+				// Ignore column
+				continue
 			}
+
+			var ival *string
+			if val == nil {
+				if null != nil {
+					ival = null
+				}
+			} else {
+				ival = &[]string{series.ValueString(row, dataframe.DontLock)}[0]
+			}
+
+			batchData = append(batchData, ival)
 		}
 
 		if batchSize != nil && batchCount == *batchSize {
@@ -241,10 +283,10 @@ func sqlInsert(ctx context.Context, db execContexter, database Database, tableNa
 	// To unload array of interface, batchData, the data have to be organised
 	// In the order of `columnNames`
 
-	// _, err := db.ExecContext(ctx, query, batchData...)
-	// if err != nil {
-	// 	return err
-	// }
+	_, err := db.ExecContext(ctx, query, batchData...)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -294,7 +336,10 @@ func generateFieldPlaceholders(fields []string) string {
 func prepareTableName(database Database, tableName string) string {
 	if database == MySQL {
 		return fmt.Sprintf("`%s`", tableName)
+	} else if database == PostgreSQL {
+		return fmt.Sprintf("\"%s\"", tableName)
+	} else {
+		return tableName
 	}
-	// else PostgreSQL
-	return fmt.Sprintf("\"%s\"", tableName)
+
 }
