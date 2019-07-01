@@ -16,6 +16,15 @@ type execContexter interface {
 	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
 }
 
+// Database is used to set the Database.
+// Different databases have different syntax for placeholders etc.
+type Database int
+
+const (
+	PostgreSQL Database = 0
+	MySQL      Database = 1
+)
+
 // SQLExportOptions contains options for ExportToSQL function.
 type SQLExportOptions struct {
 
@@ -33,12 +42,15 @@ type SQLExportOptions struct {
 	// It is recommended a transaction is used so if 1 batch-insert fails, then all
 	// successfully inserted data can be rolled back.
 	// If set, it must not be 0.
-	BatchSize *int
+	BatchSize *uint
 
 	// SeriesToColumn is used to export a series (key of map) to a column in the table.
 	// If the key does not exist, the series name is used by default.
 	// If the column value is nil, the series is ignored for the purposes of exporting.
 	SeriesToColumn map[string]*string
+
+	// Database is used to set the Database.
+	Database Database
 }
 
 // PrimaryKey is used to generate custom values for the primary key
@@ -54,6 +66,8 @@ type PrimaryKey struct {
 }
 
 // ExportToSQL exports a dataframe to a SQL Database.
+// It is assumed to be a PostgreSQL database (for placeholder purposes), unless
+// otherwise set to MySQL using the Options.
 func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame, tableName string, options ...SQLExportOptions) error {
 
 	df.Lock()
@@ -63,7 +77,8 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 		null      *string
 		r         dataframe.Range
 		pk        *PrimaryKey
-		batchSize *int
+		batchSize *uint
+		database  Database
 	)
 
 	if tableName == "" {
@@ -86,6 +101,10 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 		if options[0].SeriesToColumn != nil {
 			seriesToColumn = options[0].SeriesToColumn
 		}
+		database = options[0].Database
+		if database != PostgreSQL && database != MySQL {
+			return errors.New("invalid database")
+		}
 	}
 
 	nRows := df.NRows(dataframe.DontLock)
@@ -98,11 +117,39 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 		return err
 	}
 
+	// Determine column names
+	columnNames := []string{}
+
+	if pk != nil {
+		columnNames = append(columnNames, pk.PrimaryKey)
+	}
+
+	for _, seriesName := range df.Names() {
+
+		colName, exists := seriesToColumn[seriesName]
+		if exists && colName == nil {
+			// Ignore column
+			continue
+		}
+
+		if !exists {
+			// Use series name
+			columnNames = append(columnNames, seriesName)
+		} else {
+			// Use provided column name
+			columnNames = append(columnNames, *colName)
+		}
+	}
+
+	// Iterate over rows
+
 	iterator := df.Values(dataframe.ValuesOptions{InitialRow: start, Step: 1, DontReadLock: true})
 
-	var batchData []map[string]*string
+	var (
+		batchData  []interface{}
+		batchCount uint
+	)
 
-	batchCount := 0
 	for {
 		// context has been canceled
 		if err := ctx.Err(); err != nil {
@@ -116,14 +163,12 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 
 		batchCount = batchCount + 1
 
-		rowData := map[string]*string{}
-
 		// Insert primary key
 		if pk != nil {
 			if pk.Value != nil {
-				rowData[pk.PrimaryKey] = pk.Value(*row, nRows)
+				batchData = append(batchData, pk.Value(*row, nRows))
 			} else {
-				rowData[pk.PrimaryKey] = nil
+				batchData = append(batchData, nil)
 			}
 		}
 
@@ -147,21 +192,13 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 					ival = &[]string{df.Series[colIdx].ValueString(*row, dataframe.DontLock)}[0]
 				}
 
-				if !exists {
-					// Use series name
-					rowData[seriesName] = ival
-				} else {
-					// Use provided column name
-					rowData[*colName] = ival
-				}
+				batchData = append(batchData, ival)
 			}
 		}
 
-		batchData = append(batchData, rowData)
-
 		if batchSize != nil && batchCount == *batchSize {
 			// Now insert data to table
-			err := sqlInsert(ctx, db, tableName, batchData)
+			err := sqlInsert(ctx, db, database, tableName, columnNames, batchData)
 			if err != nil {
 				return err
 			}
@@ -174,7 +211,7 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 
 	// Insert the remaining data into table
 	if len(batchData) > 0 {
-		err := sqlInsert(ctx, db, tableName, batchData)
+		err := sqlInsert(ctx, db, database, tableName, columnNames, batchData)
 		if err != nil {
 			return err
 		}
@@ -183,44 +220,45 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 	return nil
 }
 
-func sqlInsert(ctx context.Context, db execContexter, tableName string, batchData []map[string]*string) error {
-	var query string
+func sqlInsert(ctx context.Context, db execContexter, database Database, tableName string, columnNames []string, batchData []interface{}) error {
+	// var query string
 
+	fmt.Println("columnNames", spew.Sdump(columnNames))
 	fmt.Println("batchData", spew.Sdump(batchData))
 	fmt.Println("------------")
 
-	// Prepare Table Fields for insert query
-	tableFields := []string{}
-	for colName := range batchData[0] {
-		tableFields = append(tableFields, colName)
-	}
+	// // Prepare Table Fields for insert query
+	// tableFields := []string{}
+	// for colName := range batchData[0] {
+	// 	tableFields = append(tableFields, colName)
+	// }
 
-	fieldPlaceHolder := joinSliceToString(tableFields, false)
+	// fieldPlaceHolder := joinSliceToString(tableFields, false)
 
-	query = query + "INSERT INTO " + tableName + "(" + fieldPlaceHolder + ") VALUES"
+	// query = query + "INSERT INTO " + tableName + "(" + fieldPlaceHolder + ") VALUES"
 
-	// Prepare Values For Sql Insert
-	for _, data := range batchData {
-		values := []string{}
-		// var valuesString string
-		for _, field := range tableFields {
-			values = append(values, *data[field])
-		}
+	// // Prepare Values For Sql Insert
+	// for _, data := range batchData {
+	// 	values := []string{}
+	// 	// var valuesString string
+	// 	for _, field := range tableFields {
+	// 		values = append(values, *data[field])
+	// 	}
 
-		valuesString := joinSliceToString(values, true)
+	// 	valuesString := joinSliceToString(values, true)
 
-		query = query + "(" + valuesString + "),"
+	// 	query = query + "(" + valuesString + "),"
 
-	}
+	// }
 
-	// ready query statement
-	query = strings.TrimSuffix(query, ",") + ";"
-	fmt.Println(query)
+	// // ready query statement
+	// query = strings.TrimSuffix(query, ",") + ";"
+	// fmt.Println(query)
 
-	_, err := db.ExecContext(ctx, query)
-	if err != nil {
-		return err
-	}
+	// _, err := db.ExecContext(ctx, query)
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
