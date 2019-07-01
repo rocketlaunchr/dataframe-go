@@ -234,37 +234,22 @@ func sqlInsert(ctx context.Context, db dataframe.ExecContexter, database Databas
 	fmt.Println("columnNames", spew.Sdump(columnNames))
 	fmt.Println("batchData", spew.Sdump(batchData))
 	fmt.Println("databaseType", database)
+
+	fieldPlaceHolder := generateFieldPlaceholders(columnNames)
+	fmt.Println("fields placeholder:", fieldPlaceHolder)
+	rows := len(batchData) / len(columnNames)
+	valsPlaceholder := generateValsPlaceholders(database, columnNames, rows)
+	fmt.Println("values placeholder:", valsPlaceholder)
+
+	query := "INSERT INTO " + tableName + "(" + fieldPlaceHolder + ") VALUES" + valsPlaceholder
+	fmt.Println("query:", query)
+
 	fmt.Println("------------")
 
-	// // Prepare Table Fields for insert query
-	// tableFields := []string{}
-	// for colName := range batchData[0] {
-	// 	tableFields = append(tableFields, colName)
-	// }
+	// To unload array of interface, batchData, the data have to be organised
+	// In the order of `columnNames`
 
-	// fieldPlaceHolder := joinSliceToString(tableFields, false)
-
-	// query = query + "INSERT INTO " + tableName + "(" + fieldPlaceHolder + ") VALUES"
-
-	// // Prepare Values For Sql Insert
-	// for _, data := range batchData {
-	// 	values := []string{}
-	// 	// var valuesString string
-	// 	for _, field := range tableFields {
-	// 		values = append(values, *data[field])
-	// 	}
-
-	// 	valuesString := joinSliceToString(values, true)
-
-	// 	query = query + "(" + valuesString + "),"
-
-	// }
-
-	// // ready query statement
-	// query = strings.TrimSuffix(query, ",") + ";"
-	// fmt.Println(query)
-
-	// _, err := db.ExecContext(ctx, query)
+	// _, err := db.ExecContext(ctx, query, batchData...)
 	// if err != nil {
 	// 	return err
 	// }
@@ -272,29 +257,43 @@ func sqlInsert(ctx context.Context, db dataframe.ExecContexter, database Databas
 	return nil
 }
 
-// joinSliceToString converts a slice of string
-// To a comma separated list of string values
-func joinSliceToString(fields []string, withQuotes bool) string {
-	var fieldsStr string
+func generateValsPlaceholders(dbtype Database, fields []string, rows int) string {
+	var singleValuesStr string
+	var valuesStr string
 
-	if withQuotes {
-		for _, v := range fields {
-			if v == "NULL" || v == "\\N" || v == "NaN" || v == "NA" {
-				fieldsStr = fieldsStr + " " + "null" + ","
-				continue
+	if dbtype == MySQL { // MySQL db
+		singleValuesStr = "("
+		singleValuesStr = singleValuesStr + strings.Repeat("?,", len(fields))
+		singleValuesStr = strings.TrimSuffix(singleValuesStr, ",")
+		singleValuesStr = singleValuesStr + "),"
+
+		valuesStr = strings.Repeat(singleValuesStr, rows)
+		valuesStr = strings.TrimSuffix(valuesStr, ",")
+
+	} else { // Postgres DB
+		varCount := 1
+		for i := 1; i <= rows; i++ {
+			singleValuesStr = singleValuesStr + "("
+			for j := 1; j <= len(fields); j++ {
+				singleValuesStr = singleValuesStr + fmt.Sprintf(":%d,", varCount) // `:` can be changed to `$` from here.
+				varCount++
 			}
-			fieldsStr = fieldsStr + " '" + v + "',"
+			singleValuesStr = strings.TrimSuffix(singleValuesStr, ",")
+			singleValuesStr = singleValuesStr + "),"
 		}
-	} else { // without quotes
-		for _, v := range fields {
-			if v == "NULL" || v == "\\N" || v == "NaN" || v == "NA" {
-				fieldsStr = fieldsStr + " " + "null" + ","
-				continue
-			}
-			fieldsStr = fieldsStr + " " + v + ","
-		}
+
+		valuesStr = strings.TrimSuffix(singleValuesStr, ",")
 	}
 
+	return valuesStr
+}
+
+func generateFieldPlaceholders(fields []string) string {
+	var fieldsStr string
+
+	for _, v := range fields {
+		fieldsStr = fieldsStr + " " + v + ","
+	}
 	fieldsStr = strings.TrimSuffix(fieldsStr, ",")
 
 	return fieldsStr
