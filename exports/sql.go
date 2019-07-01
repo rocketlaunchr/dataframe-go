@@ -105,7 +105,7 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 		if database != PostgreSQL && database != MySQL {
 			return errors.New("invalid database")
 		}
-	}	
+	}
 
 	nRows := df.NRows(dataframe.DontLock)
 	if nRows == 0 {
@@ -233,7 +233,7 @@ func sqlInsert(ctx context.Context, db execContexter, database Database, tableNa
 	valsPlaceholder := generateValsPlaceholders(database, columnNames, rows)
 	fmt.Println("values placeholder:", valsPlaceholder)
 
-	query := "INSERT INTO " + tableName + "(" + fieldPlaceHolder + ") VALUES" + valsPlaceholder
+	query := "INSERT INTO " + prepareTableName(database, tableName) + "(" + fieldPlaceHolder + ") VALUES" + valsPlaceholder
 	fmt.Println("query:", query)
 
 	fmt.Println("------------")
@@ -289,4 +289,12 @@ func generateFieldPlaceholders(fields []string) string {
 	fieldsStr = strings.TrimSuffix(fieldsStr, ",")
 
 	return fieldsStr
+}
+
+func prepareTableName(database Database, tableName string) string {
+	if database == PostgreSQL {
+		return fmt.Sprintf("`%s`", tableName)
+	}
+	// else MySQL
+	return fmt.Sprintf("\"%s\"", tableName)
 }
