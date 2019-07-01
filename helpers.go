@@ -3,6 +3,8 @@
 package dataframe
 
 import (
+	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 )
@@ -48,3 +50,29 @@ func BoolValueFormatter(v interface{}) string {
 
 // DontLock is short-hand for various functions that permit disabling locking.
 var DontLock = Options{DontLock: true}
+
+// ExecContexter goes here
+type ExecContexter interface {
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+}
+
+// GetDatabaseType is used to test DB driver to identify Database type
+// It returns 'postgres' or 'mysql'
+func GetDatabaseType(ctx context.Context, db ExecContexter, validTable string) (string, error) {
+
+	mysqlQuery := "SELECT * FROM " + "`" + validTable + "` LIMIT 1;"
+	postgresQuery := "SELECT * FROM " + "\"" + validTable + "\" LIMIT 1;"
+
+	// Expected to fetch only the first Row found
+	_, err := db.ExecContext(ctx, mysqlQuery)
+	if err != nil {
+		_, err := db.ExecContext(ctx, postgresQuery)
+		if err != nil {
+			return "", errors.New("unsupported Database or Invalid Table provided")
+		}
+
+		return "postgres", nil
+	}
+
+	return "mysql", nil
+}
