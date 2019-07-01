@@ -233,7 +233,7 @@ func sqlInsert(ctx context.Context, db execContexter, database Database, tableNa
 	valsPlaceholder := generateValsPlaceholders(database, columnNames, rows)
 	fmt.Println("values placeholder:", valsPlaceholder)
 
-	query := "INSERT INTO " + prepareTableName(database, tableName) + "(" + fieldPlaceHolder + ") VALUES" + valsPlaceholder
+	query := "INSERT INTO " + prepareTableName(database, tableName) + "(" + fieldPlaceHolder + ") VALUES" + valsPlaceholder + ";"
 	fmt.Println("query:", query)
 
 	fmt.Println("------------")
@@ -292,9 +292,9 @@ func generateFieldPlaceholders(fields []string) string {
 }
 
 func prepareTableName(database Database, tableName string) string {
-	if database == PostgreSQL {
+	if database == MySQL {
 		return fmt.Sprintf("`%s`", tableName)
 	}
-	// else MySQL
+	// else PostgreSQL
 	return fmt.Sprintf("\"%s\"", tableName)
 }
