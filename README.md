@@ -143,7 +143,7 @@ OUTPUT:
 
 ## Importing Data
 
-The `imports` sub-package has support to import from csv, jsonl and directly from a sql database.
+The `imports` sub-package has support for importing csv, jsonl and directly from a sql database.
 
 ### CSV
 
@@ -181,7 +181,7 @@ OUTPUT:
 
 ## Exporting Data
 
-The `exports` sub-package has support for exporting to csv, jsonl and MS Excel.
+The `exports` sub-package has support for exporting to csv, jsonl, Excel and directly to a SQL database.
 
 
 ## Optimizations
