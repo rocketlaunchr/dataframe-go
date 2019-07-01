@@ -309,7 +309,7 @@ func generateValsPlaceholders(dbtype Database, fields []string, rows int) string
 		for i := 1; i <= rows; i++ {
 			singleValuesStr = singleValuesStr + "("
 			for j := 1; j <= len(fields); j++ {
-				singleValuesStr = singleValuesStr + fmt.Sprintf(":%d,", varCount) // `:` can be changed to `$` from here.
+				singleValuesStr = singleValuesStr + fmt.Sprintf("$%d,", varCount)
 				varCount++
 			}
 			singleValuesStr = strings.TrimSuffix(singleValuesStr, ",")
