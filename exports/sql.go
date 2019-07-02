@@ -77,7 +77,7 @@ type PrimaryKey struct {
 // 	sql "github.com/rocketlaunchr/mysql-go"
 // 	"github.com/myesui/uuid"
 // )
-
+//
 // func main() {
 //
 // 	p, _ := stdSql.Open("mysql", "user:password@/dbname")
@@ -88,7 +88,7 @@ type PrimaryKey struct {
 //
 // 	conn, err := pool.Conn(ctx)
 // 	defer conn.Close()
-
+//
 // 	tx, _ := conn.BeginTx(ctx, nil)
 //
 // 	opts := exports.SQLExportOptions{
