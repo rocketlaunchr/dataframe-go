@@ -81,10 +81,7 @@ type PrimaryKey struct {
 //  func main() {
 //
 //  	p, _ := stdSql.Open("mysql", "user:password@/dbname")
-//  	kP, _ := stdSql.Open("mysql", "user:password@/dbname")
-//  	kP.SetMaxOpenConns(1)
-//
-//  	pool := &sql.DB{p, kP}
+//  	pool := &sql.DB{DB:p}
 //
 //  	conn, err := pool.Conn(ctx)
 //  	defer conn.Close()
