@@ -7,6 +7,14 @@ This package is designed to be light-weight and intuitive.
 The package is production ready but the API is not stable yet. Once stability is reached, version `1.0.0` will be tagged.
 It is recommended your package manager locks to a commit id instead of the master branch directly.
 
+# Features
+
+1. Importing from CSV, JSONL, MySQL & PostgreSQL
+2. Exporting to CSV, JSONL, Excel, MySQL & PostgreSQL
+3. Developer Friendly
+4. Flexible - Create custom Series (custom data types)
+5. Performant
+
 
 # Dataframes
 
@@ -143,7 +151,7 @@ OUTPUT:
 
 ## Importing Data
 
-The `imports` sub-package has support for importing csv, jsonl and directly from a sql database.
+The `imports` sub-package has support for importing csv, jsonl and directly from a SQL database.
 
 ### CSV
 
@@ -192,7 +200,7 @@ The `exports` sub-package has support for exporting to csv, jsonl, Excel and dir
 
 Out of the box, there is support for `string`, `time.Time`, `float64` and `int64`. Automatic support exists for `float32` and all types of integers. There is a convenience function provided for dealing with `bool`.
 
-There may be times that you want to use your own custom data types. You can either implement your own `Series` type or use the **Generic Series**.
+There may be times that you want to use your own custom data types. You can either implement your own `Series` type (more performant) or use the **Generic Series** (more convenient).
 
 ## civil.Date
 
