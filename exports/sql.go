@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
-
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
@@ -141,61 +139,12 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 		}
 	}
 
-	// Iterate over rows
-
-	// iterator := df.Values(dataframe.ValuesOptions{InitialRow: start, Step: 1, DontReadLock: true})
-
 	var (
 		batchData  []interface{}
 		batchCount uint
 	)
 
-	// for {
-	// 	// context has been canceled
-	// 	if err := ctx.Err(); err != nil {
-	// 		return err
-	// 	}
-
-	// 	row, vals := iterator()
-	// 	if row == nil || *row > end {
-	// 		break
-	// 	}
-
-	// 	batchCount = batchCount + 1
-
-	// 	// Insert primary key
-	// 	if pk != nil {
-	// 		if pk.Value != nil {
-	// 			batchData = append(batchData, pk.Value(*row, nRows))
-	// 		} else {
-	// 			batchData = append(batchData, nil)
-	// 		}
-	// 	}
-
-	// 	for k, val := range vals {
-	// 		switch colIdx := k.(type) {
-	// 		case int:
-	// 			seriesName := df.Series[colIdx].Name()
-
-	// 			colName, exists := seriesToColumn[seriesName]
-	// 			if exists && colName == nil {
-	// 				// Ignore column
-	// 				continue
-	// 			}
-
-	// 			var ival *string
-	// 			if val == nil {
-	// 				if null != nil {
-	// 					ival = null
-	// 				}
-	// 			} else {
-	// 				ival = &[]string{df.Series[colIdx].ValueString(*row, dataframe.DontLock)}[0]
-	// 			}
-
-	// 			batchData = append(batchData, ival)
-	// 		}
-	// 	}
-
+	// Iterate over rows
 	for row := start; row <= end; row++ {
 
 		// context has been canceled
@@ -215,12 +164,9 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 		}
 
 		for _, series := range df.Series {
-			// var val interface{}
 			val := series.Value(row, dataframe.DontLock)
 
-			seriesName := series.Name()
-
-			colName, exists := seriesToColumn[seriesName]
+			colName, exists := seriesToColumn[series.Name()]
 			if exists && colName == nil {
 				// Ignore column
 				continue
@@ -263,27 +209,14 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 }
 
 func sqlInsert(ctx context.Context, db execContexter, database Database, tableName string, columnNames []string, batchData []interface{}) error {
-	// var query string
 
-	fmt.Println("columnNames", spew.Sdump(columnNames))
-	fmt.Println("batchData", spew.Sdump(batchData))
-	fmt.Println("databaseType", database)
+	tableName = strings.Join(escapeNames(database, []string{tableName}), ",")
+	columns := strings.Join(escapeNames(database, columnNames), ",")
+	placeholders := placeholders(database, columnNames, len(batchData)/len(columnNames))
 
-	fieldPlaceHolder := generateFieldPlaceholders(columnNames)
-	fmt.Println("fields placeholder:", fieldPlaceHolder)
-	rows := len(batchData) / len(columnNames)
-	valsPlaceholder := generateValsPlaceholders(database, columnNames, rows)
-	fmt.Println("values placeholder:", valsPlaceholder)
+	stmt := "INSERT INTO " + tableName + " (" + columns + ") VALUES " + placeholders
 
-	query := "INSERT INTO " + prepareTableName(database, tableName) + "(" + fieldPlaceHolder + ") VALUES" + valsPlaceholder + ";"
-	fmt.Println("query:", query)
-
-	fmt.Println("------------")
-
-	// To unload array of interface, batchData, the data have to be organised
-	// In the order of `columnNames`
-
-	_, err := db.ExecContext(ctx, query, batchData...)
+	_, err := db.ExecContext(ctx, stmt, batchData...)
 	if err != nil {
 		return err
 	}
@@ -291,20 +224,14 @@ func sqlInsert(ctx context.Context, db execContexter, database Database, tableNa
 	return nil
 }
 
-func generateValsPlaceholders(dbtype Database, fields []string, rows int) string {
-	var singleValuesStr string
-	var valuesStr string
+func placeholders(dbtype Database, fields []string, rows int) string {
 
-	if dbtype == MySQL { // MySQL db
-		singleValuesStr = "("
-		singleValuesStr = singleValuesStr + strings.Repeat("?,", len(fields))
-		singleValuesStr = strings.TrimSuffix(singleValuesStr, ",")
-		singleValuesStr = singleValuesStr + "),"
+	if dbtype == MySQL {
+		inner := "( " + strings.TrimSuffix(strings.Repeat("?,", len(fields)), ",") + " ),"
+		return strings.TrimSuffix(strings.Repeat(inner, rows), ",")
+	} else {
+		var singleValuesStr string
 
-		valuesStr = strings.Repeat(singleValuesStr, rows)
-		valuesStr = strings.TrimSuffix(valuesStr, ",")
-
-	} else { // Postgres DB
 		varCount := 1
 		for i := 1; i <= rows; i++ {
 			singleValuesStr = singleValuesStr + "("
@@ -312,34 +239,28 @@ func generateValsPlaceholders(dbtype Database, fields []string, rows int) string
 				singleValuesStr = singleValuesStr + fmt.Sprintf("$%d,", varCount)
 				varCount++
 			}
-			singleValuesStr = strings.TrimSuffix(singleValuesStr, ",")
-			singleValuesStr = singleValuesStr + "),"
+			singleValuesStr = strings.TrimSuffix(singleValuesStr, ",") + "),"
 		}
 
-		valuesStr = strings.TrimSuffix(singleValuesStr, ",")
+		return strings.TrimSuffix(singleValuesStr, ",")
 	}
-
-	return valuesStr
 }
 
-func generateFieldPlaceholders(fields []string) string {
-	var fieldsStr string
+func escapeNames(database Database, names []string) []string {
+	out := []string{}
 
-	for _, v := range fields {
-		fieldsStr = fieldsStr + " " + v + ","
-	}
-	fieldsStr = strings.TrimSuffix(fieldsStr, ",")
-
-	return fieldsStr
-}
-
-func prepareTableName(database Database, tableName string) string {
-	if database == MySQL {
-		return fmt.Sprintf("`%s`", tableName)
-	} else if database == PostgreSQL {
-		return fmt.Sprintf("\"%s\"", tableName)
-	} else {
-		return tableName
+	switch database {
+	case MySQL:
+		for _, v := range names {
+			out = append(out, fmt.Sprintf("`%s`", v))
+		}
+	case PostgreSQL:
+		for _, v := range names {
+			out = append(out, fmt.Sprintf("\"%s\"", v))
+		}
+	default:
+		out = names
 	}
 
+	return out
 }
