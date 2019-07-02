@@ -58,7 +58,7 @@ type PrimaryKey struct {
 	// PrimaryKey is the column name of primary key
 	PrimaryKey string
 
-	// Value is a function that generates a primary key id given the row number
+	// Value is a function that generates a primary key value given the row number
 	// and number of rows in the Dataframe.
 	// For auto-incrementing primary keys, nil can be returned.
 	Value func(row int, n int) *string
@@ -68,7 +68,7 @@ type PrimaryKey struct {
 // It is assumed to be a PostgreSQL database (for placeholder purposes), unless
 // otherwise set to MySQL using the Options.
 //
-// Example:
+// Example (general gist):
 //
 //  import (
 //  	stdSql "database/sql"
@@ -109,7 +109,8 @@ type PrimaryKey struct {
 //
 //  	err = exports.ExportToSQL(ctx, tx, df, "test", opts)
 //  	if err != nil {
-//  		return tx.Rollback()
+//  		tx.Rollback()
+//  		return
 //  	}
 //
 //  	tx.Commit()
