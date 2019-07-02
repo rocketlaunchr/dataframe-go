@@ -42,7 +42,8 @@ type SQLExportOptions struct {
 	// If set, it must not be 0.
 	BatchSize *uint
 
-	// SeriesToColumn is used to export a series (key of map) to a column in the table.
+	// SeriesToColumn is used to map the series name to the table's column name.
+	// They key of the map is the series name. Column names are case-sensitive.
 	// If the key does not exist, the series name is used by default.
 	// If the column value is nil, the series is ignored for the purposes of exporting.
 	SeriesToColumn map[string]*string
