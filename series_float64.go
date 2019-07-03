@@ -5,6 +5,7 @@ package dataframe
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"sync"
@@ -12,13 +13,15 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+const uvnan uint64 = 0x7FF8000000000001 // uint64 bit for nan
+
 // SeriesFloat64 is used for series containing float64 data.
 type SeriesFloat64 struct {
 	valFormatter ValueToStringFormatter
 
 	lock     sync.RWMutex
 	name     string
-	values   []*float64
+	values   []float64
 	nilCount int
 }
 
@@ -26,7 +29,7 @@ type SeriesFloat64 struct {
 func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *SeriesFloat64 {
 	s := &SeriesFloat64{
 		name:     name,
-		values:   []*float64{},
+		values:   []float64{},
 		nilCount: 0,
 	}
 
@@ -43,7 +46,11 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 		}
 	}
 
-	s.values = make([]*float64, size, capacity)
+	s.values = make([]float64, size, capacity)
+	for i := range s.values {
+		s.values[i] = math.Float64frombits(uvnan) // storing nil values
+	}
+
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
@@ -53,9 +60,9 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 		}
 
 		if idx < size {
-			s.values[idx] = val
+			s.values[idx] = *val
 		} else {
-			s.values = append(s.values, val)
+			s.values = append(s.values, *val)
 		}
 	}
 
@@ -108,10 +115,10 @@ func (s *SeriesFloat64) Value(row int, options ...Options) interface{} {
 	}
 
 	val := s.values[row]
-	if val == nil {
+	if math.IsNaN(val) {
 		return nil
 	}
-	return *val
+	return val
 }
 
 // ValueString returns a string representation of a
@@ -137,7 +144,7 @@ func (s *SeriesFloat64) Prepend(val interface{}, options ...Options) {
 		// There is already extra capacity so copy current values by 1 spot
 		s.values = s.values[:len(s.values)+1]
 		copy(s.values[1:], s.values)
-		s.values[0] = s.valToPointer(val)
+		s.values[0] = *s.valToPointer(val)
 		return
 	}
 
@@ -175,7 +182,7 @@ func (s *SeriesFloat64) Insert(row int, val interface{}, options ...Options) {
 }
 
 func (s *SeriesFloat64) insert(row int, val interface{}) {
-	s.values = append(s.values, nil)
+	s.values = append(s.values, math.Float64frombits(uvnan))
 	copy(s.values[row+1:], s.values[row:])
 
 	v := s.valToPointer(val)
@@ -183,7 +190,7 @@ func (s *SeriesFloat64) insert(row int, val interface{}) {
 		s.nilCount++
 	}
 
-	s.values[row] = v
+	s.values[row] = *v
 }
 
 // Remove is used to delete the value of a particular row.
@@ -193,7 +200,7 @@ func (s *SeriesFloat64) Remove(row int, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	if s.values[row] == nil {
+	if math.IsNaN(s.values[row]) {
 		s.nilCount--
 	}
 
@@ -211,13 +218,13 @@ func (s *SeriesFloat64) Update(row int, val interface{}, options ...Options) {
 
 	newVal := s.valToPointer(val)
 
-	if s.values[row] == nil && newVal != nil {
+	if math.IsNaN(s.values[row]) && newVal != nil {
 		s.nilCount--
-	} else if s.values[row] != nil && newVal == nil {
+	} else if !math.IsNaN(s.values[row]) && newVal == nil {
 		s.nilCount++
 	}
 
-	s.values[row] = newVal
+	s.values[row] = *newVal
 }
 
 func (s *SeriesFloat64) valToPointer(v interface{}) *float64 {
@@ -326,21 +333,21 @@ func (s *SeriesFloat64) Sort(options ...Options) {
 			}
 		}()
 
-		if s.values[i] == nil {
-			if s.values[j] == nil {
+		if math.IsNaN(s.values[i]) {
+			if math.IsNaN(s.values[j]) {
 				// both are nil
 				return true
 			}
 			return true
 		}
 
-		if s.values[j] == nil {
+		if math.IsNaN(s.values[j]) {
 			// i has value and j is nil
 			return false
 		}
 		// Both are not nil
-		ti := *s.values[i]
-		tj := *s.values[j]
+		ti := s.values[i]
+		tj := s.values[j]
 
 		return ti < tj
 	})
@@ -366,7 +373,7 @@ func (s *SeriesFloat64) Copy(r ...Range) Series {
 		return &SeriesFloat64{
 			valFormatter: s.valFormatter,
 			name:         s.name,
-			values:       []*float64{},
+			values:       []float64{},
 			nilCount:     s.nilCount,
 		}
 	}
