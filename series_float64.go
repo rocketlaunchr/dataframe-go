@@ -47,9 +47,6 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 	}
 
 	s.Values = make([]float64, size, capacity)
-	for i := range s.Values {
-		s.Values[i] = float64FromBits(uvnan) // storing nil values
-	}
 
 	s.valFormatter = DefaultValueFormatter
 
