@@ -55,14 +55,14 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 
 	for idx, v := range vals {
 		val := s.valToPointer(v)
-		if val == nil {
+		if isNaN(val) {
 			s.nilCount++
 		}
 
 		if idx < size {
-			s.Values[idx] = *val
+			s.Values[idx] = val
 		} else {
-			s.Values = append(s.Values, *val)
+			s.Values = append(s.Values, val)
 		}
 	}
 
@@ -144,7 +144,7 @@ func (s *SeriesFloat64) Prepend(val interface{}, options ...Options) {
 		// There is already extra capacity so copy current values by 1 spot
 		s.Values = s.Values[:len(s.Values)+1]
 		copy(s.Values[1:], s.Values)
-		s.Values[0] = *s.valToPointer(val)
+		s.Values[0] = s.valToPointer(val)
 		return
 	}
 
@@ -186,11 +186,11 @@ func (s *SeriesFloat64) insert(row int, val interface{}) {
 	copy(s.Values[row+1:], s.Values[row:])
 
 	v := s.valToPointer(val)
-	if v == nil {
+	if isNaN(v) {
 		s.nilCount++
 	}
 
-	s.Values[row] = *v
+	s.Values[row] = v
 }
 
 // Remove is used to delete the value of a particular row.
@@ -218,32 +218,32 @@ func (s *SeriesFloat64) Update(row int, val interface{}, options ...Options) {
 
 	newVal := s.valToPointer(val)
 
-	if isNaN(s.Values[row]) && newVal != nil {
+	if isNaN(s.Values[row]) && isNaN(newVal) {
 		s.nilCount--
-	} else if !isNaN(s.Values[row]) && newVal == nil {
+	} else if !isNaN(s.Values[row]) && isNaN(newVal) {
 		s.nilCount++
 	}
 
-	s.Values[row] = *newVal
+	s.Values[row] = newVal
 }
 
-func (s *SeriesFloat64) valToPointer(v interface{}) *float64 {
+func (s *SeriesFloat64) valToPointer(v interface{}) float64 {
 	switch val := v.(type) {
 	case nil:
-		return nil
+		return float64frombits(uvnan)
 	case *float64:
 		if val == nil {
-			return nil
+			return float64frombits(uvnan)
 		}
-		return &[]float64{*val}[0]
+		return []float64{*val}[0]
 	case float64:
-		return &val
+		return val
 	default:
 		f, err := strconv.ParseFloat(fmt.Sprintf("%v", v), 64)
 		if err != nil {
 			_ = v.(float64) // Intentionally panic
 		}
-		return &f
+		return f
 	}
 }
 
