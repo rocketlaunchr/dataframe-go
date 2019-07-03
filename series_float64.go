@@ -5,15 +5,15 @@ package dataframe
 import (
 	"bytes"
 	"fmt"
-	"math"
 	"sort"
 	"strconv"
 	"sync"
+	"unsafe"
 
 	"github.com/olekukonko/tablewriter"
 )
 
-const uvnan uint64 = 0x7FF8000000000001 // uint64 bit for nan
+const uvnan = 0x7FF8000000000001 // uint64 bit for nan
 
 // SeriesFloat64 is used for series containing float64 data.
 type SeriesFloat64 struct {
@@ -48,7 +48,7 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 
 	s.values = make([]float64, size, capacity)
 	for i := range s.values {
-		s.values[i] = math.Float64frombits(uvnan) // storing nil values
+		s.values[i] = float64frombits(uvnan) // storing nil values
 	}
 
 	s.valFormatter = DefaultValueFormatter
@@ -115,7 +115,7 @@ func (s *SeriesFloat64) Value(row int, options ...Options) interface{} {
 	}
 
 	val := s.values[row]
-	if math.IsNaN(val) {
+	if isNaN(val) {
 		return nil
 	}
 	return val
@@ -182,7 +182,7 @@ func (s *SeriesFloat64) Insert(row int, val interface{}, options ...Options) {
 }
 
 func (s *SeriesFloat64) insert(row int, val interface{}) {
-	s.values = append(s.values, math.Float64frombits(uvnan))
+	s.values = append(s.values, float64frombits(uvnan))
 	copy(s.values[row+1:], s.values[row:])
 
 	v := s.valToPointer(val)
@@ -200,7 +200,7 @@ func (s *SeriesFloat64) Remove(row int, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	if math.IsNaN(s.values[row]) {
+	if isNaN(s.values[row]) {
 		s.nilCount--
 	}
 
@@ -218,9 +218,9 @@ func (s *SeriesFloat64) Update(row int, val interface{}, options ...Options) {
 
 	newVal := s.valToPointer(val)
 
-	if math.IsNaN(s.values[row]) && newVal != nil {
+	if isNaN(s.values[row]) && newVal != nil {
 		s.nilCount--
-	} else if !math.IsNaN(s.values[row]) && newVal == nil {
+	} else if !isNaN(s.values[row]) && newVal == nil {
 		s.nilCount++
 	}
 
@@ -333,15 +333,15 @@ func (s *SeriesFloat64) Sort(options ...Options) {
 			}
 		}()
 
-		if math.IsNaN(s.values[i]) {
-			if math.IsNaN(s.values[j]) {
+		if isNaN(s.values[i]) {
+			if isNaN(s.values[j]) {
 				// both are nil
 				return true
 			}
 			return true
 		}
 
-		if math.IsNaN(s.values[j]) {
+		if isNaN(s.values[j]) {
 			// i has value and j is nil
 			return false
 		}
@@ -476,3 +476,18 @@ func (s *SeriesFloat64) ContainsNil() bool {
 	defer s.lock.RUnlock()
 	return s.nilCount > 0
 }
+
+// isNaN reports whether f is an IEEE 754 ``not-a-number'' value.
+func isNaN(f float64) (is bool) {
+	// IEEE 754 says that only NaNs satisfy f != f.
+	// To avoid the floating-point hardware, could use:
+	//	x := Float64bits(f);
+	//	return uint32(x>>shift)&mask == mask && x != uvinf && x != uvneginf
+	return f != f
+}
+
+// Float64frombits returns the floating-point number corresponding
+// to the IEEE 754 binary representation b, with the sign bit of b
+// and the result in the same bit position.
+// Float64frombits(Float64bits(x)) == x.
+func float64frombits(b uint64) float64 { return *(*float64)(unsafe.Pointer(&b)) }
