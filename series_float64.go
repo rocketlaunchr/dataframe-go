@@ -48,7 +48,7 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 
 	s.Values = make([]float64, size, capacity)
 	for i := range s.Values {
-		s.Values[i] = float64frombits(uvnan) // storing nil values
+		s.Values[i] = float64FromBits(uvnan) // storing nil values
 	}
 
 	s.valFormatter = DefaultValueFormatter
@@ -182,7 +182,7 @@ func (s *SeriesFloat64) Insert(row int, val interface{}, options ...Options) {
 }
 
 func (s *SeriesFloat64) insert(row int, val interface{}) {
-	s.Values = append(s.Values, float64frombits(uvnan))
+	s.Values = append(s.Values, float64FromBits(uvnan))
 	copy(s.Values[row+1:], s.Values[row:])
 
 	v := s.valToPointer(val)
@@ -230,10 +230,10 @@ func (s *SeriesFloat64) Update(row int, val interface{}, options ...Options) {
 func (s *SeriesFloat64) valToPointer(v interface{}) float64 {
 	switch val := v.(type) {
 	case nil:
-		return float64frombits(uvnan)
+		return float64FromBits(uvnan)
 	case *float64:
 		if val == nil {
-			return float64frombits(uvnan)
+			return float64FromBits(uvnan)
 		}
 		return []float64{*val}[0]
 	case float64:
@@ -490,4 +490,4 @@ func isNaN(f float64) (is bool) {
 // to the IEEE 754 binary representation b, with the sign bit of b
 // and the result in the same bit position.
 // Float64frombits(Float64bits(x)) == x.
-func float64frombits(b uint64) float64 { return *(*float64)(unsafe.Pointer(&b)) }
+func float64FromBits(b uint64) float64 { return *(*float64)(unsafe.Pointer(&b)) }
