@@ -8,19 +8,18 @@ import (
 	"sort"
 	"strconv"
 	"sync"
-	"unsafe"
 
 	"github.com/olekukonko/tablewriter"
 )
-
-const uvnan = 0x7FF8000000000001 // uint64 bit for nan
 
 // SeriesFloat64 is used for series containing float64 data.
 type SeriesFloat64 struct {
 	valFormatter ValueToStringFormatter
 
-	lock     sync.RWMutex
-	name     string
+	lock sync.RWMutex
+	name string
+	// Values is exported to better improve interoperability with the gonum package.
+	// See: https://godoc.org/gonum.org/v1/gonum
 	Values   []float64
 	nilCount int
 }
@@ -46,8 +45,7 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 		}
 	}
 
-	s.Values = make([]float64, size, capacity)
-
+	s.Values = make([]float64, size, capacity) // Warning: filled with 0.0 (not NaN)
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
@@ -65,6 +63,10 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 
 	if len(vals) < size {
 		s.nilCount = s.nilCount + size - len(vals)
+		// Fill with NaN
+		for i := len(vals); i < size; i++ {
+			s.Values[i] = nan()
+		}
 	}
 
 	return s
@@ -179,7 +181,7 @@ func (s *SeriesFloat64) Insert(row int, val interface{}, options ...Options) {
 }
 
 func (s *SeriesFloat64) insert(row int, val interface{}) {
-	s.Values = append(s.Values, float64FromBits(uvnan))
+	s.Values = append(s.Values, nan())
 	copy(s.Values[row+1:], s.Values[row:])
 
 	v := s.valToPointer(val)
@@ -215,7 +217,7 @@ func (s *SeriesFloat64) Update(row int, val interface{}, options ...Options) {
 
 	newVal := s.valToPointer(val)
 
-	if isNaN(s.Values[row]) && isNaN(newVal) {
+	if isNaN(s.Values[row]) && !isNaN(newVal) {
 		s.nilCount--
 	} else if !isNaN(s.Values[row]) && isNaN(newVal) {
 		s.nilCount++
@@ -227,12 +229,12 @@ func (s *SeriesFloat64) Update(row int, val interface{}, options ...Options) {
 func (s *SeriesFloat64) valToPointer(v interface{}) float64 {
 	switch val := v.(type) {
 	case nil:
-		return float64FromBits(uvnan)
+		return nan()
 	case *float64:
 		if val == nil {
-			return float64FromBits(uvnan)
+			return nan()
 		}
-		return []float64{*val}[0]
+		return *val
 	case float64:
 		return val
 	default:
@@ -473,18 +475,3 @@ func (s *SeriesFloat64) ContainsNil() bool {
 	defer s.lock.RUnlock()
 	return s.nilCount > 0
 }
-
-// isNaN reports whether f is an IEEE 754 ``not-a-number'' value.
-func isNaN(f float64) (is bool) {
-	// IEEE 754 says that only NaNs satisfy f != f.
-	// To avoid the floating-point hardware, could use:
-	//	x := Float64bits(f);
-	//	return uint32(x>>shift)&mask == mask && x != uvinf && x != uvneginf
-	return f != f
-}
-
-// Float64frombits returns the floating-point number corresponding
-// to the IEEE 754 binary representation b, with the sign bit of b
-// and the result in the same bit position.
-// Float64frombits(Float64bits(x)) == x.
-func float64FromBits(b uint64) float64 { return *(*float64)(unsafe.Pointer(&b)) }
