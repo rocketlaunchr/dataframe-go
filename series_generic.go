@@ -27,8 +27,8 @@ type SeriesGeneric struct {
 	nilCount int
 }
 
-// NewSeries creates a new generic series.
-func NewSeries(name string, concreteType interface{}, init *SeriesInit, vals ...interface{}) *SeriesGeneric {
+// NewSeriesGeneric creates a new generic series.
+func NewSeriesGeneric(name string, concreteType interface{}, init *SeriesInit, vals ...interface{}) *SeriesGeneric {
 
 	// Validate concrete type
 	err := checkConcreteType(concreteType)
