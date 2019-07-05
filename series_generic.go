@@ -277,7 +277,7 @@ func (s *SeriesGeneric) IsEqualFunc(a, b interface{}) bool {
 func (s *SeriesGeneric) IsLessThanFunc(a, b interface{}) bool {
 
 	if s.isLessThanFunc == nil {
-		panic(errors.New("IsEqualFunc not set"))
+		panic(errors.New("IsLessThanFunc not set"))
 	}
 
 	return s.isLessThanFunc(a, b)
