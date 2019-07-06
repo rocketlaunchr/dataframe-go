@@ -14,7 +14,7 @@ It is recommended your package manager locks to a commit id instead of the maste
 3. Developer Friendly
 4. Flexible - Create custom Series (custom data types)
 5. Performant
-
+6. Interoperability with [gonum package](https://godoc.org/gonum.org/v1/gonum).
 
 # Dataframes
 
