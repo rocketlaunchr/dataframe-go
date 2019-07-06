@@ -15,8 +15,10 @@ import (
 type Database int
 
 const (
+	// PostgreSQL database
 	PostgreSQL Database = 0
-	MySQL      Database = 1
+	// MySQL database
+	MySQL Database = 1
 )
 
 type execContexter interface {
@@ -279,21 +281,21 @@ func placeholders(dbtype Database, fields []string, rows int) string {
 	if dbtype == MySQL {
 		inner := "( " + strings.TrimSuffix(strings.Repeat("?,", len(fields)), ",") + " ),"
 		return strings.TrimSuffix(strings.Repeat(inner, rows), ",")
-	} else {
-		var singleValuesStr string
-
-		varCount := 1
-		for i := 1; i <= rows; i++ {
-			singleValuesStr = singleValuesStr + "("
-			for j := 1; j <= len(fields); j++ {
-				singleValuesStr = singleValuesStr + fmt.Sprintf("$%d,", varCount)
-				varCount++
-			}
-			singleValuesStr = strings.TrimSuffix(singleValuesStr, ",") + "),"
-		}
-
-		return strings.TrimSuffix(singleValuesStr, ",")
 	}
+
+	var singleValuesStr string
+
+	varCount := 1
+	for i := 1; i <= rows; i++ {
+		singleValuesStr = singleValuesStr + "("
+		for j := 1; j <= len(fields); j++ {
+			singleValuesStr = singleValuesStr + fmt.Sprintf("$%d,", varCount)
+			varCount++
+		}
+		singleValuesStr = strings.TrimSuffix(singleValuesStr, ",") + "),"
+	}
+
+	return strings.TrimSuffix(singleValuesStr, ",")
 }
 
 func escapeNames(database Database, names []string) []string {
