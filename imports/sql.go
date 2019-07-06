@@ -81,9 +81,9 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 				case time.Time:
 					seriess = append(seriess, dataframe.NewSeriesTime(name, init))
 				case Converter:
-					seriess = append(seriess, dataframe.NewSeries(name, T.ConcreteType, init))
+					seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
 				default:
-					seriess = append(seriess, dataframe.NewSeries(name, typ, init))
+					seriess = append(seriess, dataframe.NewSeriesGeneric(name, typ, init))
 				}
 
 				continue

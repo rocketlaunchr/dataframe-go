@@ -27,8 +27,8 @@ type SeriesGeneric struct {
 	nilCount int
 }
 
-// NewGenericSeries creates a new generic series.
-func NewGenericSeries(name string, concreteType interface{}, init *SeriesInit, vals ...interface{}) *SeriesGeneric {
+// NewSeriesGeneric creates a new generic series.
+func NewSeriesGeneric(name string, concreteType interface{}, init *SeriesInit, vals ...interface{}) *SeriesGeneric {
 
 	// Validate concrete type
 	err := checkConcreteType(concreteType)
@@ -277,7 +277,7 @@ func (s *SeriesGeneric) IsEqualFunc(a, b interface{}) bool {
 func (s *SeriesGeneric) IsLessThanFunc(a, b interface{}) bool {
 
 	if s.isLessThanFunc == nil {
-		panic(errors.New("IsEqualFunc not set"))
+		panic(errors.New("IsLessThanFunc not set"))
 	}
 
 	return s.isLessThanFunc(a, b)

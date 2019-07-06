@@ -16,9 +16,11 @@ import (
 type SeriesFloat64 struct {
 	valFormatter ValueToStringFormatter
 
-	lock     sync.RWMutex
-	name     string
-	values   []*float64
+	lock sync.RWMutex
+	name string
+	// Values is exported to better improve interoperability with the gonum package.
+	// See: https://godoc.org/gonum.org/v1/gonum
+	Values   []float64
 	nilCount int
 }
 
@@ -26,7 +28,7 @@ type SeriesFloat64 struct {
 func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *SeriesFloat64 {
 	s := &SeriesFloat64{
 		name:     name,
-		values:   []*float64{},
+		Values:   []float64{},
 		nilCount: 0,
 	}
 
@@ -43,24 +45,28 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 		}
 	}
 
-	s.values = make([]*float64, size, capacity)
+	s.Values = make([]float64, size, capacity) // Warning: filled with 0.0 (not NaN)
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
 		val := s.valToPointer(v)
-		if val == nil {
+		if isNaN(val) {
 			s.nilCount++
 		}
 
 		if idx < size {
-			s.values[idx] = val
+			s.Values[idx] = val
 		} else {
-			s.values = append(s.values, val)
+			s.Values = append(s.Values, val)
 		}
 	}
 
 	if len(vals) < size {
 		s.nilCount = s.nilCount + size - len(vals)
+		// Fill with NaN
+		for i := len(vals); i < size; i++ {
+			s.Values[i] = nan()
+		}
 	}
 
 	return s
@@ -94,7 +100,7 @@ func (s *SeriesFloat64) NRows(options ...Options) int {
 		defer s.lock.RUnlock()
 	}
 
-	return len(s.values)
+	return len(s.Values)
 }
 
 // Value returns the value of a particular row.
@@ -107,11 +113,11 @@ func (s *SeriesFloat64) Value(row int, options ...Options) interface{} {
 		defer s.lock.RUnlock()
 	}
 
-	val := s.values[row]
-	if val == nil {
+	val := s.Values[row]
+	if isNaN(val) {
 		return nil
 	}
-	return *val
+	return val
 }
 
 // ValueString returns a string representation of a
@@ -133,11 +139,11 @@ func (s *SeriesFloat64) Prepend(val interface{}, options ...Options) {
 
 	// See: https://stackoverflow.com/questions/41914386/what-is-the-mechanism-of-using-append-to-prepend-in-go
 
-	if cap(s.values) > len(s.values) {
+	if cap(s.Values) > len(s.Values) {
 		// There is already extra capacity so copy current values by 1 spot
-		s.values = s.values[:len(s.values)+1]
-		copy(s.values[1:], s.values)
-		s.values[0] = s.valToPointer(val)
+		s.Values = s.Values[:len(s.Values)+1]
+		copy(s.Values[1:], s.Values)
+		s.Values[0] = s.valToPointer(val)
 		return
 	}
 
@@ -175,15 +181,15 @@ func (s *SeriesFloat64) Insert(row int, val interface{}, options ...Options) {
 }
 
 func (s *SeriesFloat64) insert(row int, val interface{}) {
-	s.values = append(s.values, nil)
-	copy(s.values[row+1:], s.values[row:])
+	s.Values = append(s.Values, nan())
+	copy(s.Values[row+1:], s.Values[row:])
 
 	v := s.valToPointer(val)
-	if v == nil {
+	if isNaN(v) {
 		s.nilCount++
 	}
 
-	s.values[row] = v
+	s.Values[row] = v
 }
 
 // Remove is used to delete the value of a particular row.
@@ -193,11 +199,11 @@ func (s *SeriesFloat64) Remove(row int, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	if s.values[row] == nil {
+	if isNaN(s.Values[row]) {
 		s.nilCount--
 	}
 
-	s.values = append(s.values[:row], s.values[row+1:]...)
+	s.Values = append(s.Values[:row], s.Values[row+1:]...)
 }
 
 // Update is used to update the value of a particular row.
@@ -211,32 +217,32 @@ func (s *SeriesFloat64) Update(row int, val interface{}, options ...Options) {
 
 	newVal := s.valToPointer(val)
 
-	if s.values[row] == nil && newVal != nil {
+	if isNaN(s.Values[row]) && !isNaN(newVal) {
 		s.nilCount--
-	} else if s.values[row] != nil && newVal == nil {
+	} else if !isNaN(s.Values[row]) && isNaN(newVal) {
 		s.nilCount++
 	}
 
-	s.values[row] = newVal
+	s.Values[row] = newVal
 }
 
-func (s *SeriesFloat64) valToPointer(v interface{}) *float64 {
+func (s *SeriesFloat64) valToPointer(v interface{}) float64 {
 	switch val := v.(type) {
 	case nil:
-		return nil
+		return nan()
 	case *float64:
 		if val == nil {
-			return nil
+			return nan()
 		}
-		return &[]float64{*val}[0]
+		return *val
 	case float64:
-		return &val
+		return val
 	default:
 		f, err := strconv.ParseFloat(fmt.Sprintf("%v", v), 64)
 		if err != nil {
 			_ = v.(float64) // Intentionally panic
 		}
-		return &f
+		return f
 	}
 }
 
@@ -262,7 +268,7 @@ func (s *SeriesFloat64) Swap(row1, row2 int, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	s.values[row1], s.values[row2] = s.values[row2], s.values[row1]
+	s.Values[row1], s.Values[row2] = s.Values[row2], s.Values[row1]
 }
 
 // IsEqualFunc returns true if a is equal to b.
@@ -319,28 +325,28 @@ func (s *SeriesFloat64) Sort(options ...Options) {
 		sortDesc = options[0].SortDesc
 	}
 
-	sort.SliceStable(s.values, func(i, j int) (ret bool) {
+	sort.SliceStable(s.Values, func(i, j int) (ret bool) {
 		defer func() {
 			if sortDesc {
 				ret = !ret
 			}
 		}()
 
-		if s.values[i] == nil {
-			if s.values[j] == nil {
+		if isNaN(s.Values[i]) {
+			if isNaN(s.Values[j]) {
 				// both are nil
 				return true
 			}
 			return true
 		}
 
-		if s.values[j] == nil {
+		if isNaN(s.Values[j]) {
 			// i has value and j is nil
 			return false
 		}
 		// Both are not nil
-		ti := *s.values[i]
-		tj := *s.values[j]
+		ti := s.Values[i]
+		tj := s.Values[j]
 
 		return ti < tj
 	})
@@ -362,11 +368,11 @@ func (s *SeriesFloat64) Unlock() {
 // to Copy.
 func (s *SeriesFloat64) Copy(r ...Range) Series {
 
-	if len(s.values) == 0 {
+	if len(s.Values) == 0 {
 		return &SeriesFloat64{
 			valFormatter: s.valFormatter,
 			name:         s.name,
-			values:       []*float64{},
+			Values:       []float64{},
 			nilCount:     s.nilCount,
 		}
 	}
@@ -375,19 +381,19 @@ func (s *SeriesFloat64) Copy(r ...Range) Series {
 		r = append(r, Range{})
 	}
 
-	start, end, err := r[0].Limits(len(s.values))
+	start, end, err := r[0].Limits(len(s.Values))
 	if err != nil {
 		panic(err)
 	}
 
 	// Copy slice
-	x := s.values[start : end+1]
+	x := s.Values[start : end+1]
 	newSlice := append(x[:0:0], x...)
 
 	return &SeriesFloat64{
 		valFormatter: s.valFormatter,
 		name:         s.name,
-		values:       newSlice,
+		Values:       newSlice,
 		nilCount:     s.nilCount,
 	}
 }
@@ -405,11 +411,11 @@ func (s *SeriesFloat64) Table(r ...Range) string {
 	data := [][]string{}
 
 	headers := []string{"", s.name} // row header is blank
-	footers := []string{fmt.Sprintf("%dx%d", len(s.values), 1), s.Type()}
+	footers := []string{fmt.Sprintf("%dx%d", len(s.Values), 1), s.Type()}
 
-	if len(s.values) > 0 {
+	if len(s.Values) > 0 {
 
-		start, end, err := r[0].Limits(len(s.values))
+		start, end, err := r[0].Limits(len(s.Values))
 		if err != nil {
 			panic(err)
 		}
@@ -441,7 +447,7 @@ func (s *SeriesFloat64) String() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	count := len(s.values)
+	count := len(s.Values)
 
 	out := "[ "
 
@@ -456,7 +462,7 @@ func (s *SeriesFloat64) String() string {
 		return out + "]"
 	}
 
-	for row := range s.values {
+	for row := range s.Values {
 		out = out + s.ValueString(row, Options{true, false}) + " "
 	}
 	return out + "]"

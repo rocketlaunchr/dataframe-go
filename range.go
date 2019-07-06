@@ -2,17 +2,33 @@
 
 package dataframe
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
-// Range is used to specify a range.
-// Both Start and End are inclusive.
+// Range is used to specify a range. Both Start and End are inclusive.
 // A nil value means no limit, so a Start of nil means 0
 // and an End of nil means no limit.
 // The End value must always be equal to or larger than Start.
-// Negative values are acceptable.
+// Negative values are acceptable. A value of -2 means the second last row.
 type Range struct {
 	Start *int
 	End   *int
+}
+
+// String implements Stringer interface.
+func (r Range) String() string {
+	if r.Start == nil {
+		if r.End == nil {
+			return "Range:nil-nil"
+		}
+		return fmt.Sprintf("Range:nil-%d", *r.End)
+	}
+	if r.End == nil {
+		return fmt.Sprintf("Range:%d-nil", *r.Start)
+	}
+	return fmt.Sprintf("Range:%d-%d", *r.Start, *r.End)
 }
 
 // NRows returns the number of rows contained by Range.
@@ -133,7 +149,7 @@ OUTER:
 				v2 := ints[j]
 				prevVal := ints[j-1]
 
-				if v2 != prevVal+1 {
+				if (v2 != prevVal) && (v2 != prevVal+1) {
 					out = append(out, Range{Start: &v1, End: &prevVal})
 					i = j - 1
 					break
