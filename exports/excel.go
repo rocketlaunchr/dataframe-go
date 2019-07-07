@@ -51,6 +51,20 @@ func ExportToExcel(ctx context.Context, outputFilePath string, df *dataframe.Dat
 		}
 	}
 
+	file = xlsx.NewFile()
+	sheet, err := file.AddSheet(writeSheet)
+	if err != nil {
+		return err
+	}
+
+	// Add first row to excel sheet for header fields
+	sheetRow = sheet.AddRow()
+	// Write Header fields first
+	for _, field := range df.Names() {
+		cell = sheetRow.AddCell() // set column cell
+		cell.Value = field        // assign field to cell
+	}
+
 	nRows := df.NRows(dataframe.DontLock)
 
 	if nRows > 0 {
@@ -58,21 +72,6 @@ func ExportToExcel(ctx context.Context, outputFilePath string, df *dataframe.Dat
 		s, e, err := r.Limits(nRows)
 		if err != nil {
 			return err
-		}
-
-		file = xlsx.NewFile()
-		sheet, err := file.AddSheet(writeSheet)
-		if err != nil {
-			return err
-		}
-
-		// Add first row to excel sheet
-		// for header fields
-		sheetRow = sheet.AddRow()
-		// Write Header fields first
-		for _, field := range df.Names() {
-			cell = sheetRow.AddCell() // set column cell
-			cell.Value = field        // assign field to cell
 		}
 
 		// Writing record in Rows
@@ -87,7 +86,6 @@ func ExportToExcel(ctx context.Context, outputFilePath string, df *dataframe.Dat
 			sheetRow = sheet.AddRow()
 
 			// collecting rows
-			// sVals := []string{}
 			for _, aSeries := range df.Series {
 				val := aSeries.Value(row)
 				cell = sheetRow.AddCell()
@@ -96,15 +94,14 @@ func ExportToExcel(ctx context.Context, outputFilePath string, df *dataframe.Dat
 				} else {
 					cell.Value = aSeries.ValueString(row)
 				}
-
 			}
 		}
+	}
 
-		// Save file
-		err = file.Save(outputFilePath)
-		if err != nil {
-			return err
-		}
+	// Save file
+	err = file.Save(outputFilePath)
+	if err != nil {
+		return err
 	}
 
 	return nil
