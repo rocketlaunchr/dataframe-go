@@ -30,7 +30,6 @@ type SQLLoadOptions struct {
 }
 
 // LoadFromSQL will load data from a sql database.
-// WARNING: The API may change in the future.
 func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, args ...interface{}) (*dataframe.DataFrame, error) {
 
 	var init *dataframe.SeriesInit

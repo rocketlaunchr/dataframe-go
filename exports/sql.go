@@ -70,7 +70,7 @@ type PrimaryKey struct {
 // It is assumed to be a PostgreSQL database (for placeholder purposes), unless
 // otherwise set to MySQL using the Options.
 //
-// Example (general gist):
+// Example (gist):
 //
 //  import (
 //  	stdSql "database/sql"

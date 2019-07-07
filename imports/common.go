@@ -10,11 +10,11 @@ import (
 )
 
 // GenericDataConverter is used to convert input data into a generic data type.
-// This is required when importing data for a Generic Series ("NewSeries").
+// This is required when importing data for a Generic Series ("NewSeriesGeneric").
 type GenericDataConverter func(in interface{}) (interface{}, error)
 
 // Converter is used to convert input data into a generic data type.
-// This is required when importing data for a Generic Series ("NewSeries").
+// This is required when importing data for a Generic Series ("NewSeriesGeneric").
 type Converter struct {
 	ConcreteType  interface{}
 	ConverterFunc GenericDataConverter
