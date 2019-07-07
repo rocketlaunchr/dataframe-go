@@ -18,6 +18,7 @@ import (
 // It will find all values that are between lower and upper bounds (inclusive).
 // It will return a slice containing the rows which contain values within the bounds.
 // If Search is canceled, an incomplete list of the rows "found so far" is returned.
+// s will be locked for the duration of the operation.
 //
 // Example:
 //

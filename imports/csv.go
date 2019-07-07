@@ -54,7 +54,6 @@ type CSVLoadOptions struct {
 }
 
 // LoadFromCSV will load data from a csv file.
-// WARNING: The API may change in the future.
 func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions) (*dataframe.DataFrame, error) {
 
 	var init *dataframe.SeriesInit

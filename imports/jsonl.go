@@ -32,7 +32,6 @@ type JSONLoadOptions struct {
 
 // LoadFromJSON will load data from a jsonl file.
 // The first row determines which fields will be imported for subsequent rows.
-// WARNING: The API may change in the future.
 func LoadFromJSON(ctx context.Context, r io.ReadSeeker, options ...JSONLoadOptions) (*dataframe.DataFrame, error) {
 
 	var init *dataframe.SeriesInit
