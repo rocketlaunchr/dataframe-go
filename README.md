@@ -198,7 +198,7 @@ The `exports` sub-package has support for exporting to csv, jsonl, Excel and dir
 
 # Generic Series
 
-Out of the box, there is support for `string`, `time.Time`, `float64` and `int64`. Automatic support exists for `float32` and all types of integers. There is a convenience function provided for dealing with `bool`.
+Out of the box, there is support for `string`, `time.Time`, `float64` and `int64`. Automatic support exists for `float32` and all types of integers. There is a convenience function provided for dealing with `bool`. There is also support for `complex128` inside the `series` subpackage.
 
 There may be times that you want to use your own custom data types. You can either implement your own `Series` type (more performant) or use the **Generic Series** (more convenient).
 
