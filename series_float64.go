@@ -181,6 +181,19 @@ func (s *SeriesFloat64) Insert(row int, val interface{}, options ...Options) {
 }
 
 func (s *SeriesFloat64) insert(row int, val interface{}) {
+	switch V := val.(type) {
+	case []float64:
+		// count how many NaN
+		for _, v := range V {
+			if isNaN(v) {
+				s.nilCount++
+			}
+		}
+
+		s.Values = append(s.Values[:row], append(V, s.Values[row:]...)...)
+		return
+	}
+
 	s.Values = append(s.Values, nan())
 	copy(s.Values[row+1:], s.Values[row:])
 
