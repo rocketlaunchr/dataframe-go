@@ -175,6 +175,29 @@ func (s *SeriesTime) Insert(row int, val interface{}, options ...Options) {
 }
 
 func (s *SeriesTime) insert(row int, val interface{}) {
+
+	switch V := val.(type) {
+	case []time.Time:
+		var vals []*time.Time
+		// count how many NaN
+		for _, v := range V {
+
+			vals = append(vals, s.valToPointer(v))
+		}
+
+		s.values = append(s.values[:row], append(vals, s.values[row:]...)...)
+		return
+	case []*time.Time:
+		for _, v := range V {
+			if v == nil {
+				s.nilCount++
+			}
+		}
+
+		s.values = append(s.values[:row], append(V, s.values[row:]...)...)
+		return
+	}
+
 	s.values = append(s.values, nil)
 	copy(s.values[row+1:], s.values[row:])
 
