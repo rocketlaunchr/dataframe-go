@@ -183,6 +183,18 @@ func (s *SeriesComplex128) Insert(row int, val interface{}, options ...dataframe
 }
 
 func (s *SeriesComplex128) insert(row int, val interface{}) {
+	switch V := val.(type) {
+	case []complex128:
+		// count how many NaN
+		for _, v := range V {
+			if cmplx.IsNaN(v) {
+				s.nilCount++
+			}
+		}
+		s.Values = append(s.Values[:row], append(V, s.Values[row:]...)...)
+		return
+	}
+
 	s.Values = append(s.Values, cmplx.NaN())
 	copy(s.Values[row+1:], s.Values[row:])
 

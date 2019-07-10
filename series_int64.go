@@ -175,6 +175,25 @@ func (s *SeriesInt64) Insert(row int, val interface{}, options ...Options) {
 }
 
 func (s *SeriesInt64) insert(row int, val interface{}) {
+	switch V := val.(type) {
+	case []int64:
+		var vals []*int64
+		for _, v := range V {
+			v := v
+			vals = append(vals, &v)
+		}
+		s.values = append(s.values[:row], append(vals, s.values[row:]...)...)
+		return
+	case []*int64:
+		for _, v := range V {
+			if v == nil {
+				s.nilCount++
+			}
+		}
+		s.values = append(s.values[:row], append(V, s.values[row:]...)...)
+		return
+	}
+
 	s.values = append(s.values, nil)
 	copy(s.values[row+1:], s.values[row:])
 
