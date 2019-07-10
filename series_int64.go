@@ -178,12 +178,10 @@ func (s *SeriesInt64) insert(row int, val interface{}) {
 	switch V := val.(type) {
 	case []int64:
 		var vals []*int64
-		// count how many NaN
 		for _, v := range V {
-
-			vals = append(vals, s.valToPointer(v))
+			v := v
+			vals = append(vals, &v)
 		}
-
 		s.values = append(s.values[:row], append(vals, s.values[row:]...)...)
 		return
 	case []*int64:
@@ -192,7 +190,6 @@ func (s *SeriesInt64) insert(row int, val interface{}) {
 				s.nilCount++
 			}
 		}
-
 		s.values = append(s.values[:row], append(V, s.values[row:]...)...)
 		return
 	}
