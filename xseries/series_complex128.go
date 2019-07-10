@@ -1,6 +1,6 @@
 // Copyright 2019 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
-package series
+package xseries
 
 import (
 	"bytes"
