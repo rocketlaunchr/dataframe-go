@@ -189,7 +189,6 @@ func (s *SeriesFloat64) insert(row int, val interface{}) {
 				s.nilCount++
 			}
 		}
-
 		s.Values = append(s.Values[:row], append(V, s.Values[row:]...)...)
 		return
 	}
