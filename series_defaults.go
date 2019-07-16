@@ -4,7 +4,6 @@ package dataframe
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -22,11 +21,5 @@ func DefaultValueFormatter(v interface{}) string {
 		return "NaN"
 	}
 
-	switch val := v.(type) {
-	case time.Time:
-		return val.Format("2006-01-02 15:04:05")
-	default:
-		return fmt.Sprintf("%v", v)
-	}
-
+	return fmt.Sprintf("%v", v)
 }
