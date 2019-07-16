@@ -194,7 +194,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 								if err != nil {
 									return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", *val, row-1, fieldName)
 								}
-								insertVals[fieldName] = time.Unix(sec, 0)
+								t = time.Unix(sec, 0)
 							}
 							insertVals[fieldName] = t
 
@@ -208,7 +208,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 							if err != nil {
 								return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", *val, row-1, fieldName)
 							}
-							insertVals[fieldName] = time.Unix(sec, 0)
+							t = time.Unix(sec, 0)
 						}
 						insertVals[fieldName] = t
 					case Converter:
@@ -257,7 +257,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 						if err != nil {
 							return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", *val, row-1, fieldName)
 						}
-						insertVals[fieldName] = time.Unix(sec, 0)
+						t = time.Unix(sec, 0)
 					}
 					insertVals[fieldName] = t
 
@@ -269,7 +269,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 						if err != nil {
 							return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", *val, row-1, fieldName)
 						}
-						insertVals[fieldName] = time.Unix(sec, 0)
+						t = time.Unix(sec, 0)
 					}
 					insertVals[fieldName] = t
 				}
