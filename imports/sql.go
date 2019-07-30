@@ -65,8 +65,8 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 		if database != PostgreSQL && database != MySQL {
 			return nil, errors.New("invalid database")
 		}
-
 	}
+
 	rows, err := stmt.QueryContext(ctx, args...)
 	if err != nil {
 		return nil, err
@@ -186,27 +186,17 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 							return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, fieldName)
 						}
 					case time.Time:
+						layout := time.RFC3339 // Default for PostgreSQL
 						if database == MySQL {
-							t, err := time.Parse("2006-01-02 15:04:05", *val)
-							if err != nil {
-								// Assume unix timestamp
-								sec, err := strconv.ParseInt(*val, 10, 64)
-								if err != nil {
-									return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", *val, row-1, fieldName)
-								}
-								t = time.Unix(sec, 0)
-							}
-							insertVals[fieldName] = t
-
-							continue
+							layout = "2006-01-02 15:04:05"
 						}
-						// default type of PostgreSQL
-						t, err := time.Parse(time.RFC3339, *val)
+
+						t, err := time.Parse(layout, *val)
 						if err != nil {
 							// Assume unix timestamp
 							sec, err := strconv.ParseInt(*val, 10, 64)
 							if err != nil {
-								return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", *val, row-1, fieldName)
+								return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", layout, row-1, fieldName)
 							}
 							t = time.Unix(sec, 0)
 						}
@@ -249,30 +239,21 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 					return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, fieldName)
 				}
 			case "DATETIME", "TIMESTAMP", "TIMESTAMPTZ":
+				layout := time.RFC3339 // Default for PostgreSQL
 				if database == MySQL {
-					t, err := time.Parse("2006-01-02 15:04:05", *val)
-					if err != nil {
-						// Assume unix timestamp
-						sec, err := strconv.ParseInt(*val, 10, 64)
-						if err != nil {
-							return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", *val, row-1, fieldName)
-						}
-						t = time.Unix(sec, 0)
-					}
-					insertVals[fieldName] = t
-
-				} else { // default type of PostgreSQL
-					t, err := time.Parse(time.RFC3339, *val)
-					if err != nil {
-						// Assume unix timestamp
-						sec, err := strconv.ParseInt(*val, 10, 64)
-						if err != nil {
-							return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", *val, row-1, fieldName)
-						}
-						t = time.Unix(sec, 0)
-					}
-					insertVals[fieldName] = t
+					layout = "2006-01-02 15:04:05"
 				}
+
+				t, err := time.Parse(layout, *val)
+				if err != nil {
+					// Assume unix timestamp
+					sec, err := strconv.ParseInt(*val, 10, 64)
+					if err != nil {
+						return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", layout, row-1, fieldName)
+					}
+					t = time.Unix(sec, 0)
+				}
+				insertVals[fieldName] = t
 			default:
 				// Assume string
 				insertVals[fieldName] = *val
