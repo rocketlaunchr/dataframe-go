@@ -13,6 +13,17 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
+// Database is used to set the Database.
+// Different databases have different syntax for placeholders etc.
+type Database int
+
+const (
+	// PostgreSQL database
+	PostgreSQL Database = 0
+	// MySQL database
+	MySQL Database = 1
+)
+
 // SQLLoadOptions is likely to change.
 type SQLLoadOptions struct {
 
@@ -27,12 +38,20 @@ type SQLLoadOptions struct {
 	// The value for a given key must be of the data type of the data.
 	// eg. For a string use "". For a int64 use int64(0). What is relevant is the data type and not the value itself.
 	DictateDataType map[string]interface{}
+
+	// Database is used to set the Database.
+	Database Database
 }
 
 // LoadFromSQL will load data from a sql database.
 func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, args ...interface{}) (*dataframe.DataFrame, error) {
 
-	var init *dataframe.SeriesInit
+	var (
+		init     *dataframe.SeriesInit
+		database Database
+		row      int
+		df       *dataframe.DataFrame
+	)
 
 	if options != nil {
 
@@ -42,10 +61,11 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 			}
 		}
 
+		database = options.Database
+		if database != PostgreSQL && database != MySQL {
+			return nil, errors.New("invalid database")
+		}
 	}
-
-	var row int
-	var df *dataframe.DataFrame
 
 	rows, err := stmt.QueryContext(ctx, args...)
 	if err != nil {
@@ -91,7 +111,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 
 		// Use typ if info is available
 		switch typ {
-		case "CHAR", "VARCHAR", "TEXT", "NVARCHAR", "MEDIUMTEXT", "LONGTEXT":
+		case "VARCHAR", "TEXT", "NVARCHAR", "MEDIUMTEXT", "LONGTEXT":
 			seriess = append(seriess, dataframe.NewSeriesString(name, init))
 		case "FLOAT", "FLOAT4", "FLOAT8", "DOUBLE", "DECIMAL", "NUMERIC":
 			seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
@@ -166,14 +186,19 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 							return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, fieldName)
 						}
 					case time.Time:
-						t, err := time.Parse(time.RFC3339, *val)
+						layout := time.RFC3339 // Default for PostgreSQL
+						if database == MySQL {
+							layout = "2006-01-02 15:04:05"
+						}
+
+						t, err := time.Parse(layout, *val)
 						if err != nil {
 							// Assume unix timestamp
 							sec, err := strconv.ParseInt(*val, 10, 64)
 							if err != nil {
-								return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row-1, fieldName)
+								return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", layout, row-1, fieldName)
 							}
-							insertVals[fieldName] = time.Unix(sec, 0)
+							t = time.Unix(sec, 0)
 						}
 						insertVals[fieldName] = t
 					case Converter:
@@ -191,7 +216,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 			}
 
 			switch colType {
-			case "CHAR", "VARCHAR", "TEXT", "NVARCHAR", "MEDIUMTEXT", "LONGTEXT":
+			case "VARCHAR", "TEXT", "NVARCHAR", "MEDIUMTEXT", "LONGTEXT":
 				insertVals[fieldName] = *val
 			case "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "FLOAT4", "FLOAT8":
 				f, err := strconv.ParseFloat(*val, 64)
@@ -214,21 +239,25 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 					return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, fieldName)
 				}
 			case "DATETIME", "TIMESTAMP", "TIMESTAMPTZ":
-				t, err := time.Parse(time.RFC3339, *val)
+				layout := time.RFC3339 // Default for PostgreSQL
+				if database == MySQL {
+					layout = "2006-01-02 15:04:05"
+				}
+
+				t, err := time.Parse(layout, *val)
 				if err != nil {
 					// Assume unix timestamp
 					sec, err := strconv.ParseInt(*val, 10, 64)
 					if err != nil {
-						return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row-1, fieldName)
+						return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", layout, row-1, fieldName)
 					}
-					insertVals[fieldName] = time.Unix(sec, 0)
+					t = time.Unix(sec, 0)
 				}
 				insertVals[fieldName] = t
 			default:
 				// Assume string
 				insertVals[fieldName] = *val
 			}
-
 		}
 
 		if init == nil {

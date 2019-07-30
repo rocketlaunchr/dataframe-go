@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
@@ -230,7 +231,12 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 					ival = null
 				}
 			} else {
-				ival = &[]string{series.ValueString(row, dataframe.DontLock)}[0]
+				switch v := val.(type) {
+				case time.Time:
+					ival = &[]string{v.Format("2006-01-02 15:04:05")}[0]
+				default:
+					ival = &[]string{series.ValueString(row, dataframe.DontLock)}[0]
+				}
 			}
 
 			batchData = append(batchData, ival)
