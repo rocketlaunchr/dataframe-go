@@ -20,6 +20,5 @@ func DefaultValueFormatter(v interface{}) string {
 	if v == nil {
 		return "NaN"
 	}
-
 	return fmt.Sprintf("%v", v)
 }
