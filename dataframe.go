@@ -59,6 +59,44 @@ func (df *DataFrame) NRows(options ...Options) int {
 
 }
 
+// SeriesReturnOpt is used to control if Row/Values method returns
+// the series index, series name or both as map keys.
+type SeriesReturnOpt uint8
+
+func (s SeriesReturnOpt) has(x SeriesReturnOpt) bool {
+	return s&x != 0
+}
+
+const (
+	// SeriesIdx forces the series' index to be returned as a map key.
+	SeriesIdx SeriesReturnOpt = 1 << iota
+	// SeriesName forces the series' name to be returned as a map key.
+	SeriesName
+)
+
+// Row returns the series' values for a particular row.
+//
+// Example:
+//
+//  df.Row(5, dataframe.SeriesIdx|dataframe.SeriesName)
+//
+func (df *DataFrame) Row(row int, retOpt ...SeriesReturnOpt) map[interface{}]interface{} {
+	out := map[interface{}]interface{}{}
+
+	for idx, aSeries := range df.Series {
+		val := aSeries.Value(row)
+
+		if len(retOpt) == 0 || retOpt[0].has(SeriesIdx) {
+			out[idx] = val
+		}
+		if len(retOpt) == 0 || retOpt[0].has(SeriesName) {
+			out[aSeries.Name()] = val
+		}
+	}
+
+	return out
+}
+
 // ValuesOptions is used to modify the behaviour of Values().
 type ValuesOptions struct {
 
@@ -92,7 +130,7 @@ type ValuesOptions struct {
 //  }
 //  df.Unlock()
 //
-func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interface{}]interface{}) {
+func (df *DataFrame) Values(options ...ValuesOptions) func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}) {
 
 	var row int
 	var step int = 1
@@ -109,7 +147,7 @@ func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interfac
 		}
 	}
 
-	return func() (*int, map[interface{}]interface{}) {
+	return func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}) {
 		if !dontReadLock {
 			df.lock.RLock()
 			defer df.lock.RUnlock()
@@ -124,8 +162,13 @@ func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interfac
 
 		for idx, aSeries := range df.Series {
 			val := aSeries.Value(row)
-			out[aSeries.Name()] = val
-			out[idx] = val
+
+			if len(retOpt) == 0 || retOpt[0].has(SeriesIdx) {
+				out[idx] = val
+			}
+			if len(retOpt) == 0 || retOpt[0].has(SeriesName) {
+				out[aSeries.Name()] = val
+			}
 		}
 
 		row = row + step
