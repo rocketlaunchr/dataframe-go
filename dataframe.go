@@ -376,12 +376,24 @@ func (df *DataFrame) Swap(row1, row2 int, options ...Options) {
 
 // Lock will lock the dataframe allowing you to directly manipulate
 // the underlying series with confidence.
-func (df *DataFrame) Lock() {
+func (df *DataFrame) Lock(deepLock ...bool) {
 	df.lock.Lock()
+
+	if len(deepLock) > 0 && deepLock[0] {
+		for i := range df.Series {
+			df.Series[i].Lock()
+		}
+	}
 }
 
 // Unlock will unlock the dataframe that was previously locked.
-func (df *DataFrame) Unlock() {
+func (df *DataFrame) Unlock(deepUnlock ...bool) {
+	if len(deepUnlock) > 0 && deepUnlock[0] {
+		for i := range df.Series {
+			df.Series[i].Unlock()
+		}
+	}
+
 	df.lock.Unlock()
 }
 
