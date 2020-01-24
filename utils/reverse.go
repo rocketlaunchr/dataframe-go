@@ -32,10 +32,8 @@ func Reverse(ctx context.Context, s common, opts ...ReverseOptions) error {
 
 	if len(opts) == 0 {
 		opts = append(opts, ReverseOptions{R: &dataframe.Range{}})
-	} else {
-		if opts[0].R == nil {
-			opts[0].R = &dataframe.Range{}
-		}
+	} else if opts[0].R == nil {
+		opts[0].R = &dataframe.Range{}
 	}
 
 	if !opts[0].DontLock {
