@@ -15,16 +15,32 @@ type common interface {
 	Swap(row1, row2 int, options ...dataframe.Options)
 }
 
+// ReverseOptions
+type ReverseOptions struct {
+
+	// R is used to limit the range of the Series for search purposes.
+	R *dataframe.Range
+
+	// DontLock can be set to true if the series should not be locked.
+	DontLock bool
+}
+
 // Reverse will reverse the order of a Dataframe or Series.
 // If a Range is provided, only the rows within the range are reversed.
 // s will be locked for the duration of the operation.
-func Reverse(ctx context.Context, s common, r ...dataframe.Range) error {
+func Reverse(ctx context.Context, s common, opts ...ReverseOptions) error {
 
-	s.Lock()
-	defer s.Unlock()
+	if len(opts) == 0 {
+		opts = append(opts, ReverseOptions{R: &dataframe.Range{}})
+	} else {
+		if opts[0].R == nil {
+			opts[0].R = &dataframe.Range{}
+		}
+	}
 
-	if len(r) == 0 {
-		r = append(r, dataframe.Range{})
+	if !opts[0].DontLock {
+		s.Lock()
+		defer s.Unlock()
 	}
 
 	nRows := s.NRows(dataframe.DontLock)
@@ -32,12 +48,12 @@ func Reverse(ctx context.Context, s common, r ...dataframe.Range) error {
 		return nil
 	}
 
-	start, _, err := r[0].Limits(nRows)
+	start, _, err := opts[0].R.Limits(nRows)
 	if err != nil {
 		return err
 	}
 
-	rRows, _ := r[0].NRows(nRows)
+	rRows, _ := opts[0].R.NRows(nRows)
 
 	if rRows == 1 || rRows == 0 {
 		return nil
