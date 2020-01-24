@@ -37,10 +37,8 @@ func Shuffle(ctx context.Context, s common, opts ...ShuffleOptions) (rErr error)
 
 	if len(opts) == 0 {
 		opts = append(opts, ShuffleOptions{R: &dataframe.Range{}})
-	} else {
-		if opts[0].R == nil {
-			opts[0].R = &dataframe.Range{}
-		}
+	} else if opts[0].R == nil {
+		opts[0].R = &dataframe.Range{}
 	}
 
 	if !opts[0].DontLock {

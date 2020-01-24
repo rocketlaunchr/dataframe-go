@@ -49,10 +49,8 @@ func Search(ctx context.Context, s dataframe.Series, lower, upper interface{}, o
 
 	if len(opts) == 0 {
 		opts = append(opts, SearchOptions{R: &dataframe.Range{}})
-	} else {
-		if opts[0].R == nil {
-			opts[0].R = &dataframe.Range{}
-		}
+	} else if opts[0].R == nil {
+		opts[0].R = &dataframe.Range{}
 	}
 
 	if !opts[0].DontLock {

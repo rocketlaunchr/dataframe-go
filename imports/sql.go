@@ -11,6 +11,7 @@ import (
 	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
+	rlSql "github.com/rocketlaunchr/mysql-go"
 )
 
 // Database is used to set the Database.
@@ -23,6 +24,24 @@ const (
 	// MySQL database
 	MySQL Database = 1
 )
+
+type queryContexter1 interface {
+	QueryContext(ctx context.Context, args ...interface{}) (*sql.Rows, error)
+}
+
+type queryContexter2 interface {
+	QueryContext(ctx context.Context, args ...interface{}) (*rlSql.Rows, error)
+}
+
+type rows interface {
+	Close() error
+	ColumnTypes() ([]*sql.ColumnType, error)
+	Columns() ([]string, error)
+	Err() error
+	Next() bool
+	NextResultSet() bool
+	Scan(dest ...interface{}) error
+}
 
 // SQLLoadOptions is likely to change.
 type SQLLoadOptions struct {
@@ -44,7 +63,10 @@ type SQLLoadOptions struct {
 }
 
 // LoadFromSQL will load data from a sql database.
-func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, args ...interface{}) (*dataframe.DataFrame, error) {
+// stmt must be a *sql.Stmt or the equivalent from the mysql-go package.
+//
+// See: https://godoc.org/github.com/rocketlaunchr/mysql-go#Stmt
+func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions, args ...interface{}) (*dataframe.DataFrame, error) {
 
 	var (
 		init     *dataframe.SeriesInit
@@ -67,7 +89,20 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 		}
 	}
 
-	rows, err := stmt.QueryContext(ctx, args...)
+	var (
+		rows rows
+		err  error
+	)
+
+	switch stmt := stmt.(type) {
+	case queryContexter1:
+		rows, err = stmt.QueryContext(ctx, args...)
+	case queryContexter2:
+		rows, err = stmt.QueryContext(ctx, args...)
+	default:
+		panic(fmt.Sprintf("interface conversion: %T is not a valid Stmt", stmt))
+	}
+
 	if err != nil {
 		return nil, err
 	}
