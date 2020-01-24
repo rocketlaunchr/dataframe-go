@@ -62,6 +62,9 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 	cr.ReuseRecord = true
 	if len(options) > 0 {
 		cr.Comma = options[0].Comma
+		if cr.Comma == 0 {
+			cr.Comma = ','
+		}
 		cr.Comment = options[0].Comment
 		cr.TrimLeadingSpace = options[0].TrimLeadingSpace
 
