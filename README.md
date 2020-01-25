@@ -97,7 +97,7 @@ sks := []dataframe.SortKey{
 	{Key: "day", Desc: true},
 }
 
-df.Sort(sks)
+df.Sort(ctx, sks)
 
 OUTPUT:
 +-----+-------+---------+
