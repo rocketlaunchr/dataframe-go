@@ -46,7 +46,7 @@ type rows interface {
 // SQLLoadOptions is likely to change.
 type SQLLoadOptions struct {
 
-	// KnownRowCount is used to set the capacity of the underlying slices of the dataframe.
+	// KnownRowCount is used to set the capacity of the underlying slices of the Dataframe.
 	// The maximum number of rows supported (on a 64-bit machine) is 9,223,372,036,854,775,807 (half of 64 bit range).
 	// Preallocating memory can provide speed improvements. Benchmarks should be performed for your use-case.
 	//

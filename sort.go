@@ -12,7 +12,7 @@ type IsEqualFunc func(a, b interface{}) bool
 // IsLessThanFunc returns true if a < b
 type IsLessThanFunc func(a, b interface{}) bool
 
-// SortKey is the key to sort a dataframe
+// SortKey is the key to sort a Dataframe
 type SortKey struct {
 
 	// Key can be an int (position of series) or string (name of series)
@@ -61,6 +61,7 @@ func (s *sorter) Swap(i, j int) {
 	s.df.Swap(i, j, DontLock)
 }
 
+// SortOptions is used to configure the sort algorithm for a Dataframe or Series
 type SortOptions struct {
 
 	// Stable can be set if the original order of equal items must be maintained.
@@ -68,7 +69,7 @@ type SortOptions struct {
 	// See: https://golang.org/pkg/sort/#Stable
 	Stable bool
 
-	// Desc can be set to sort in descending order. This option is ignored when applied to a dataframe.
+	// Desc can be set to sort in descending order. This option is ignored when applied to a Dataframe.
 	// Only use it with a Series.
 	Desc bool
 

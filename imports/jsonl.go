@@ -16,7 +16,7 @@ import (
 type JSONLoadOptions struct {
 
 	// LargeDataSet should be set to true for large datasets.
-	// It will set the capacity of the underlying slices of the dataframe by performing a basic parse
+	// It will set the capacity of the underlying slices of the Dataframe by performing a basic parse
 	// of the full dataset before processing the data fully.
 	// Preallocating memory can provide speed improvements. Benchmarks should be performed for your use-case.
 	LargeDataSet bool

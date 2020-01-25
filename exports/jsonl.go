@@ -16,7 +16,7 @@ type JSONExportOptions struct {
 	// If not set, then null (non-string) is used.
 	NullString *string
 
-	// Range is used to export a subset of rows from the dataframe.
+	// Range is used to export a subset of rows from the Dataframe.
 	Range dataframe.Range
 
 	// SetEscapeHTML specifies whether problematic HTML characters should be escaped inside JSON quoted strings.
@@ -24,8 +24,8 @@ type JSONExportOptions struct {
 	SetEscapeHTML bool
 }
 
-// ExportToJSON exports a dataframe in the jsonl format.
-// Each line represents a row from the dataframe.
+// ExportToJSON exports a Dataframe in the jsonl format.
+// Each line represents a row from the Dataframe.
 //
 // See: http://jsonlines.org/ for more information.
 func ExportToJSON(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...JSONExportOptions) error {

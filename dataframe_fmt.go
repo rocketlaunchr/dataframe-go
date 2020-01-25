@@ -26,7 +26,7 @@ type TableOptions struct {
 	R *Range
 }
 
-// Table will produce the dataframe in a table.
+// Table will produce the Dataframe in a table.
 func (df *DataFrame) Table(opts ...TableOptions) string {
 
 	df.lock.RLock()
@@ -119,7 +119,7 @@ func (df *DataFrame) Table(opts ...TableOptions) string {
 	return buf.String()
 }
 
-// String will display dataframe
+// String will display Dataframe.
 func (df *DataFrame) String() string {
 
 	if df.NRows() <= 6 {
