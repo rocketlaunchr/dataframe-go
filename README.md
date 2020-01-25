@@ -149,6 +149,40 @@ OUTPUT:
 7 map[day:8 0:8 sales:89 1:89]
 ```
 
+## Statistics
+
+You can easily calculate statistics for a Series using the [gonum](https://godoc.org/gonum.org/v1/gonum) or [montanaflynn/stats](https://godoc.org/github.com/montanaflynn/stats) package.
+
+### Example
+
+Generally, statistics packages require `SeriesFloat64` to operate. Some series provide easy conversion using the `ToSeriesFloat64` method.
+
+```go
+import "gonum.org/v1/gonum/stat"
+
+s := dataframe.NewSeriesInt64("random", nil, 1, 2, 3, 4, 5, 6, 7, 8)
+sf, _ := s.ToSeriesFloat64(ctx)
+```
+
+### Mean
+
+```go
+mean := stat.Mean(sf.Values, nil)
+```
+
+### Median
+
+```go
+import "github.com/montanaflynn/stats"
+median, _ := stats.Median(sf.Values)
+```
+
+### Standard Deviation
+
+```go
+std := stat.StdDev(sf.Values, nil)
+```
+
 ## Importing Data
 
 The `imports` sub-package has support for importing csv, jsonl and directly from a SQL database.
