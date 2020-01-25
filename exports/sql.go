@@ -33,7 +33,7 @@ type SQLExportOptions struct {
 	// Common options are NULL, \N, NaN, NA.
 	NullString *string
 
-	// Range is used to export a subset of rows from the dataframe.
+	// Range is used to export a subset of rows from the Dataframe.
 	Range dataframe.Range
 
 	// PrimaryKey is used if you want to generate custom values for the primary key
@@ -67,7 +67,7 @@ type PrimaryKey struct {
 	Value func(row int, n int) *string
 }
 
-// ExportToSQL exports a dataframe to a SQL Database.
+// ExportToSQL exports a Dataframe to a SQL Database.
 // It is assumed to be a PostgreSQL database (for placeholder purposes), unless
 // otherwise set to MySQL using the Options.
 //

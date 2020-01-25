@@ -1,7 +1,7 @@
 Dataframes for Go [![GoDoc](http://godoc.org/github.com/rocketlaunchr/dataframe-go?status.svg)](http://godoc.org/github.com/rocketlaunchr/dataframe-go) [![gocover.io](http://gocover.io/_badge/github.com/rocketlaunchr/dataframe-go)](https://gocover.io/github.com/rocketlaunchr/dataframe-go) [![Go Report Card](https://goreportcard.com/badge/github.com/rocketlaunchr/dataframe-go)](https://goreportcard.com/report/github.com/rocketlaunchr/dataframe-go)
 ===============
 
-Dataframes are used for statistics and data manipulation. You can think of a dataframe as an excel spreadsheet.
+Dataframes are used for statistics and data manipulation. You can think of a Dataframe as an excel spreadsheet.
 This package is designed to be light-weight and intuitive.
 
 The package is production ready but the API is not stable yet. Once stability is reached, version `1.0.0` will be tagged.
@@ -118,7 +118,7 @@ OUTPUT:
 ```
 ## Iterating
 
-You can change the step and starting row. It may be wise to lock the dataframe before iterating.
+You can change the step and starting row. It may be wise to lock the Dataframe before iterating.
 
 The returned values are a map containing the name of the series (`string`) and the order of the series (`int`).
 

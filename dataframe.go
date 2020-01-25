@@ -356,7 +356,7 @@ func (df *DataFrame) NameToColumn(seriesName string) (int, error) {
 
 // ReorderColumns reorders the columns based on an ordered list of
 // column names. The length of newOrder must match the number of columns
-// in the dataframe. The column names in newOrder must be unique.
+// in the Dataframe. The column names in newOrder must be unique.
 func (df *DataFrame) ReorderColumns(newOrder []string) error {
 	df.lock.Lock()
 	defer df.lock.Unlock()
@@ -391,7 +391,7 @@ func (df *DataFrame) ReorderColumns(newOrder []string) error {
 	return nil
 }
 
-// RemoveSeries will remove a series from the dataframe.
+// RemoveSeries will remove a Series from the Dataframe.
 func (df *DataFrame) RemoveSeries(seriesName string) error {
 	df.lock.Lock()
 	defer df.lock.Unlock()
@@ -417,8 +417,8 @@ func (df *DataFrame) Swap(row1, row2 int, options ...Options) {
 	}
 }
 
-// Lock will lock the dataframe allowing you to directly manipulate
-// the underlying series with confidence.
+// Lock will lock the Dataframe allowing you to directly manipulate
+// the underlying Series with confidence.
 func (df *DataFrame) Lock(deepLock ...bool) {
 	df.lock.Lock()
 
@@ -429,7 +429,7 @@ func (df *DataFrame) Lock(deepLock ...bool) {
 	}
 }
 
-// Unlock will unlock the dataframe that was previously locked.
+// Unlock will unlock the Dataframe that was previously locked.
 func (df *DataFrame) Unlock(deepUnlock ...bool) {
 	if len(deepUnlock) > 0 && deepUnlock[0] {
 		for i := range df.Series {
@@ -440,8 +440,8 @@ func (df *DataFrame) Unlock(deepUnlock ...bool) {
 	df.lock.Unlock()
 }
 
-// Copy will create a new copy of the dataframe.
-// It is recommended that you lock the dataframe
+// Copy will create a new copy of the Dataframe.
+// It is recommended that you lock the Dataframe
 // before attempting to Copy.
 func (df *DataFrame) Copy(r ...Range) *DataFrame {
 

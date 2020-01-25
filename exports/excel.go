@@ -14,7 +14,7 @@ type ExcelExportOptions struct {
 	// Common options are NULL, \N, NaN, NA.
 	NullString *string
 
-	// Range is used to export a subset of rows from the dataframe.
+	// Range is used to export a subset of rows from the Dataframe.
 	Range dataframe.Range
 
 	// WriteSheet is used to specify a sheet name.
@@ -22,7 +22,7 @@ type ExcelExportOptions struct {
 	WriteSheet *string
 }
 
-// ExportToExcel exports a dataframe to a excel file.
+// ExportToExcel exports a Dataframe to a excel file.
 func ExportToExcel(ctx context.Context, outputFilePath string, df *dataframe.DataFrame, options ...ExcelExportOptions) error {
 
 	df.Lock()
