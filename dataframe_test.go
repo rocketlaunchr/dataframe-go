@@ -3,6 +3,7 @@
 package dataframe
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -168,11 +169,11 @@ func TestSort(t *testing.T) {
 	df := NewDataFrame(s1, s2)
 
 	sks := []SortKey{
-		{Key: "sales", SortDesc: true},
-		{Key: "day", SortDesc: false},
+		{Key: "sales", Desc: true},
+		{Key: "day", Desc: false},
 	}
 
-	df.Sort(sks)
+	df.Sort(context.Background(), sks)
 
 	expectedValues := [][]interface{}{
 		{int64(3), int64(1), int64(2), int64(4), nil, nil},

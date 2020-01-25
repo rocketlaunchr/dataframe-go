@@ -459,7 +459,7 @@ func (df *DataFrame) Copy(r ...Range) *DataFrame {
 	}
 
 	if len(seriess) > 0 {
-		newDF.n = seriess[0].NRows(Options{true, false})
+		newDF.n = seriess[0].NRows(Options{DontLock: true})
 	}
 
 	return newDF

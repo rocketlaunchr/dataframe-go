@@ -448,7 +448,7 @@ func (s *SeriesComplex128) Table(r ...dataframe.Range) string {
 		}
 
 		for row := start; row <= end; row++ {
-			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, dataframe.Options{true, false})}
+			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, dataframe.Options{DontLock: true})}
 			data = append(data, sVals)
 		}
 
@@ -484,13 +484,13 @@ func (s *SeriesComplex128) String() string {
 			if j == 3 {
 				out = out + "... "
 			}
-			out = out + s.ValueString(row, dataframe.Options{true, false}) + " "
+			out = out + s.ValueString(row, dataframe.Options{DontLock: true}) + " "
 		}
 		return out + "]"
 	}
 
 	for row := range s.Values {
-		out = out + s.ValueString(row, dataframe.Options{true, false}) + " "
+		out = out + s.ValueString(row, dataframe.Options{DontLock: true}) + " "
 	}
 	return out + "]"
 

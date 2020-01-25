@@ -93,8 +93,8 @@ df.UpdateRow(0, map[string]interface{}{
 ```go
 
 sks := []dataframe.SortKey{
-	{Key: "sales", SortDesc: true},
-	{Key: "day", SortDesc: true},
+	{Key: "sales", Desc: true},
+	{Key: "day", Desc: true},
 }
 
 df.Sort(sks)

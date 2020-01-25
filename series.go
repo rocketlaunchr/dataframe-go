@@ -2,14 +2,15 @@
 
 package dataframe
 
-// Options provides a way to set
-// various optional options.
+import (
+	"context"
+)
+
+// Options provides a way to set various optional options.
 type Options struct {
+
 	// Don't apply lock
 	DontLock bool
-
-	// Sort in descending order
-	SortDesc bool
 }
 
 // ValueToStringFormatter is used to convert a value
