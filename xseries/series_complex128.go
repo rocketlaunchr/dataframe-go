@@ -511,3 +511,44 @@ func DefaultValueFormatter(v interface{}) string {
 	}
 	return strings.TrimSuffix(strings.TrimPrefix(fmt.Sprintf("%v", v), "("), ")")
 }
+
+// ToSeriesString will convert the Series to a SeriesString.
+// The operation does not lock the Series.
+func (s *SeriesComplex128) ToSeriesString(ctx context.Context, conv ...func(interface{}) (*string, error)) (*dataframe.SeriesString, error) {
+
+	ec := dataframe.NewErrorCollection()
+
+	ss := dataframe.NewSeriesString(s.name, &dataframe.SeriesInit{Capacity: s.NRows(dataframe.Options{DontLock: true})})
+
+	for row, rowVal := range s.Values {
+
+		// Cancel operation
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if cmplx.IsNaN(rowVal) {
+			ss.Append(nil, dataframe.Options{DontLock: true})
+		} else {
+			if len(conv) == 0 {
+				cv := s.valFormatter(rowVal)
+				ss.Append(cv, dataframe.Options{DontLock: true})
+			} else {
+				cv, err := conv[0](rowVal)
+				if err != nil {
+					// interpret as nil
+					ss.Append(nil, dataframe.Options{DontLock: true})
+					ec.AddError(&dataframe.RowError{Row: row, Err: err}, false)
+				} else {
+					ss.Append(cv, dataframe.Options{DontLock: true})
+				}
+			}
+		}
+	}
+
+	if !ec.IsNil(false) {
+		return ss, ec
+	}
+
+	return ss, nil
+}

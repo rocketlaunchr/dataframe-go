@@ -503,3 +503,51 @@ func (s *SeriesFloat64) ContainsNil() bool {
 	defer s.lock.RUnlock()
 	return s.nilCount > 0
 }
+
+// ToSeriesString will convert the Series to a SeriesString.
+// The operation does not lock the Series.
+func (s *SeriesFloat64) ToSeriesString(ctx context.Context, conv ...func(interface{}) (*string, error)) (*SeriesString, error) {
+
+	ec := NewErrorCollection()
+
+	ss := NewSeriesString(s.name, &SeriesInit{Capacity: s.NRows(Options{DontLock: true})})
+
+	for row, rowVal := range s.Values {
+
+		// Cancel operation
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if isNaN(rowVal) {
+			ss.values = append(ss.values, nil)
+			ss.nilCount++
+		} else {
+			if len(conv) == 0 {
+				cv := strconv.FormatFloat(rowVal, 'G', -1, 64)
+				ss.values = append(ss.values, &cv)
+			} else {
+				cv, err := conv[0](rowVal)
+				if err != nil {
+					// interpret as nil
+					ss.values = append(ss.values, nil)
+					ss.nilCount++
+					ec.AddError(&RowError{Row: row, Err: err}, false)
+				} else {
+					if cv == nil {
+						ss.values = append(ss.values, nil)
+						ss.nilCount++
+					} else {
+						ss.values = append(ss.values, cv)
+					}
+				}
+			}
+		}
+	}
+
+	if !ec.IsNil(false) {
+		return ss, ec
+	}
+
+	return ss, nil
+}

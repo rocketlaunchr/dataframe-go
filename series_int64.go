@@ -503,3 +503,96 @@ func (s *SeriesInt64) ContainsNil() bool {
 	defer s.lock.RUnlock()
 	return s.nilCount > 0
 }
+
+// ToSeriesString will convert the Series to a SeriesString.
+// The operation does not lock the Series.
+func (s *SeriesInt64) ToSeriesString(ctx context.Context, conv ...func(interface{}) (*string, error)) (*SeriesString, error) {
+
+	ec := NewErrorCollection()
+
+	ss := NewSeriesString(s.name, &SeriesInit{Capacity: s.NRows(Options{DontLock: true})})
+
+	for row, rowVal := range s.values {
+
+		// Cancel operation
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if rowVal == nil {
+			ss.values = append(ss.values, nil)
+			ss.nilCount++
+		} else {
+			if len(conv) == 0 {
+				cv := strconv.FormatInt(*rowVal, 10)
+				ss.values = append(ss.values, &cv)
+			} else {
+				cv, err := conv[0](rowVal)
+				if err != nil {
+					// interpret as nil
+					ss.values = append(ss.values, nil)
+					ss.nilCount++
+					ec.AddError(&RowError{Row: row, Err: err}, false)
+				} else {
+					if cv == nil {
+						ss.values = append(ss.values, nil)
+						ss.nilCount++
+					} else {
+						ss.values = append(ss.values, cv)
+					}
+				}
+			}
+		}
+	}
+
+	if !ec.IsNil(false) {
+		return ss, ec
+	}
+
+	return ss, nil
+}
+
+// ToSeriesFloat64 will convert the Series to a SeriesFloat64.
+// The operation does not lock the Series.
+func (s *SeriesInt64) ToSeriesFloat64(ctx context.Context, conv ...func(interface{}) (float64, error)) (*SeriesFloat64, error) {
+
+	ec := NewErrorCollection()
+
+	ss := NewSeriesFloat64(s.name, &SeriesInit{Capacity: s.NRows(Options{DontLock: true})})
+
+	for row, rowVal := range s.values {
+
+		// Cancel operation
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if rowVal == nil {
+			ss.Values = append(ss.Values, nan())
+			ss.nilCount++
+		} else {
+			if len(conv) == 0 {
+				ss.Values = append(ss.Values, float64(*rowVal))
+			} else {
+				cv, err := conv[0](rowVal)
+				if err != nil {
+					// interpret as nil
+					ss.Values = append(ss.Values, nan())
+					ss.nilCount++
+					ec.AddError(&RowError{Row: row, Err: err}, false)
+				} else {
+					if isNaN(cv) {
+						ss.nilCount++
+					}
+					ss.Values = append(ss.Values, cv)
+				}
+			}
+		}
+	}
+
+	if !ec.IsNil(false) {
+		return ss, ec
+	}
+
+	return ss, nil
+}
