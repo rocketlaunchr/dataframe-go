@@ -4,6 +4,7 @@ package xseries
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"math/cmplx"
 	"sort"
@@ -321,24 +322,31 @@ func (s *SeriesComplex128) IsLessThanFunc(a, b interface{}) bool {
 }
 
 // Sort will sort the series.
-func (s *SeriesComplex128) Sort(options ...dataframe.Options) {
+// It will return true if sorting was completed or false when the context is canceled.
+func (s *SeriesComplex128) Sort(ctx context.Context, opts ...dataframe.SortOptions) (completed bool) {
 
-	var sortDesc bool
-
-	if len(options) == 0 {
-		s.lock.Lock()
-		defer s.lock.Unlock()
-	} else {
-		if !options[0].DontLock {
-			s.lock.Lock()
-			defer s.lock.Unlock()
+	defer func() {
+		if x := recover(); x != nil {
+			completed = false
 		}
-		sortDesc = options[0].SortDesc
+	}()
+
+	if len(opts) == 0 {
+		opts = append(opts, dataframe.SortOptions{})
 	}
 
-	sort.SliceStable(s.Values, func(i, j int) (ret bool) {
+	if !opts[0].DontLock {
+		s.Lock()
+		defer s.Unlock()
+	}
+
+	sortFunc := func(i, j int) (ret bool) {
+		if err := ctx.Err(); err != nil {
+			panic(err)
+		}
+
 		defer func() {
-			if sortDesc {
+			if opts[0].Desc {
 				ret = !ret
 			}
 		}()
@@ -360,7 +368,15 @@ func (s *SeriesComplex128) Sort(options ...dataframe.Options) {
 		tj := s.Values[j]
 
 		return cmplx.Abs(ti) < cmplx.Abs(tj)
-	})
+	}
+
+	if opts[0].Stable {
+		sort.SliceStable(s.Values, sortFunc)
+	} else {
+		sort.Slice(s.Values, sortFunc)
+	}
+
+	return true
 }
 
 // Lock will lock the Series allowing you to directly manipulate

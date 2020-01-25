@@ -4,6 +4,7 @@ package dataframe
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -306,28 +307,35 @@ func (s *SeriesGeneric) SetIsLessThanFunc(f IsLessThanFunc) {
 }
 
 // Sort will sort the series.
-func (s *SeriesGeneric) Sort(options ...Options) {
+// It will return true if sorting was completed or false when the context is canceled.
+func (s *SeriesGeneric) Sort(ctx context.Context, opts ...SortOptions) (completed bool) {
 
 	if s.isLessThanFunc == nil {
 		panic(fmt.Errorf("cannot sort without setting IsLessThanFunc"))
 	}
 
-	var sortDesc bool
-
-	if len(options) == 0 {
-		s.lock.Lock()
-		defer s.lock.Unlock()
-	} else {
-		if !options[0].DontLock {
-			s.lock.Lock()
-			defer s.lock.Unlock()
+	defer func() {
+		if x := recover(); x != nil {
+			completed = false
 		}
-		sortDesc = options[0].SortDesc
+	}()
+
+	if len(opts) == 0 {
+		opts = append(opts, SortOptions{})
 	}
 
-	sort.SliceStable(s.values, func(i, j int) (ret bool) {
+	if !opts[0].DontLock {
+		s.Lock()
+		defer s.Unlock()
+	}
+
+	sortFunc := func(i, j int) (ret bool) {
+		if err := ctx.Err(); err != nil {
+			panic(err)
+		}
+
 		defer func() {
-			if sortDesc {
+			if opts[0].Desc {
 				ret = !ret
 			}
 		}()
@@ -349,7 +357,15 @@ func (s *SeriesGeneric) Sort(options ...Options) {
 		}
 		// Both are not nil
 		return s.isLessThanFunc(left, right)
-	})
+	}
+
+	if opts[0].Stable {
+		sort.SliceStable(s.values, sortFunc)
+	} else {
+		sort.Slice(s.values, sortFunc)
+	}
+
+	return true
 }
 
 // Swap is used to swap 2 values based on their row position.

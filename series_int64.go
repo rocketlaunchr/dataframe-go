@@ -4,6 +4,7 @@ package dataframe
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"sort"
 	"strconv"
@@ -323,24 +324,31 @@ func (s *SeriesInt64) IsLessThanFunc(a, b interface{}) bool {
 }
 
 // Sort will sort the series.
-func (s *SeriesInt64) Sort(options ...Options) {
+// It will return true if sorting was completed or false when the context is canceled.
+func (s *SeriesInt64) Sort(ctx context.Context, opts ...SortOptions) (completed bool) {
 
-	var sortDesc bool
-
-	if len(options) == 0 {
-		s.lock.Lock()
-		defer s.lock.Unlock()
-	} else {
-		if !options[0].DontLock {
-			s.lock.Lock()
-			defer s.lock.Unlock()
+	defer func() {
+		if x := recover(); x != nil {
+			completed = false
 		}
-		sortDesc = options[0].SortDesc
+	}()
+
+	if len(opts) == 0 {
+		opts = append(opts, SortOptions{})
 	}
 
-	sort.SliceStable(s.values, func(i, j int) (ret bool) {
+	if !opts[0].DontLock {
+		s.Lock()
+		defer s.Unlock()
+	}
+
+	sortFunc := func(i, j int) (ret bool) {
+		if err := ctx.Err(); err != nil {
+			panic(err)
+		}
+
 		defer func() {
-			if sortDesc {
+			if opts[0].Desc {
 				ret = !ret
 			}
 		}()
@@ -362,7 +370,15 @@ func (s *SeriesInt64) Sort(options ...Options) {
 		tj := *s.values[j]
 
 		return ti < tj
-	})
+	}
+
+	if opts[0].Stable {
+		sort.SliceStable(s.values, sortFunc)
+	} else {
+		sort.Slice(s.values, sortFunc)
+	}
+
+	return true
 }
 
 // Lock will lock the Series allowing you to directly manipulate

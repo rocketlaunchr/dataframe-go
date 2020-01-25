@@ -75,7 +75,8 @@ type Series interface {
 	SetValueToStringFormatter(f ValueToStringFormatter)
 
 	// Sort will sort the series.
-	Sort(options ...Options)
+	// It will return true if sorting was completed or false when the context is canceled.
+	Sort(ctx context.Context, opts ...SortOptions) bool
 
 	// IsEqualFunc returns true if a is equal to b.
 	IsEqualFunc(a, b interface{}) bool
