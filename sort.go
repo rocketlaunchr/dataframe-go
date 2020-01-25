@@ -61,6 +61,21 @@ func (s *sorter) Swap(i, j int) {
 	s.df.Swap(i, j, DontLock)
 }
 
+type SortOptions struct {
+
+	// Stable can be set if the original order of equal items must be maintained.
+	//
+	// See: https://golang.org/pkg/sort/#Stable
+	Stable bool
+
+	// Desc can be set to sort in descending order. This option is ignored when applied to a dataframe.
+	// Only use it with a Series.
+	Desc bool
+
+	// DontLock can be set to true if the series should not be locked.
+	DontLock bool
+}
+
 // Sort is used to sort the data according to different keys
 func (df *DataFrame) Sort(keys []SortKey) {
 	if len(keys) == 0 {
