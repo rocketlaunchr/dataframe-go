@@ -3,6 +3,7 @@
 package dataframe
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -276,7 +277,7 @@ func TestSeriesSort(t *testing.T) {
 	// Sort values
 	for i := range init {
 		s := init[i]
-		s.Sort(Options{SortDesc: true})
+		s.Sort(context.Background(), SortOptions{Desc: true})
 	}
 
 	expectedValues := [][]interface{}{

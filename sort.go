@@ -18,8 +18,8 @@ type SortKey struct {
 	// Key can be an int (position of series) or string (name of series)
 	Key interface{}
 
-	// Sort in descending order
-	SortDesc bool
+	// Desc can be set to sort in descending order.
+	Desc bool
 
 	seriesIndex int
 }
@@ -36,7 +36,7 @@ func (s *sorter) Len() int {
 func (s *sorter) Less(i, j int) bool {
 
 	for _, key := range s.keys {
-		// key.SortDesc
+		// key.Desc
 		series := s.df.Series[key.seriesIndex]
 
 		left := series.Value(i)
@@ -46,7 +46,7 @@ func (s *sorter) Less(i, j int) bool {
 		if series.IsEqualFunc(left, right) {
 			continue
 		} else {
-			if key.SortDesc {
+			if key.Desc {
 				// Sort in descending order
 				return !series.IsLessThanFunc(left, right)
 			}

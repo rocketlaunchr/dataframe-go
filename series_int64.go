@@ -450,7 +450,7 @@ func (s *SeriesInt64) Table(r ...Range) string {
 		}
 
 		for row := start; row <= end; row++ {
-			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, Options{true, false})}
+			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, Options{DontLock: true})}
 			data = append(data, sVals)
 		}
 
@@ -486,13 +486,13 @@ func (s *SeriesInt64) String() string {
 			if j == 3 {
 				out = out + "... "
 			}
-			out = out + s.ValueString(row, Options{true, false}) + " "
+			out = out + s.ValueString(row, Options{DontLock: true}) + " "
 		}
 		return out + "]"
 	}
 
 	for row := range s.values {
-		out = out + s.ValueString(row, Options{true, false}) + " "
+		out = out + s.ValueString(row, Options{DontLock: true}) + " "
 	}
 	return out + "]"
 }
