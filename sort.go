@@ -3,6 +3,7 @@
 package dataframe
 
 import (
+	"context"
 	"sort"
 )
 
@@ -15,7 +16,7 @@ type IsLessThanFunc func(a, b interface{}) bool
 // SortKey is the key to sort a Dataframe
 type SortKey struct {
 
-	// Key can be an int (position of series) or string (name of series)
+	// Key can be an int (position of series) or string (name of series).
 	Key interface{}
 
 	// Desc can be set to sort in descending order.
@@ -27,6 +28,7 @@ type SortKey struct {
 type sorter struct {
 	keys []SortKey
 	df   *DataFrame
+	ctx  context.Context
 }
 
 func (s *sorter) Len() int {
@@ -35,8 +37,11 @@ func (s *sorter) Len() int {
 
 func (s *sorter) Less(i, j int) bool {
 
+	if err := s.ctx.Err(); err != nil {
+		panic(err)
+	}
+
 	for _, key := range s.keys {
-		// key.Desc
 		series := s.df.Series[key.seriesIndex]
 
 		left := series.Value(i)
@@ -77,14 +82,36 @@ type SortOptions struct {
 	DontLock bool
 }
 
-// Sort is used to sort the data according to different keys
-func (df *DataFrame) Sort(keys []SortKey) {
+// Sort is used to sort the Dataframe according to different keys.
+// It will return true if sorting was completed or false when the context is canceled.
+func (df *DataFrame) Sort(ctx context.Context, keys []SortKey, opts ...SortOptions) (completed bool) {
 	if len(keys) == 0 {
-		return
+		return true
 	}
 
-	df.lock.Lock()
-	defer df.lock.Unlock()
+	defer func() {
+		if x := recover(); x != nil {
+			if x == context.Canceled || x == context.DeadlineExceeded {
+				completed = false
+			} else {
+				panic(x)
+			}
+		}
+	}()
+
+	if len(opts) == 0 || (len(opts) != 0 && !opts[0].DontLock) {
+		// Default
+		df.lock.Lock()
+		defer df.lock.Unlock()
+	}
+
+	// Clear seriesIndex from keys
+	defer func() {
+		for i := range keys {
+			key := &keys[i]
+			key.seriesIndex = 0
+		}
+	}()
 
 	// Convert keys to index
 	for i := range keys {
@@ -105,14 +132,15 @@ func (df *DataFrame) Sort(keys []SortKey) {
 	s := &sorter{
 		keys: keys,
 		df:   df,
+		ctx:  ctx,
 	}
 
-	sort.Stable(s)
-
-	// Clear seriesIndex from keys
-	for i := range keys {
-		key := &keys[i]
-		key.seriesIndex = 0
+	if len(opts) == 0 || (len(opts) != 0 && !opts[0].Stable) {
+		// Default
+		sort.Sort(s)
+	} else {
+		sort.Stable(s)
 	}
 
+	return true
 }

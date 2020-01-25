@@ -77,7 +77,7 @@ type Series interface {
 
 	// Sort will sort the series.
 	// It will return true if sorting was completed or false when the context is canceled.
-	Sort(ctx context.Context, opts ...SortOptions) bool
+	Sort(ctx context.Context, opts ...SortOptions) (completed bool)
 
 	// IsEqualFunc returns true if a is equal to b.
 	IsEqualFunc(a, b interface{}) bool
