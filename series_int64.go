@@ -521,7 +521,7 @@ func (s *SeriesInt64) ContainsNil() bool {
 
 // ToSeriesString will convert the Series to a SeriesString.
 // The operation does not lock the Series.
-func (s *SeriesInt64) ToSeriesString(ctx context.Context, conv ...func(interface{}) (*string, error)) (*SeriesString, error) {
+func (s *SeriesInt64) ToSeriesString(ctx context.Context, removeNil bool, conv ...func(interface{}) (*string, error)) (*SeriesString, error) {
 
 	ec := NewErrorCollection()
 
@@ -535,6 +535,9 @@ func (s *SeriesInt64) ToSeriesString(ctx context.Context, conv ...func(interface
 		}
 
 		if rowVal == nil {
+			if removeNil {
+				continue
+			}
 			ss.values = append(ss.values, nil)
 			ss.nilCount++
 		} else {
@@ -569,7 +572,7 @@ func (s *SeriesInt64) ToSeriesString(ctx context.Context, conv ...func(interface
 
 // ToSeriesFloat64 will convert the Series to a SeriesFloat64.
 // The operation does not lock the Series.
-func (s *SeriesInt64) ToSeriesFloat64(ctx context.Context, conv ...func(interface{}) (float64, error)) (*SeriesFloat64, error) {
+func (s *SeriesInt64) ToSeriesFloat64(ctx context.Context, removeNil bool, conv ...func(interface{}) (float64, error)) (*SeriesFloat64, error) {
 
 	ec := NewErrorCollection()
 
@@ -583,6 +586,9 @@ func (s *SeriesInt64) ToSeriesFloat64(ctx context.Context, conv ...func(interfac
 		}
 
 		if rowVal == nil {
+			if removeNil {
+				continue
+			}
 			ss.Values = append(ss.Values, nan())
 			ss.nilCount++
 		} else {

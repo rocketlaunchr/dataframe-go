@@ -195,6 +195,14 @@ func (s *SeriesComplex128) insert(row int, val interface{}) {
 		}
 		s.Values = append(s.Values[:row], append(V, s.Values[row:]...)...)
 		return
+	case []float64:
+		cplx := []complex128{}
+		for _, v := range V {
+			// No need to check math.IsNaN(v)
+			cplx = append(cplx, complex(v, 0))
+		}
+		s.insert(row, cplx)
+		return
 	}
 
 	s.Values = append(s.Values, cmplx.NaN())
@@ -253,6 +261,16 @@ func (s *SeriesComplex128) valToPointer(v interface{}) complex128 {
 		return *val
 	case complex128:
 		return val
+	case *float64:
+		if val == nil { // || math.IsNaN(*val) {
+			return cmplx.NaN()
+		}
+		return complex(*val, 0)
+	case float64:
+		// if math.IsNaN(val) {
+		// 	return cmplx.NaN()
+		// }
+		return complex(val, 0)
 	case *string:
 		if val == nil {
 			return cmplx.NaN()
@@ -530,7 +548,7 @@ func DefaultValueFormatter(v interface{}) string {
 
 // ToSeriesString will convert the Series to a SeriesString.
 // The operation does not lock the Series.
-func (s *SeriesComplex128) ToSeriesString(ctx context.Context, conv ...func(interface{}) (*string, error)) (*dataframe.SeriesString, error) {
+func (s *SeriesComplex128) ToSeriesString(ctx context.Context, removeNil bool, conv ...func(interface{}) (*string, error)) (*dataframe.SeriesString, error) {
 
 	ec := dataframe.NewErrorCollection()
 
@@ -544,6 +562,9 @@ func (s *SeriesComplex128) ToSeriesString(ctx context.Context, conv ...func(inte
 		}
 
 		if cmplx.IsNaN(rowVal) {
+			if removeNil {
+				continue
+			}
 			ss.Append(nil, dataframe.Options{DontLock: true})
 		} else {
 			if len(conv) == 0 {
