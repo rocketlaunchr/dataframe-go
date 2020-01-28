@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"math"
 	"math/cmplx"
 	"sort"
 	"strconv"
@@ -578,6 +579,63 @@ func (s *SeriesComplex128) ToSeriesString(ctx context.Context, removeNil bool, c
 					ec.AddError(&dataframe.RowError{Row: row, Err: err}, false)
 				} else {
 					ss.Append(cv, dataframe.Options{DontLock: true})
+				}
+			}
+		}
+	}
+
+	if !ec.IsNil(false) {
+		return ss, ec
+	}
+
+	return ss, nil
+}
+
+// ToSeriesFloat64 will convert the Series to a SeriesFloat64.
+// The operation does not lock the Series.
+func (s *SeriesComplex128) ToSeriesFloat64(ctx context.Context, removeNil bool, conv ...func(interface{}) (float64, error)) (*dataframe.SeriesFloat64, error) {
+
+	ec := dataframe.NewErrorCollection()
+
+	ss := dataframe.NewSeriesFloat64(s.name, &dataframe.SeriesInit{Capacity: s.NRows(dataframe.Options{DontLock: true})})
+
+	for _, rowVal := range s.Values {
+
+		// Cancel operation
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if cmplx.IsNaN(rowVal) {
+			if removeNil {
+				continue
+			}
+			ss.Append(nil, dataframe.Options{DontLock: true})
+		} else {
+			r := real(rowVal)
+			i := imag(rowVal)
+
+			if r >= 0 {
+				if i >= 0 {
+					ss.Append(cmplx.Abs(rowVal), dataframe.Options{DontLock: true})
+				} else {
+					// i is neg
+					if math.Abs(r) > math.Abs(i) {
+						ss.Append(cmplx.Abs(rowVal), dataframe.Options{DontLock: true})
+					} else {
+						ss.Append(-cmplx.Abs(rowVal), dataframe.Options{DontLock: true})
+					}
+				}
+			} else {
+				if i >= 0 {
+					// r is neg
+					if math.Abs(r) > math.Abs(i) {
+						ss.Append(-cmplx.Abs(rowVal), dataframe.Options{DontLock: true})
+					} else {
+						ss.Append(cmplx.Abs(rowVal), dataframe.Options{DontLock: true})
+					}
+				} else {
+					ss.Append(-cmplx.Abs(rowVal), dataframe.Options{DontLock: true})
 				}
 			}
 		}
