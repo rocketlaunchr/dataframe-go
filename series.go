@@ -102,4 +102,7 @@ type Series interface {
 
 	// ContainsNil will return whether or not the series contains any nil values.
 	ContainsNil() bool
+
+	// NilCount will return how many nil values are in the series.
+	NilCount() int
 }
