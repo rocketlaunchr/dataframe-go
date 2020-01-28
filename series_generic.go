@@ -514,3 +514,10 @@ func (s *SeriesGeneric) ContainsNil() bool {
 	defer s.lock.RUnlock()
 	return s.nilCount > 0
 }
+
+// NilCount will return how many nil values are in the series.
+func (s *SeriesGeneric) NilCount() int {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.nilCount
+}

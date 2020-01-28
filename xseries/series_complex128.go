@@ -538,6 +538,13 @@ func (s *SeriesComplex128) ContainsNil() bool {
 	return s.nilCount > 0
 }
 
+// NilCount will return how many nil values are in the series.
+func (s *SeriesComplex128) NilCount() int {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.nilCount
+}
+
 // DefaultValueFormatter will return a string representation
 // of the data in a particular row.
 func DefaultValueFormatter(v interface{}) string {

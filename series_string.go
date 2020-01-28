@@ -502,6 +502,13 @@ func (s *SeriesString) ContainsNil() bool {
 	return s.nilCount > 0
 }
 
+// NilCount will return how many nil values are in the series.
+func (s *SeriesString) NilCount() int {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.nilCount
+}
+
 // ToSeriesInt64 will convert the Series to a SeriesInt64.
 // The operation does not lock the Series.
 func (s *SeriesString) ToSeriesInt64(ctx context.Context, removeNil bool, conv ...func(interface{}) (*int64, error)) (*SeriesInt64, error) {
