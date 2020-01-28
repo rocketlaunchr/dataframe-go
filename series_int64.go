@@ -251,6 +251,21 @@ func (s *SeriesInt64) valToPointer(v interface{}) *int64 {
 		return &[]int64{*val}[0]
 	case int64:
 		return &val
+	case *string:
+		if val == nil {
+			return nil
+		}
+		i, err := strconv.ParseInt(*val, 10, 64)
+		if err != nil {
+			_ = v.(int64) // Intentionally panic
+		}
+		return &i
+	case string:
+		i, err := strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			_ = v.(int64) // Intentionally panic
+		}
+		return &i
 	default:
 		i, err := strconv.ParseInt(fmt.Sprintf("%v", v), 10, 64)
 		if err != nil {

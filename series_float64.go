@@ -250,6 +250,21 @@ func (s *SeriesFloat64) valToPointer(v interface{}) float64 {
 		return *val
 	case float64:
 		return val
+	case *string:
+		if val == nil {
+			return nan()
+		}
+		f, err := strconv.ParseFloat(*val, 64)
+		if err != nil {
+			_ = v.(float64) // Intentionally panic
+		}
+		return f
+	case string:
+		f, err := strconv.ParseFloat(val, 64)
+		if err != nil {
+			_ = v.(float64) // Intentionally panic
+		}
+		return f
 	default:
 		f, err := strconv.ParseFloat(fmt.Sprintf("%v", v), 64)
 		if err != nil {
