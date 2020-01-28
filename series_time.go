@@ -252,6 +252,14 @@ func (s *SeriesTime) valToPointer(v interface{}) *time.Time {
 		return &[]time.Time{*val}[0]
 	case time.Time:
 		return &val
+	case *string:
+		// TODO: Prob don't do anything
+		_ = v.(time.Time) // Intentionally panic
+		return nil
+	case string:
+		// TODO: Prob don't do anything
+		_ = v.(time.Time) // Intentionally panic
+		return nil
 	default:
 		_ = v.(time.Time) // Intentionally panic
 		return nil
