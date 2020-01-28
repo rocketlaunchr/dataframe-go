@@ -16,7 +16,7 @@ type ToSeriesInt64 interface {
 	// the error to determine which rows were unconverted.
 	//
 	// NOTE: The returned ErrorCollection should contain RowError objects.
-	ToSeriesInt64(context.Context, ...func(interface{}) (*int64, error)) (*SeriesInt64, error)
+	ToSeriesInt64(context.Context, bool, ...func(interface{}) (*int64, error)) (*SeriesInt64, error)
 }
 
 // ToSeriesString is an interface used by the Dataframe to know if a particular
@@ -29,7 +29,7 @@ type ToSeriesString interface {
 	// the error to determine which rows were unconverted.
 	//
 	// NOTE: The returned ErrorCollection should contain RowError objects.
-	ToSeriesString(context.Context, ...func(interface{}) (*string, error)) (*SeriesString, error)
+	ToSeriesString(context.Context, bool, ...func(interface{}) (*string, error)) (*SeriesString, error)
 }
 
 // ToSeriesFloat64 is an interface used by the Dataframe to know if a particular
@@ -42,5 +42,5 @@ type ToSeriesFloat64 interface {
 	// the error to determine which rows were unconverted.
 	//
 	// NOTE: The returned ErrorCollection should contain RowError objects.
-	ToSeriesFloat64(context.Context, ...func(interface{}) (float64, error)) (*SeriesFloat64, error)
+	ToSeriesFloat64(context.Context, bool, ...func(interface{}) (float64, error)) (*SeriesFloat64, error)
 }

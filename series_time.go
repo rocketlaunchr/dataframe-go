@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 
@@ -253,13 +254,20 @@ func (s *SeriesTime) valToPointer(v interface{}) *time.Time {
 	case time.Time:
 		return &val
 	case *string:
-		// TODO: Prob don't do anything
-		_ = v.(time.Time) // Intentionally panic
-		return nil
+		if val == nil {
+			return nil
+		}
+		sec, err := strconv.ParseInt(*val, 10, 64)
+		if err != nil {
+			_ = v.(time.Time) // Intentionally panic
+		}
+		return &[]time.Time{time.Unix(sec, 0)}[0]
 	case string:
-		// TODO: Prob don't do anything
-		_ = v.(time.Time) // Intentionally panic
-		return nil
+		sec, err := strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			_ = v.(time.Time) // Intentionally panic
+		}
+		return &[]time.Time{time.Unix(sec, 0)}[0]
 	default:
 		_ = v.(time.Time) // Intentionally panic
 		return nil
@@ -512,7 +520,7 @@ func (s *SeriesTime) ContainsNil() bool {
 
 // ToSeriesInt64 will convert the Series to a SeriesInt64. The time format is Unix seconds.
 // The operation does not lock the Series.
-func (s *SeriesTime) ToSeriesInt64(ctx context.Context, conv ...func(interface{}) (*int64, error)) (*SeriesInt64, error) {
+func (s *SeriesTime) ToSeriesInt64(ctx context.Context, removeNil bool, conv ...func(interface{}) (*int64, error)) (*SeriesInt64, error) {
 
 	ec := NewErrorCollection()
 
@@ -526,6 +534,9 @@ func (s *SeriesTime) ToSeriesInt64(ctx context.Context, conv ...func(interface{}
 		}
 
 		if rowVal == nil {
+			if removeNil {
+				continue
+			}
 			ss.values = append(ss.values, nil)
 			ss.nilCount++
 		} else {
@@ -560,7 +571,7 @@ func (s *SeriesTime) ToSeriesInt64(ctx context.Context, conv ...func(interface{}
 
 // ToSeriesFloat64 will convert the Series to a SeriesFloat64. The time format is Unix seconds.
 // The operation does not lock the Series.
-func (s *SeriesTime) ToSeriesFloat64(ctx context.Context, conv ...func(interface{}) (float64, error)) (*SeriesFloat64, error) {
+func (s *SeriesTime) ToSeriesFloat64(ctx context.Context, removeNil bool, conv ...func(interface{}) (float64, error)) (*SeriesFloat64, error) {
 
 	ec := NewErrorCollection()
 
@@ -574,6 +585,9 @@ func (s *SeriesTime) ToSeriesFloat64(ctx context.Context, conv ...func(interface
 		}
 
 		if rowVal == nil {
+			if removeNil {
+				continue
+			}
 			ss.Values = append(ss.Values, nan())
 			ss.nilCount++
 		} else {
