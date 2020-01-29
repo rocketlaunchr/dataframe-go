@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"golang.org/x/exp/rand"
 	"sort"
 	"strconv"
 	"sync"
@@ -632,4 +633,48 @@ func (s *SeriesString) ToSeriesFloat64(ctx context.Context, removeNil bool, conv
 	}
 
 	return ss, nil
+}
+
+const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+func randomString(rng *rand.Rand) *string {
+	b := make([]byte, 12)
+	for i := range b {
+		b[i] = charset[rng.Intn(len(charset))]
+	}
+	return &[]string{string(b)}[0]
+}
+
+// FillRand will fill a Series with random data. probNil is a value between between 0 and 1 which
+// determines if a row is given a nil value.
+func (s *SeriesString) FillRand(src rand.Source, probNil float64, rander Rander, opts ...FillRandOptions) {
+
+	rng := rand.New(src)
+
+	capacity := cap(s.values)
+	length := len(s.values)
+	s.nilCount = 0
+
+	for i := 0; i < length; i++ {
+		if rng.Float64() < probNil {
+			// nil
+			s.values[i] = nil
+			s.nilCount++
+		} else {
+			s.values[i] = randomString(rng)
+		}
+	}
+
+	if capacity > length {
+		excess := capacity - length
+		for i := 0; i < excess; i++ {
+			if rng.Float64() < probNil {
+				// nil
+				s.values = append(s.values, nil)
+				s.nilCount++
+			} else {
+				s.values = append(s.values, randomString(rng))
+			}
+		}
+	}
 }

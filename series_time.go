@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"golang.org/x/exp/rand"
 	"sort"
 	"strconv"
 	"sync"
@@ -634,4 +635,38 @@ func (s *SeriesTime) ToSeriesFloat64(ctx context.Context, removeNil bool, conv .
 	}
 
 	return ss, nil
+}
+
+// FillRand will fill a Series with random data. probNil is a value between between 0 and 1 which
+// determines if a row is given a nil value.
+func (s *SeriesTime) FillRand(src rand.Source, probNil float64, rander Rander, opts ...FillRandOptions) {
+
+	rng := rand.New(src)
+
+	capacity := cap(s.values)
+	length := len(s.values)
+	s.nilCount = 0
+
+	for i := 0; i < length; i++ {
+		if rng.Float64() < probNil {
+			// nil
+			s.values[i] = nil
+			s.nilCount++
+		} else {
+			s.values[i] = &[]time.Time{time.Unix(int64(rander.Rand()), 0)}[0]
+		}
+	}
+
+	if capacity > length {
+		excess := capacity - length
+		for i := 0; i < excess; i++ {
+			if rng.Float64() < probNil {
+				// nil
+				s.values = append(s.values, nil)
+				s.nilCount++
+			} else {
+				s.values = append(s.values, &[]time.Time{time.Unix(int64(rander.Rand()), 0)}[0])
+			}
+		}
+	}
 }
