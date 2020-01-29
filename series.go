@@ -131,8 +131,8 @@ type FillRandOptions struct {
 	Extra interface{}
 }
 
-// NewRandomSeries is an interface for generating a Series with random values.
-type NewRandomSeries interface {
+// FillRander is an interface for generating a Series with random values.
+type FillRander interface {
 
 	// FillRand will fill a Series with random data. probNil is a value between between 0 and 1 which
 	// determines if a row is given a nil value.
