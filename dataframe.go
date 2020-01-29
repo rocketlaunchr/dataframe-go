@@ -4,6 +4,7 @@ package dataframe
 
 import (
 	"errors"
+	"golang.org/x/exp/rand"
 	"sync"
 )
 
@@ -473,4 +474,13 @@ func (df *DataFrame) Copy(r ...Range) *DataFrame {
 	}
 
 	return newDF
+}
+
+// FillRand will randomly fill all the Series in the Dataframe.
+func (df *DataFrame) FillRand(src rand.Source, probNil float64, rander Rander, opts ...FillRandOptions) {
+	for _, s := range df.Series {
+		if sfr, ok := s.(FillRander); ok {
+			sfr.FillRand(src, probNil, rander, opts...)
+		}
+	}
 }
