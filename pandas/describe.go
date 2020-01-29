@@ -5,11 +5,7 @@ package pandas
 import (
 	"context"
 	"fmt"
-	"math"
-	"sort"
 	"strconv"
-
-	"gonum.org/v1/gonum/stat"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
@@ -24,54 +20,55 @@ type DescribeOutput struct {
 	Max         []float64
 	Percentiles [][]float64
 
-	series      bool
 	percentiles []float64
+	headers     []string
 }
 
 func (do DescribeOutput) String() string {
 
-	out := map[string]interface{}{}
+	out := map[string][]interface{}{}
 
-	if do.series {
-		out["count"] = do.Count[0]
-		out["nil count"] = do.NilCount[0]
+	for idx := range do.headers {
+		out["count"] = append(out["count"], do.Count[idx])
+		out["nil count"] = append(out["nil count"], do.NilCount[idx])
 
 		if len(do.Median) > 0 {
-			out["median"] = do.Median[0]
+			out["median"] = append(out["median"], do.Median[idx])
 		} else {
-			out["median"] = nil
+			out["median"] = append(out["median"], "NaN")
 		}
 
 		if len(do.Mean) > 0 {
-			out["mean"] = do.Mean[0]
+			out["mean"] = append(out["mean"], do.Mean[idx])
 		} else {
-			out["mean"] = nil
+			out["mean"] = append(out["mean"], "NaN")
 		}
 
 		if len(do.StdDev) > 0 {
-			out["std dev"] = do.StdDev[0]
+			out["std dev"] = append(out["std dev"], do.StdDev[idx])
 		} else {
-			out["std dev"] = nil
+			out["std dev"] = append(out["std dev"], "NaN")
 		}
 
 		if len(do.Min) > 0 {
-			out["min"] = do.Min[0]
+			out["min"] = append(out["min"], do.Min[idx])
 		} else {
-			out["min"] = nil
+			out["min"] = append(out["min"], "NaN")
 		}
 
 		if len(do.Max) > 0 {
-			out["max"] = do.Max[0]
+			out["max"] = append(out["max"], do.Max[idx])
 		} else {
-			out["max"] = nil
+			out["max"] = append(out["max"], "NaN")
 		}
 
 		for i, p := range do.percentiles {
-			out[strconv.FormatFloat(100*p, 'f', -1, 64)+"%"] = do.Percentiles[0][i]
+			key := strconv.FormatFloat(100*p, 'f', -1, 64) + "%"
+			out[key] = append(out[key], do.Percentiles[idx][i])
 		}
 	}
 
-	return printMap(out)
+	return printMap(do.headers, out)
 }
 
 type DescribeOptions struct {
@@ -80,18 +77,10 @@ type DescribeOptions struct {
 	Blacklist   []interface{}
 }
 
+// Describe outputs various statistical information a Series or Dataframe.
+//
+// See: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.describe.html#pandas.DataFrame.describe
 func Describe(ctx context.Context, s interface{}, opts ...DescribeOptions) (DescribeOutput, error) {
-
-	switch _s := s.(type) {
-	case dataframe.Series:
-		return describeSeries(ctx, _s, opts...)
-		// case *dataframe.DataFrame:
-	}
-
-	panic(fmt.Sprintf("interface conversion: %T is not a valid Series or DataFrame", s))
-}
-
-func describeSeries(ctx context.Context, s dataframe.Series, opts ...DescribeOptions) (DescribeOutput, error) {
 
 	if len(opts) == 0 {
 		opts = append(opts, DescribeOptions{
@@ -103,65 +92,12 @@ func describeSeries(ctx context.Context, s dataframe.Series, opts ...DescribeOpt
 		}
 	}
 
-	out := DescribeOutput{
-		series:      true,
-		percentiles: opts[0].Percentiles,
-
-		Count:    []int{s.NRows()},
-		NilCount: []int{s.NilCount()},
+	switch _s := s.(type) {
+	case dataframe.Series:
+		return describeSeries(ctx, _s, opts...)
+	case *dataframe.DataFrame:
+		return describeDataframe(ctx, _s, opts...)
 	}
 
-	var (
-		sf        *dataframe.SeriesFloat64
-		floatable bool
-	)
-
-	if sf64, ok := s.(*dataframe.SeriesFloat64); ok {
-		sf = sf64
-		floatable = true
-	} else {
-		_, floatable = s.(dataframe.ToSeriesFloat64)
-		if floatable {
-			var err error
-			sf, err = s.(dataframe.ToSeriesFloat64).ToSeriesFloat64(ctx, false)
-			if err != nil {
-				return DescribeOutput{}, err
-			}
-		}
-	}
-
-	if floatable {
-		var vals []float64
-
-		// Arrange values from lowest to highest
-		for _, v := range sf.Values {
-			if !math.IsNaN(v) {
-				vals = append(vals, v)
-			}
-		}
-		sort.Float64s(vals)
-
-		// Median
-		out.Median = []float64{stat.Quantile(0.5, stat.Empirical, vals, nil)}
-
-		// Mean
-		out.Mean = []float64{stat.Mean(vals, nil)}
-
-		// Std Dev
-		out.StdDev = []float64{stat.StdDev(vals, nil)}
-
-		// Percentiles
-		out.Percentiles = append(out.Percentiles, []float64{})
-		for _, p := range opts[0].Percentiles {
-			q := stat.Quantile(p, stat.Empirical, vals, nil)
-			out.Percentiles[len(out.Percentiles)-1] = append(out.Percentiles[len(out.Percentiles)-1], q)
-		}
-
-		if len(vals) > 0 {
-			out.Min = []float64{vals[0]}
-			out.Max = []float64{vals[len(vals)-1]}
-		}
-	}
-
-	return out, nil
+	panic(fmt.Sprintf("interface conversion: %T is not a valid Series or DataFrame", s))
 }
