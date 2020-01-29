@@ -65,6 +65,9 @@ type Series interface {
 	// Remove is used to delete the value of a particular row.
 	Remove(row int, options ...Options)
 
+	// Reset is used clear all data contained in the Series.
+	Reset(options ...Options)
+
 	// Update is used to update the value of a particular row.
 	// val can be a concrete data type or nil. Nil represents
 	// the absence of a value.

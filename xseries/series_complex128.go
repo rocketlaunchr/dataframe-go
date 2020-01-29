@@ -231,6 +231,17 @@ func (s *SeriesComplex128) Remove(row int, options ...dataframe.Options) {
 	s.Values = append(s.Values[:row], s.Values[row+1:]...)
 }
 
+// Reset is used clear all data contained in the Series.
+func (s *SeriesComplex128) Reset(options ...dataframe.Options) {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+	}
+
+	s.Values = []complex128{}
+	s.nilCount = 0
+}
+
 // Update is used to update the value of a particular row.
 // val can be a concrete data type or nil. Nil represents
 // the absence of a value.

@@ -219,6 +219,17 @@ func (s *SeriesString) Remove(row int, options ...Options) {
 	s.values = append(s.values[:row], s.values[row+1:]...)
 }
 
+// Reset is used clear all data contained in the Series.
+func (s *SeriesString) Reset(options ...Options) {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+	}
+
+	s.values = []*string{}
+	s.nilCount = 0
+}
+
 // Update is used to update the value of a particular row.
 // val can be a concrete data type or nil. Nil represents
 // the absence of a value.
