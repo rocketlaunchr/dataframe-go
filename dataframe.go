@@ -271,6 +271,16 @@ func (df *DataFrame) insert(row int, vals ...interface{}) {
 	}
 }
 
+// ClearRow makes an entire row nil.
+func (df *DataFrame) ClearRow(row int) {
+	df.lock.Lock()
+	defer df.lock.Unlock()
+
+	for i := range df.Series {
+		df.Series[i].Update(row, nil, Options{DontLock: true}) //???
+	}
+}
+
 // Remove deletes a row.
 func (df *DataFrame) Remove(row int) {
 	df.lock.Lock()
