@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"golang.org/x/exp/rand"
 	"math"
 	"math/cmplx"
 	"sort"
@@ -784,4 +785,38 @@ func parseComplex(s string) (complex128, error) {
 		return 0, convErr(err, orig)
 	}
 	return complex(0, imag), nil
+}
+
+// FillRand will fill a Series with random data. probNil is a value between between 0 and 1 which
+// determines if a row is given a nil value.
+func (s *SeriesComplex128) FillRand(src rand.Source, probNil float64, rander dataframe.Rander, opts ...dataframe.FillRandOptions) {
+
+	rng := rand.New(src)
+
+	capacity := cap(s.Values)
+	length := len(s.Values)
+	s.nilCount = 0
+
+	for i := 0; i < length; i++ {
+		if rng.Float64() < probNil {
+			// nil
+			s.Values[i] = cmplx.NaN()
+			s.nilCount++
+		} else {
+			s.Values[i] = complex(rander.Rand(), rander.Rand())
+		}
+	}
+
+	if capacity > length {
+		excess := capacity - length
+		for i := 0; i < excess; i++ {
+			if rng.Float64() < probNil {
+				// nil
+				s.Values = append(s.Values, cmplx.NaN())
+				s.nilCount++
+			} else {
+				s.Values = append(s.Values, complex(rander.Rand(), rander.Rand()))
+			}
+		}
+	}
 }

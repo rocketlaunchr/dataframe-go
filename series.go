@@ -4,6 +4,8 @@ package dataframe
 
 import (
 	"context"
+
+	"golang.org/x/exp/rand"
 )
 
 // Options provides a way to set various optional options.
@@ -108,4 +110,42 @@ type Series interface {
 
 	// NilCount will return how many nil values are in the series.
 	NilCount() int
+}
+
+// Rander is an interface for generating random float64.
+//
+// See: https://godoc.org/golang.org/x/exp/rand for a random generator source.
+// See: https://godoc.org/gonum.org/v1/gonum/stat/distuv for various random distributions.
+type Rander interface {
+
+	// Rand returns a randomly generated float64.
+	Rand() float64
+}
+
+type FillRandOptions struct {
+
+	// R is used to only randomly fill a range of rows.
+	R *Range
+
+	// Extra is used to pass extra custom data.
+	Extra interface{}
+}
+
+// NewRandomSeries is an interface for generating a Series with random values.
+type NewRandomSeries interface {
+
+	// FillRand will fill a Series with random data. probNil is a value between between 0 and 1 which
+	// determines if a row is given a nil value.
+	//
+	// Example:
+	//
+	//  import "golang.org/x/exp/rand"
+	//  import "gonum.org/v1/gonum/stat/distuv"
+	//  import "time"
+	//
+	//  src := rand.NewSource(uint64(time.Now().UTC().UnixNano()))
+	//  uniform := distuv.Uniform{Min: 0, Max: 10000, Src: src}
+	//  s.FillRand(src, 0.5, uniform)
+	//
+	FillRand(src rand.Source, probNil float64, rander Rander, opts ...FillRandOptions)
 }
