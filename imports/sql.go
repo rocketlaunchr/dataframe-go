@@ -33,6 +33,14 @@ type queryContexter2 interface {
 	QueryContext(ctx context.Context, args ...interface{}) (*rlSql.Rows, error)
 }
 
+type queryContexter3 interface {
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+}
+
+type queryContexter4 interface {
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*rlSql.Rows, error)
+}
+
 type rows interface {
 	Close() error
 	ColumnTypes() ([]*sql.ColumnType, error)
@@ -60,6 +68,11 @@ type SQLLoadOptions struct {
 
 	// Database is used to set the Database.
 	Database Database
+
+	// Query can be set to the sql stmt if a *sql.DB, *sql.TX, *sql.Conn or the equivalent from the mysql-go package is provided.
+	//
+	// See: https://godoc.org/github.com/rocketlaunchr/mysql-go
+	Query string
 }
 
 // LoadFromSQL will load data from a sql database.
@@ -99,6 +112,18 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 		rows, err = stmt.QueryContext(ctx, args...)
 	case queryContexter2:
 		rows, err = stmt.QueryContext(ctx, args...)
+	case queryContexter3:
+		query := ""
+		if options != nil {
+			query = (*options).Query
+		}
+		rows, err = stmt.QueryContext(ctx, query, args...)
+	case queryContexter4:
+		query := ""
+		if options != nil {
+			query = (*options).Query
+		}
+		rows, err = stmt.QueryContext(ctx, query, args...)
 	default:
 		panic(fmt.Sprintf("interface conversion: %T is not a valid Stmt", stmt))
 	}
