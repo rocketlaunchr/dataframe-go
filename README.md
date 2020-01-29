@@ -7,6 +7,8 @@ This package is designed to be light-weight and intuitive.
 The package is production ready but the API is not stable yet. Once stability is reached, version `1.0.0` will be tagged.
 It is recommended your package manager locks to a commit id instead of the master branch directly.
 
+⭐ **the project to show your appreciation.**
+
 # Features
 
 1. Importing from CSV, JSONL, MySQL & PostgreSQL
@@ -266,21 +268,17 @@ OUTPUT:
 
 ## Other useful packages
 
-* [remember-go](https://github.com/rocketlaunchr/remember-go) - Cache slow database queries
-* [mysql-go](https://github.com/rocketlaunchr/mysql-go) - Properly cancel slow MySQL queries
-* [react](https://github.com/rocketlaunchr/react) - Build front end applications using Go
-* [igo](https://github.com/rocketlaunchr/igo) - A Go transpiler with cool new syntax such as `fordefer` (defer for for-loops)
+- [dbq](https://github.com/rocketlaunchr/dbq) - Zero boilerplate database operations for Go
+- [electron-alert](https://github.com/rocketlaunchr/electron-alert) - SweetAlert2 for Electron Applications
+- [igo](https://github.com/rocketlaunchr/igo) - A Go transpiler with cool new syntax such as fordefer (defer for for-loops)
+- [mysql-go](https://github.com/rocketlaunchr/mysql-go) - Properly cancel slow MySQL queries
+- [react](https://github.com/rocketlaunchr/react) - Build front end applications using Go
+- [remember-go](https://github.com/rocketlaunchr/remember-go) - Cache slow database queries
 
-# 
+#
 
 ### Legal Information
 
 The license is a modified MIT license. Refer to `LICENSE` file for more details.
 
 **© 2018-20 PJ Engineering and Business Solutions Pty. Ltd.**
-
-### Final Notes
-
-Feel free to enhance features by issuing pull-requests.
-
-**Star** the project to show your appreciation.
