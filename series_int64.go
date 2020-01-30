@@ -49,6 +49,22 @@ func NewSeriesInt64(name string, init *SeriesInit, vals ...interface{}) *SeriesI
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
+
+		// Special case
+		if idx == 0 {
+			if is, ok := vals[0].([]int64); ok {
+				for _, v := range is {
+					val := s.valToPointer(v)
+					if idx < size {
+						s.values[idx] = val
+					} else {
+						s.values = append(s.values, val)
+					}
+				}
+				continue
+			}
+		}
+
 		val := s.valToPointer(v)
 		if val == nil {
 			s.nilCount++

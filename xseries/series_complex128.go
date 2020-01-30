@@ -55,6 +55,25 @@ func NewSeriesComplex128(name string, init *dataframe.SeriesInit, vals ...interf
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
+
+		// Special case
+		if idx == 0 {
+			if cs, ok := vals[0].([]float64); ok {
+				for _, v := range cs {
+					val := s.valToPointer(v)
+					if cmplx.IsNaN(val) {
+						s.nilCount++
+					}
+					if idx < size {
+						s.Values[idx] = val
+					} else {
+						s.Values = append(s.Values, val)
+					}
+				}
+				continue
+			}
+		}
+
 		val := s.valToPointer(v)
 		if cmplx.IsNaN(val) {
 			s.nilCount++
