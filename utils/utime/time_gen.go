@@ -1,3 +1,5 @@
+// Copyright 2019-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+
 package utime
 
 import (
@@ -21,10 +23,10 @@ type TimeGenerator func(startTime time.Time, reverse bool) NextTime
 //
 // Example:
 //
-//  gen, _ := utime.IntervalGenerator("1W1D")
-//  nt := gen(time.Now().UTC(), false)
+//  gen, _ := utime.TimeIntervalGenerator("1W1D")
+//  ntg := gen(time.Now().UTC(), false)
 //  for {
-//     fmt.Println(nt())
+//     fmt.Println(ntg())
 //     time.Sleep(500 * time.Millisecond)
 //  }
 //
