@@ -19,9 +19,10 @@ import (
 type SeriesTime struct {
 	valFormatter ValueToStringFormatter
 
-	lock     sync.RWMutex
-	name     string
-	values   []*time.Time
+	lock sync.RWMutex
+	name string
+	// Values is exported to better improve interoperability with various sub-packages.
+	Values   []*time.Time
 	nilCount int
 }
 
@@ -29,7 +30,7 @@ type SeriesTime struct {
 func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTime {
 	s := &SeriesTime{
 		name:     name,
-		values:   []*time.Time{},
+		Values:   []*time.Time{},
 		nilCount: 0,
 	}
 
@@ -46,7 +47,7 @@ func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTi
 		}
 	}
 
-	s.values = make([]*time.Time, size, capacity)
+	s.Values = make([]*time.Time, size, capacity)
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
@@ -57,9 +58,9 @@ func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTi
 				for _, v := range ts {
 					val := s.valToPointer(v)
 					if idx < size {
-						s.values[idx] = val
+						s.Values[idx] = val
 					} else {
-						s.values = append(s.values, val)
+						s.Values = append(s.Values, val)
 					}
 				}
 				continue
@@ -72,9 +73,9 @@ func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTi
 		}
 
 		if idx < size {
-			s.values[idx] = val
+			s.Values[idx] = val
 		} else {
-			s.values = append(s.values, val)
+			s.Values = append(s.Values, val)
 		}
 	}
 
@@ -113,7 +114,7 @@ func (s *SeriesTime) NRows(options ...Options) int {
 		defer s.lock.RUnlock()
 	}
 
-	return len(s.values)
+	return len(s.Values)
 }
 
 // Value returns the value of a particular row.
@@ -126,7 +127,7 @@ func (s *SeriesTime) Value(row int, options ...Options) interface{} {
 		defer s.lock.RUnlock()
 	}
 
-	val := s.values[row]
+	val := s.Values[row]
 	if val == nil {
 		return nil
 	}
@@ -152,11 +153,11 @@ func (s *SeriesTime) Prepend(val interface{}, options ...Options) {
 
 	// See: https://stackoverflow.com/questions/41914386/what-is-the-mechanism-of-using-append-to-prepend-in-go
 
-	if cap(s.values) > len(s.values) {
+	if cap(s.Values) > len(s.Values) {
 		// There is already extra capacity so copy current values by 1 spot
-		s.values = s.values[:len(s.values)+1]
-		copy(s.values[1:], s.values)
-		s.values[0] = s.valToPointer(val)
+		s.Values = s.Values[:len(s.Values)+1]
+		copy(s.Values[1:], s.Values)
+		s.Values[0] = s.valToPointer(val)
 		return
 	}
 
@@ -202,7 +203,7 @@ func (s *SeriesTime) insert(row int, val interface{}) {
 			v := v
 			vals = append(vals, &v)
 		}
-		s.values = append(s.values[:row], append(vals, s.values[row:]...)...)
+		s.Values = append(s.Values[:row], append(vals, s.Values[row:]...)...)
 		return
 	case []*time.Time:
 		for _, v := range V {
@@ -210,19 +211,19 @@ func (s *SeriesTime) insert(row int, val interface{}) {
 				s.nilCount++
 			}
 		}
-		s.values = append(s.values[:row], append(V, s.values[row:]...)...)
+		s.Values = append(s.Values[:row], append(V, s.Values[row:]...)...)
 		return
 	}
 
-	s.values = append(s.values, nil)
-	copy(s.values[row+1:], s.values[row:])
+	s.Values = append(s.Values, nil)
+	copy(s.Values[row+1:], s.Values[row:])
 
 	v := s.valToPointer(val)
 	if v == nil {
 		s.nilCount++
 	}
 
-	s.values[row] = s.valToPointer(v)
+	s.Values[row] = s.valToPointer(v)
 }
 
 // Remove is used to delete the value of a particular row.
@@ -232,11 +233,11 @@ func (s *SeriesTime) Remove(row int, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	if s.values[row] == nil {
+	if s.Values[row] == nil {
 		s.nilCount--
 	}
 
-	s.values = append(s.values[:row], s.values[row+1:]...)
+	s.Values = append(s.Values[:row], s.Values[row+1:]...)
 }
 
 // Reset is used clear all data contained in the Series.
@@ -246,7 +247,7 @@ func (s *SeriesTime) Reset(options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	s.values = []*time.Time{}
+	s.Values = []*time.Time{}
 	s.nilCount = 0
 }
 
@@ -261,13 +262,13 @@ func (s *SeriesTime) Update(row int, val interface{}, options ...Options) {
 
 	newVal := s.valToPointer(val)
 
-	if s.values[row] == nil && newVal != nil {
+	if s.Values[row] == nil && newVal != nil {
 		s.nilCount--
-	} else if s.values[row] != nil && newVal == nil {
+	} else if s.Values[row] != nil && newVal == nil {
 		s.nilCount++
 	}
 
-	s.values[row] = newVal
+	s.Values[row] = newVal
 }
 
 func (s *SeriesTime) valToPointer(v interface{}) *time.Time {
@@ -324,7 +325,7 @@ func (s *SeriesTime) Swap(row1, row2 int, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	s.values[row1], s.values[row2] = s.values[row2], s.values[row1]
+	s.Values[row1], s.Values[row2] = s.Values[row2], s.Values[row1]
 }
 
 // IsEqualFunc returns true if a is equal to b.
@@ -395,29 +396,29 @@ func (s *SeriesTime) Sort(ctx context.Context, opts ...SortOptions) (completed b
 			}
 		}()
 
-		if s.values[i] == nil {
-			if s.values[j] == nil {
+		if s.Values[i] == nil {
+			if s.Values[j] == nil {
 				// both are nil
 				return true
 			}
 			return true
 		}
 
-		if s.values[j] == nil {
+		if s.Values[j] == nil {
 			// i has value and j is nil
 			return false
 		}
 		// Both are not nil
-		ti := *s.values[i]
-		tj := *s.values[j]
+		ti := *s.Values[i]
+		tj := *s.Values[j]
 
 		return ti.Before(tj)
 	}
 
 	if opts[0].Stable {
-		sort.SliceStable(s.values, sortFunc)
+		sort.SliceStable(s.Values, sortFunc)
 	} else {
-		sort.Slice(s.values, sortFunc)
+		sort.Slice(s.Values, sortFunc)
 	}
 
 	return true
@@ -439,11 +440,11 @@ func (s *SeriesTime) Unlock() {
 // to Copy.
 func (s *SeriesTime) Copy(r ...Range) Series {
 
-	if len(s.values) == 0 {
+	if len(s.Values) == 0 {
 		return &SeriesTime{
 			valFormatter: s.valFormatter,
 			name:         s.name,
-			values:       []*time.Time{},
+			Values:       []*time.Time{},
 			nilCount:     s.nilCount,
 		}
 	}
@@ -452,19 +453,19 @@ func (s *SeriesTime) Copy(r ...Range) Series {
 		r = append(r, Range{})
 	}
 
-	start, end, err := r[0].Limits(len(s.values))
+	start, end, err := r[0].Limits(len(s.Values))
 	if err != nil {
 		panic(err)
 	}
 
 	// Copy slice
-	x := s.values[start : end+1]
+	x := s.Values[start : end+1]
 	newSlice := append(x[:0:0], x...)
 
 	return &SeriesTime{
 		valFormatter: s.valFormatter,
 		name:         s.name,
-		values:       newSlice,
+		Values:       newSlice,
 		nilCount:     s.nilCount,
 	}
 }
@@ -482,11 +483,11 @@ func (s *SeriesTime) Table(r ...Range) string {
 	data := [][]string{}
 
 	headers := []string{"", s.name} // row header is blank
-	footers := []string{fmt.Sprintf("%dx%d", len(s.values), 1), s.Type()}
+	footers := []string{fmt.Sprintf("%dx%d", len(s.Values), 1), s.Type()}
 
-	if len(s.values) > 0 {
+	if len(s.Values) > 0 {
 
-		start, end, err := r[0].Limits(len(s.values))
+		start, end, err := r[0].Limits(len(s.Values))
 		if err != nil {
 			panic(err)
 		}
@@ -518,7 +519,7 @@ func (s *SeriesTime) String() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
-	count := len(s.values)
+	count := len(s.Values)
 
 	out := "[ "
 
@@ -533,7 +534,7 @@ func (s *SeriesTime) String() string {
 		return out + "]"
 	}
 
-	for row := range s.values {
+	for row := range s.Values {
 		out = out + s.ValueString(row, Options{DontLock: true}) + " "
 	}
 	return out + "]"
@@ -561,7 +562,7 @@ func (s *SeriesTime) ToSeriesInt64(ctx context.Context, removeNil bool, conv ...
 
 	ss := NewSeriesInt64(s.name, &SeriesInit{Capacity: s.NRows(Options{DontLock: true})})
 
-	for row, rowVal := range s.values {
+	for row, rowVal := range s.Values {
 
 		// Cancel operation
 		if err := ctx.Err(); err != nil {
@@ -612,7 +613,7 @@ func (s *SeriesTime) ToSeriesFloat64(ctx context.Context, removeNil bool, conv .
 
 	ss := NewSeriesFloat64(s.name, &SeriesInit{Capacity: s.NRows(Options{DontLock: true})})
 
-	for row, rowVal := range s.values {
+	for row, rowVal := range s.Values {
 
 		// Cancel operation
 		if err := ctx.Err(); err != nil {
@@ -659,17 +660,17 @@ func (s *SeriesTime) FillRand(src rand.Source, probNil float64, rander Rander, o
 
 	rng := rand.New(src)
 
-	capacity := cap(s.values)
-	length := len(s.values)
+	capacity := cap(s.Values)
+	length := len(s.Values)
 	s.nilCount = 0
 
 	for i := 0; i < length; i++ {
 		if rng.Float64() < probNil {
 			// nil
-			s.values[i] = nil
+			s.Values[i] = nil
 			s.nilCount++
 		} else {
-			s.values[i] = &[]time.Time{time.Unix(int64(rander.Rand()), 0)}[0]
+			s.Values[i] = &[]time.Time{time.Unix(int64(rander.Rand()), 0)}[0]
 		}
 	}
 
@@ -678,10 +679,10 @@ func (s *SeriesTime) FillRand(src rand.Source, probNil float64, rander Rander, o
 		for i := 0; i < excess; i++ {
 			if rng.Float64() < probNil {
 				// nil
-				s.values = append(s.values, nil)
+				s.Values = append(s.Values, nil)
 				s.nilCount++
 			} else {
-				s.values = append(s.values, &[]time.Time{time.Unix(int64(rander.Rand()), 0)}[0])
+				s.Values = append(s.Values, &[]time.Time{time.Unix(int64(rander.Rand()), 0)}[0])
 			}
 		}
 	}
