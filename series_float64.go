@@ -51,6 +51,25 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
+
+		// Special case
+		if idx == 0 {
+			if fs, ok := vals[0].([]float64); ok {
+				for _, v := range fs {
+					val := s.valToPointer(v)
+					if isNaN(val) {
+						s.nilCount++
+					}
+					if idx < size {
+						s.Values[idx] = val
+					} else {
+						s.Values = append(s.Values, val)
+					}
+				}
+				continue
+			}
+		}
+
 		val := s.valToPointer(v)
 		if isNaN(val) {
 			s.nilCount++

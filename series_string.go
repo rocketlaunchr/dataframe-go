@@ -49,6 +49,22 @@ func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *Series
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
+
+		// Special case
+		if idx == 0 {
+			if ss, ok := vals[0].([]string); ok {
+				for _, v := range ss {
+					val := s.valToPointer(v)
+					if idx < size {
+						s.values[idx] = val
+					} else {
+						s.values = append(s.values, val)
+					}
+				}
+				continue
+			}
+		}
+
 		val := s.valToPointer(v)
 		if val == nil {
 			s.nilCount++

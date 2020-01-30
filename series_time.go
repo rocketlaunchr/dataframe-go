@@ -50,6 +50,22 @@ func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTi
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
+
+		// Special case
+		if idx == 0 {
+			if ts, ok := vals[0].([]time.Time); ok {
+				for _, v := range ts {
+					val := s.valToPointer(v)
+					if idx < size {
+						s.values[idx] = val
+					} else {
+						s.values = append(s.values, val)
+					}
+				}
+				continue
+			}
+		}
+
 		val := s.valToPointer(v)
 		if val == nil {
 			s.nilCount++
