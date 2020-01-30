@@ -43,7 +43,12 @@ func NewSeriesTime(ctx context.Context, name string, timeFreq string, startTime 
 	}
 
 	// Generate time intervals.
-	times := []time.Time{}
+	var times []*time.Time
+	if opts.Size != nil {
+		times = make([]*time.Time, 0, *opts.Size)
+	} else {
+		times = []*time.Time{}
+	}
 
 	gen, err := TimeIntervalGenerator(timeFreq)
 	if err != nil {
@@ -74,8 +79,11 @@ func NewSeriesTime(ctx context.Context, name string, timeFreq string, startTime 
 			}
 		}
 
-		times = append(times, nt)
+		times = append(times, &nt)
 	}
 
-	return dataframe.NewSeriesTime(name, &dataframe.SeriesInit{Capacity: len(times)}, times), nil
+	st := dataframe.NewSeriesTime(name, nil)
+	st.Values = times
+
+	return st, nil
 }
