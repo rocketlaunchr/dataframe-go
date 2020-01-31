@@ -112,6 +112,13 @@ type Series interface {
 	NilCount() int
 }
 
+// NewSerieser is an interface for a Series to create a new initialized Series of the same type.
+type NewSerieser interface {
+
+	// NewSeries creates a new initialized Series of the same type.
+	NewSeries(name string, init *SeriesInit) Series
+}
+
 // Rander is an interface for generating random float64.
 //
 // See: https://godoc.org/golang.org/x/exp/rand for a random generator source.

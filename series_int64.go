@@ -24,7 +24,7 @@ type SeriesInt64 struct {
 	nilCount int
 }
 
-// NewSeriesInt64 creates a new series with the underlying type as int64
+// NewSeriesInt64 creates a new series with the underlying type as int64.
 func NewSeriesInt64(name string, init *SeriesInit, vals ...interface{}) *SeriesInt64 {
 	s := &SeriesInt64{
 		name:     name,
@@ -82,6 +82,11 @@ func NewSeriesInt64(name string, init *SeriesInit, vals ...interface{}) *SeriesI
 	}
 
 	return s
+}
+
+// NewSeries creates a new initialized SeriesInt64.
+func (s *SeriesInt64) NewSeries(name string, init *SeriesInit) Series {
+	return NewSeriesInt64(name, init)
 }
 
 // Name returns the series name.
