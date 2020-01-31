@@ -55,7 +55,7 @@ func dictateForce(row int, insertVals map[string]interface{}, name string, typ i
 		case string:
 			f, err := strconv.ParseFloat(v, 64)
 			if err != nil {
-				return fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, name)
+				return fmt.Errorf("can't force string: %s to float64. row: %d field: %s", v, row-1, name)
 			}
 			insertVals[name] = f
 		case json.Number:
@@ -80,7 +80,7 @@ func dictateForce(row int, insertVals map[string]interface{}, name string, typ i
 			} else if v == "FALSE" || v == "false" || v == "0" {
 				insertVals[name] = int64(0)
 			} else {
-				return fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, name)
+				return fmt.Errorf("can't force string: %s to bool. row: %d field: %s", v, row-1, name)
 			}
 		case json.Number:
 			// Check if float64
@@ -109,7 +109,7 @@ func dictateForce(row int, insertVals map[string]interface{}, name string, typ i
 		case string:
 			i, err := strconv.ParseInt(v, 10, 64)
 			if err != nil {
-				return fmt.Errorf("can't force string to int64. row: %d field: %s", row-1, name)
+				return fmt.Errorf("can't force string: %s to int64. row: %d field: %s", v, row-1, name)
 			}
 			insertVals[name] = i
 		case json.Number:
@@ -145,7 +145,7 @@ func dictateForce(row int, insertVals map[string]interface{}, name string, typ i
 		case string:
 			t, err := time.Parse(time.RFC3339, v)
 			if err != nil {
-				return fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row-1, name)
+				return fmt.Errorf("can't force string: %s to time.Time (%s). row: %d field: %s", v, time.RFC3339, row-1, name)
 			}
 			insertVals[name] = t
 		case json.Number:

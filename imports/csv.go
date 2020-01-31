@@ -184,18 +184,18 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 							} else if v == "FALSE" || v == "false" || v == "0" {
 								insertVals = append(insertVals, int64(0))
 							} else {
-								return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, name)
+								return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", v, row-1, name)
 							}
 						case int64:
 							i, err := strconv.ParseInt(v, 10, 64)
 							if err != nil {
-								return nil, fmt.Errorf("can't force string to int64. row: %d field: %s", row-1, name)
+								return nil, fmt.Errorf("can't force string: %s to int64. row: %d field: %s", v, row-1, name)
 							}
 							insertVals = append(insertVals, i)
 						case float64:
 							f, err := strconv.ParseFloat(v, 64)
 							if err != nil {
-								return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, name)
+								return nil, fmt.Errorf("can't force string: %s to float64. row: %d field: %s", v, row-1, name)
 							}
 							insertVals = append(insertVals, f)
 						case time.Time:
@@ -204,17 +204,18 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 								// Assume unix timestamp
 								sec, err := strconv.ParseInt(v, 10, 64)
 								if err != nil {
-									return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row-1, name)
+									return nil, fmt.Errorf("can't force string: %s to time.Time (%s). row: %d field: %s", v, time.RFC3339, row-1, name)
 								}
 								insertVals = append(insertVals, time.Unix(sec, 0))
+							} else {
+								insertVals = append(insertVals, t)
 							}
-							insertVals = append(insertVals, t)
 						case dataframe.NewSerieser:
 							insertVals = append(insertVals, v)
 						case Converter:
 							cv, err := T.ConverterFunc(v)
 							if err != nil {
-								return nil, fmt.Errorf("can't force string to generic data type. row: %d field: %s", row-1, name)
+								return nil, fmt.Errorf("can't force string: %s to generic data type. row: %d field: %s", v, row-1, name)
 							}
 							insertVals = append(insertVals, cv)
 						default:

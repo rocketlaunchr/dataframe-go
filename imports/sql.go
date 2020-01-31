@@ -230,13 +230,13 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 					case float64:
 						f, err := strconv.ParseFloat(*val, 64)
 						if err != nil {
-							return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, fieldName)
+							return nil, fmt.Errorf("can't force string: %s to float64. row: %d field: %s", *val, row-1, fieldName)
 						}
 						insertVals[fieldName] = f
 					case int64:
 						n, err := strconv.ParseInt(*val, 10, 64)
 						if err != nil {
-							return nil, fmt.Errorf("can't force string to Int. row: %d field: %s", row-1, fieldName)
+							return nil, fmt.Errorf("can't force string: %s to Int. row: %d field: %s", *val, row-1, fieldName)
 						}
 						insertVals[fieldName] = n
 					case string:
@@ -247,7 +247,7 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 						} else if *val == "false" || *val == "FALSE" || *val == "0" {
 							insertVals[fieldName] = int64(0)
 						} else {
-							return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, fieldName)
+							return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", *val, row-1, fieldName)
 						}
 					case time.Time:
 						layout := time.RFC3339 // Default for PostgreSQL
@@ -260,7 +260,7 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 							// Assume unix timestamp
 							sec, err := strconv.ParseInt(*val, 10, 64)
 							if err != nil {
-								return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", layout, row-1, fieldName)
+								return nil, fmt.Errorf("can't force string: %s to time.Time (%s). row: %d field: %s", *val, layout, row-1, fieldName)
 							}
 							t = time.Unix(sec, 0)
 						}
@@ -270,7 +270,7 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 					case Converter:
 						cv, err := T.ConverterFunc(*val)
 						if err != nil {
-							return nil, fmt.Errorf("can't force string to generic data type. row: %d field: %s", row-1, fieldName)
+							return nil, fmt.Errorf("can't force string: %s to generic data type. row: %d field: %s", *val, row-1, fieldName)
 						}
 						insertVals[fieldName] = cv
 					default:
@@ -287,13 +287,13 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 			case "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "FLOAT4", "FLOAT8":
 				f, err := strconv.ParseFloat(*val, 64)
 				if err != nil {
-					return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, fieldName)
+					return nil, fmt.Errorf("can't force string: %s to float64. row: %d field: %s", *val, row-1, fieldName)
 				}
 				insertVals[fieldName] = f
 			case "INT", "TINYINT", "INT2", "INT4", "INT8", "MEDIUMINT", "SMALLINT", "BIGINT":
 				n, err := strconv.ParseInt(*val, 10, 64)
 				if err != nil {
-					return nil, fmt.Errorf("can't force string to Int. row: %d field: %s", row-1, fieldName)
+					return nil, fmt.Errorf("can't force string: %s to Int. row: %d field: %s", *val, row-1, fieldName)
 				}
 				insertVals[fieldName] = n
 			case "BOOL":
@@ -302,7 +302,7 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 				} else if *val == "false" || *val == "FALSE" || *val == "0" {
 					insertVals[fieldName] = int64(0)
 				} else {
-					return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, fieldName)
+					return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", *val, row-1, fieldName)
 				}
 			case "DATETIME", "TIMESTAMP", "TIMESTAMPTZ":
 				layout := time.RFC3339 // Default for PostgreSQL
@@ -315,7 +315,7 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 					// Assume unix timestamp
 					sec, err := strconv.ParseInt(*val, 10, 64)
 					if err != nil {
-						return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", layout, row-1, fieldName)
+						return nil, fmt.Errorf("can't force string: %s to time.Time (%s). row: %d field: %s", *val, layout, row-1, fieldName)
 					}
 					t = time.Unix(sec, 0)
 				}
