@@ -30,7 +30,7 @@ type SeriesComplex128 struct {
 	nilCount int
 }
 
-// NewSeriesComplex128 creates a new series with the underlying type as complex128
+// NewSeriesComplex128 creates a new series with the underlying type as complex128.
 func NewSeriesComplex128(name string, init *dataframe.SeriesInit, vals ...interface{}) *SeriesComplex128 {
 	s := &SeriesComplex128{
 		name:     name,
@@ -95,6 +95,11 @@ func NewSeriesComplex128(name string, init *dataframe.SeriesInit, vals ...interf
 	}
 
 	return s
+}
+
+// NewSeries creates a new initialized SeriesComplex128.
+func (s *SeriesComplex128) NewSeries(name string, init *dataframe.SeriesInit) dataframe.Series {
+	return NewSeriesComplex128(name, init)
 }
 
 // Name returns the series name.

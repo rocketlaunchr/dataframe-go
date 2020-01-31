@@ -26,7 +26,7 @@ type SeriesFloat64 struct {
 	nilCount int
 }
 
-// NewSeriesFloat64 creates a new series with the underlying type as float64
+// NewSeriesFloat64 creates a new series with the underlying type as float64.
 func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *SeriesFloat64 {
 	s := &SeriesFloat64{
 		name:     name,
@@ -91,6 +91,11 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 	}
 
 	return s
+}
+
+// NewSeries creates a new initialized SeriesFloat64.
+func (s *SeriesFloat64) NewSeries(name string, init *SeriesInit) Series {
+	return NewSeriesFloat64(name, init)
 }
 
 // Name returns the series name.

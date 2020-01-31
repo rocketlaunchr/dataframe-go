@@ -26,7 +26,7 @@ type SeriesTime struct {
 	nilCount int
 }
 
-// NewSeriesTime creates a new series with the underlying type as time.Time
+// NewSeriesTime creates a new series with the underlying type as time.Time.
 func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTime {
 	s := &SeriesTime{
 		name:     name,
@@ -84,6 +84,11 @@ func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTi
 	}
 
 	return s
+}
+
+// NewSeries creates a new initialized SeriesTime.
+func (s *SeriesTime) NewSeries(name string, init *SeriesInit) Series {
+	return NewSeriesTime(name, init)
 }
 
 // Name returns the series name.

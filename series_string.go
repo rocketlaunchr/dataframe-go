@@ -24,7 +24,7 @@ type SeriesString struct {
 	nilCount int
 }
 
-// NewSeriesString creates a new series with the underlying type as string
+// NewSeriesString creates a new series with the underlying type as string.
 func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *SeriesString {
 	s := &SeriesString{
 		name:     name,
@@ -82,6 +82,11 @@ func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *Series
 	}
 
 	return s
+}
+
+// NewSeries creates a new initialized SeriesString.
+func (s *SeriesString) NewSeries(name string, init *SeriesInit) Series {
+	return NewSeriesString(name, init)
 }
 
 // Name returns the series name.
