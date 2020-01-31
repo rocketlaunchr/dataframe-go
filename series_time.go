@@ -276,6 +276,44 @@ func (s *SeriesTime) Update(row int, val interface{}, options ...Options) {
 	s.Values[row] = newVal
 }
 
+// ValuesIterator will return an iterator that can be used to iterate through all the values.
+func (s *SeriesTime) ValuesIterator(opts ...ValuesOptions) func() (*int, interface{}) {
+
+	var (
+		row  int
+		step int = 1
+	)
+
+	var dontReadLock bool
+
+	if len(opts) > 0 {
+		dontReadLock = opts[0].DontReadLock
+
+		row = opts[0].InitialRow
+		step = opts[0].Step
+		if step == 0 {
+			panic("Step can not be zero")
+		}
+	}
+
+	return func() (*int, interface{}) {
+		// Should this be on the outside?
+		if !dontReadLock {
+			s.lock.RLock()
+			defer s.lock.RUnlock()
+		}
+
+		if row > len(s.Values)-1 || row < 0 {
+			// Don't iterate further
+			return nil, nil
+		}
+
+		out := s.Values[row]
+		row = row + step
+		return &[]int{row - step}[0], out
+	}
+}
+
 func (s *SeriesTime) valToPointer(v interface{}) *time.Time {
 	switch val := v.(type) {
 	case nil:
