@@ -44,6 +44,8 @@ type CSVLoadOptions struct {
 	// DictateDataType is used to inform LoadFromCSV what the true underlying data type is for a given field name.
 	// The value for a given key must be of the data type of the data.
 	// eg. For a string use "". For a int64 use int64(0). What is relevant is the data type and not the value itself.
+	//
+	// NOTE: A custom Series must implement NewSerieser interface and be able to interpret strings to work.
 	DictateDataType map[string]interface{}
 
 	// NilValue allows you to set what string value in the CSV file should be interpreted as a nil value for
@@ -134,6 +136,8 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 						seriess = append(seriess, dataframe.NewSeriesString(name, init))
 					case time.Time:
 						seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+					case dataframe.NewSerieser:
+						seriess = append(seriess, T.NewSeries(name, init))
 					case Converter:
 						seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
 					default:
@@ -205,6 +209,8 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 								insertVals = append(insertVals, time.Unix(sec, 0))
 							}
 							insertVals = append(insertVals, t)
+						case dataframe.NewSerieser:
+							insertVals = append(insertVals, v)
 						case Converter:
 							cv, err := T.ConverterFunc(v)
 							if err != nil {

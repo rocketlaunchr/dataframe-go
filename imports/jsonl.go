@@ -24,6 +24,8 @@ type JSONLoadOptions struct {
 	// DictateDataType is used to inform LoadFromJSON what the true underlying data type is for a given field name.
 	// The value for a given key must be of the data type of the data.
 	// eg. For a string use "". For a int64 use int64(0). What is relevant is the data type and not the value itself.
+	//
+	// NOTE: A custom Series must implement NewSerieser interface and be able to interpret strings to work.
 	DictateDataType map[string]interface{}
 
 	// ErrorOnUnknownFields will generate an error if an unknown field is encountered after the first row.
@@ -124,6 +126,8 @@ func LoadFromJSON(ctx context.Context, r io.ReadSeeker, options ...JSONLoadOptio
 						seriess = append(seriess, dataframe.NewSeriesString(name, init))
 					case time.Time:
 						seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+					case dataframe.NewSerieser:
+						seriess = append(seriess, T.NewSeries(name, init))
 					case Converter:
 						seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
 					default:

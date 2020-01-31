@@ -64,6 +64,8 @@ type SQLLoadOptions struct {
 	// DictateDataType is used to inform LoadFromSQL what the true underlying data type is for a given field name.
 	// The value for a given key must be of the data type of the data.
 	// eg. For a string use "". For a int64 use int64(0). What is relevant is the data type and not the value itself.
+	//
+	// NOTE: A custom Series must implement NewSerieser interface and be able to interpret strings to work.
 	DictateDataType map[string]interface{}
 
 	// Database is used to set the Database.
@@ -159,6 +161,8 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 					seriess = append(seriess, dataframe.NewSeriesString(name, init))
 				case time.Time:
 					seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+				case dataframe.NewSerieser:
+					seriess = append(seriess, T.NewSeries(name, init))
 				case Converter:
 					seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
 				default:
@@ -261,6 +265,8 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 							t = time.Unix(sec, 0)
 						}
 						insertVals[fieldName] = t
+					case dataframe.NewSerieser:
+						insertVals[fieldName] = *val
 					case Converter:
 						cv, err := T.ConverterFunc(*val)
 						if err != nil {
