@@ -131,13 +131,11 @@ iterator := df.ValuesIterator(dataframe.ValuesOptions{0, 1, true}) // Don't appl
 
 df.Lock()
 for {
-	row, vals := iterator()
+	row, vals, _ := iterator()
 	if row == nil {
 		break
 	}
-
 	fmt.Println(*row, vals)
-
 }
 df.Unlock()
 

@@ -71,7 +71,7 @@ type Series interface {
 	Reset(options ...Options)
 
 	// ValuesIterator will return an iterator that can be used to iterate through all the values.
-	ValuesIterator(options ...ValuesOptions) func() (*int, interface{})
+	ValuesIterator(options ...ValuesOptions) func() (*int, interface{}, int)
 
 	// Update is used to update the value of a particular row.
 	// val can be a concrete data type or nil. Nil represents

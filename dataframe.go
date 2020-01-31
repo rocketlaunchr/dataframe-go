@@ -128,7 +128,7 @@ type ValuesOptions struct {
 //
 //  df.Lock()
 //  for {
-//     row, vals := iterator()
+//     row, vals, _ := iterator()
 //     if row == nil {
 //        break
 //     }
@@ -136,7 +136,7 @@ type ValuesOptions struct {
 //  }
 //  df.Unlock()
 //
-func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}) {
+func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int) {
 
 	var (
 		row  int
@@ -155,7 +155,7 @@ func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...Ser
 		}
 	}
 
-	return func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}) {
+	return func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int) {
 		// Should this be on the outside?
 		if !dontReadLock {
 			df.lock.RLock()
@@ -164,7 +164,7 @@ func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...Ser
 
 		if row > df.n-1 || row < 0 {
 			// Don't iterate further
-			return nil, nil
+			return nil, nil, 0
 		}
 
 		out := map[interface{}]interface{}{}
@@ -182,7 +182,7 @@ func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...Ser
 
 		row = row + step
 
-		return &[]int{row - step}[0], out
+		return &[]int{row - step}[0], out, df.n
 	}
 }
 
