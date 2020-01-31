@@ -272,6 +272,13 @@ func (s *SeriesInt64) valToPointer(v interface{}) *int64 {
 	switch val := v.(type) {
 	case nil:
 		return nil
+	case *int:
+		if val == nil {
+			return nil
+		}
+		return &[]int64{int64(*val)}[0]
+	case int:
+		return &[]int64{int64(val)}[0]
 	case *int64:
 		if val == nil {
 			return nil
