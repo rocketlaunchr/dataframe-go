@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
@@ -271,6 +272,11 @@ func LoadFromJSON(ctx context.Context, r io.ReadSeeker, options ...JSONLoadOptio
 	if df == nil {
 		return nil, dataframe.ErrNoRows
 	}
+
+	// The order is not stable
+	names := df.Names()
+	sort.Strings(names)
+	df.ReorderColumns(names)
 
 	return df, nil
 }
