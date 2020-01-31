@@ -127,7 +127,7 @@ The returned values are a map containing the name of the series (`string`) and t
 
 ```go
 
-iterator := df.Values(dataframe.ValuesOptions{0, 1, true}) // Don't apply read lock because we are write locking from outside.
+iterator := df.ValuesIterator(dataframe.ValuesOptions{0, 1, true}) // Don't apply read lock because we are write locking from outside.
 
 df.Lock()
 for {

@@ -80,7 +80,7 @@ func TestSwap(t *testing.T) {
 		{56.2, 23.4, 50.3},
 	}
 
-	iterator := df.Values(ValuesOptions{0, 1, true})
+	iterator := df.ValuesIterator(ValuesOptions{0, 1, true})
 	df.Lock()
 	for {
 		row, vals := iterator()
@@ -180,7 +180,7 @@ func TestSort(t *testing.T) {
 		{56.2, 50.3, 23.4, 23.4, nil, nil},
 	}
 
-	iterator := df.Values(ValuesOptions{0, 1, true})
+	iterator := df.ValuesIterator(ValuesOptions{0, 1, true})
 	df.Lock()
 	for {
 		row, vals := iterator()

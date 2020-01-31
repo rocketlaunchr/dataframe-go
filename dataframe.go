@@ -81,7 +81,12 @@ const (
 //
 //  df.Row(5, dataframe.SeriesIdx|dataframe.SeriesName)
 //
-func (df *DataFrame) Row(row int, retOpt ...SeriesReturnOpt) map[interface{}]interface{} {
+func (df *DataFrame) Row(row int, dontReadLock bool, retOpt ...SeriesReturnOpt) map[interface{}]interface{} {
+	if !dontReadLock {
+		df.lock.RLock()
+		defer df.lock.RUnlock()
+	}
+
 	out := map[interface{}]interface{}{}
 
 	for idx, aSeries := range df.Series {
@@ -115,11 +120,11 @@ type ValuesOptions struct {
 	DontReadLock bool
 }
 
-// Values will return an iterator that can be used to iterate through all the values.
+// ValuesIterator will return an iterator that can be used to iterate through all the values.
 //
 // Example:
 //
-//  iterator := df.Values(dataframe.ValuesOptions{0, 1, true})
+//  iterator := df.ValuesIterator(dataframe.ValuesOptions{0, 1, true})
 //
 //  df.Lock()
 //  for {
@@ -131,10 +136,12 @@ type ValuesOptions struct {
 //  }
 //  df.Unlock()
 //
-func (df *DataFrame) Values(options ...ValuesOptions) func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}) {
+func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}) {
 
-	var row int
-	var step int = 1
+	var (
+		row  int
+		step int = 1
+	)
 
 	var dontReadLock bool
 
@@ -149,6 +156,7 @@ func (df *DataFrame) Values(options ...ValuesOptions) func(retOpt ...SeriesRetur
 	}
 
 	return func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}) {
+		// Should this be on the outside?
 		if !dontReadLock {
 			df.lock.RLock()
 			defer df.lock.RUnlock()
