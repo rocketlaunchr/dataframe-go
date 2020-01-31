@@ -297,6 +297,9 @@ func (s *SeriesGeneric) ValuesIterator(opts ...ValuesOptions) func() (*int, inte
 		}
 
 		out := s.values[row]
+		if out == nil {
+			out = nil
+		}
 		row = row + step
 		return &[]int{row - step}[0], out
 	}

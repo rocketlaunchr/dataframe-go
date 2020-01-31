@@ -308,7 +308,13 @@ func (s *SeriesTime) ValuesIterator(opts ...ValuesOptions) func() (*int, interfa
 			return nil, nil
 		}
 
-		out := s.Values[row]
+		val := s.Values[row]
+		var out interface{}
+		if val == nil {
+			out = nil
+		} else {
+			out = *val
+		}
 		row = row + step
 		return &[]int{row - step}[0], out
 	}

@@ -305,7 +305,13 @@ func (s *SeriesInt64) ValuesIterator(opts ...ValuesOptions) func() (*int, interf
 			return nil, nil
 		}
 
-		out := s.values[row]
+		val := s.values[row]
+		var out interface{}
+		if val == nil {
+			out = nil
+		} else {
+			out = *val
+		}
 		row = row + step
 		return &[]int{row - step}[0], out
 	}

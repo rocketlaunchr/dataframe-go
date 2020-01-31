@@ -319,7 +319,10 @@ func (s *SeriesComplex128) ValuesIterator(opts ...dataframe.ValuesOptions) func(
 			return nil, nil
 		}
 
-		out := s.Values[row]
+		var out interface{} = s.Values[row]
+		if cmplx.IsNaN(out.(complex128)) {
+			out = nil
+		}
 		row = row + step
 		return &[]int{row - step}[0], out
 	}

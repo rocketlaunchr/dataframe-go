@@ -307,7 +307,10 @@ func (s *SeriesFloat64) ValuesIterator(opts ...ValuesOptions) func() (*int, inte
 			return nil, nil
 		}
 
-		out := s.Values[row]
+		var out interface{} = s.Values[row]
+		if isNaN(out.(float64)) {
+			out = nil
+		}
 		row = row + step
 		return &[]int{row - step}[0], out
 	}
