@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+
+	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
 // GenericDataConverter is used to convert input data into a generic data type.
@@ -157,6 +159,20 @@ func dictateForce(row int, insertVals map[string]interface{}, name string, typ i
 			// Do nothing
 		default:
 			return fmt.Errorf("can't force %T to time.Time. row: %d field: %s", v, row-1, name)
+		}
+	case dataframe.NewSerieser:
+		// Force v to string
+		switch v := val.(type) {
+		case string:
+			insertVals[name] = v
+		case json.Number:
+			insertVals[name] = v.String()
+		case bool:
+			if v == true {
+				insertVals[name] = "true"
+			} else {
+				insertVals[name] = "false"
+			}
 		}
 	case Converter:
 		// Force v to generic
