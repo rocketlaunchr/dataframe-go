@@ -273,7 +273,7 @@ func (s *SeriesString) Update(row int, val interface{}, options ...Options) {
 }
 
 // ValuesIterator will return an iterator that can be used to iterate through all the values.
-func (s *SeriesString) ValuesIterator(opts ...ValuesOptions) func() (*int, interface{}) {
+func (s *SeriesString) ValuesIterator(opts ...ValuesOptions) func() (*int, interface{}, int) {
 
 	var (
 		row  int
@@ -292,7 +292,7 @@ func (s *SeriesString) ValuesIterator(opts ...ValuesOptions) func() (*int, inter
 		}
 	}
 
-	return func() (*int, interface{}) {
+	return func() (*int, interface{}, int) {
 		// Should this be on the outside?
 		if !dontReadLock {
 			s.lock.RLock()
@@ -301,7 +301,7 @@ func (s *SeriesString) ValuesIterator(opts ...ValuesOptions) func() (*int, inter
 
 		if row > len(s.values)-1 || row < 0 {
 			// Don't iterate further
-			return nil, nil
+			return nil, nil, 0
 		}
 
 		val := s.values[row]
@@ -312,7 +312,7 @@ func (s *SeriesString) ValuesIterator(opts ...ValuesOptions) func() (*int, inter
 			out = *val
 		}
 		row = row + step
-		return &[]int{row - step}[0], out
+		return &[]int{row - step}[0], out, len(s.values)
 	}
 }
 
