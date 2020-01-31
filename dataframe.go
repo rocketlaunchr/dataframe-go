@@ -265,6 +265,26 @@ func (df *DataFrame) insert(row int, vals ...interface{}) {
 				}
 				df.Series[col].Insert(row, val)
 			}
+		case map[interface{}]interface{}:
+
+			if len(v) != len(df.Series) {
+				panic("no. of args not equal to no. of series")
+			}
+
+			for C, val := range v {
+				switch CTyp := C.(type) {
+				case int:
+					df.Series[CTyp].Insert(row, val)
+				case string:
+					col, err := df.NameToColumn(CTyp)
+					if err != nil {
+						panic(err)
+					}
+					df.Series[col].Insert(row, val)
+				default:
+					panic("unknown type in insert argument. Must be an int or string.")
+				}
+			}
 		default:
 			// Check if number of vals is equal to number of series
 			if len(vals) != len(df.Series) {
@@ -336,6 +356,21 @@ func (df *DataFrame) UpdateRow(row int, vals ...interface{}) {
 					panic(err)
 				}
 				df.Series[col].Update(row, val)
+			}
+		case map[interface{}]interface{}:
+			for C, val := range v {
+				switch CTyp := C.(type) {
+				case int:
+					df.Series[CTyp].Update(row, val)
+				case string:
+					col, err := df.NameToColumn(CTyp)
+					if err != nil {
+						panic(err)
+					}
+					df.Series[col].Update(row, val)
+				default:
+					panic("unknown type in UpdateRow argument. Must be an int or string.")
+				}
 			}
 		default:
 			// Check if number of vals is equal to number of series
