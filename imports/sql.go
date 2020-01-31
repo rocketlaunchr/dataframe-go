@@ -164,7 +164,12 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 				case dataframe.NewSerieser:
 					seriess = append(seriess, T.NewSeries(name, init))
 				case Converter:
-					seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
+					switch T.ConcreteType.(type) {
+					case time.Time:
+						seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+					default:
+						seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
+					}
 				default:
 					seriess = append(seriess, dataframe.NewSeriesGeneric(name, typ, init))
 				}

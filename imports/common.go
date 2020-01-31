@@ -16,7 +16,22 @@ import (
 type GenericDataConverter func(in interface{}) (interface{}, error)
 
 // Converter is used to convert input data into a generic data type.
-// This is required when importing data for a Generic Series ("NewSeriesGeneric").
+// This is required when importing data for a Generic Series ("dataframe.SeriesGeneric").
+// As a special case, if ConcreteType is time.Time, then a SeriesTime is used.
+//
+// Example:
+//
+//  opts := imports.CSVLoadOptions{
+//     DictateDataType: map[string]interface{}{
+//        "Date": imports.Converter{
+//           ConcreteType: time.Time{},
+//           ConverterFunc: func(in interface{}) (interface{}, error) {
+//              return time.Parse("2006-01-02", in.(string))
+//           },
+//        },
+//     },
+//  }
+//
 type Converter struct {
 	ConcreteType  interface{}
 	ConverterFunc GenericDataConverter
