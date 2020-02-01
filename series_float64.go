@@ -559,7 +559,7 @@ func (s *SeriesFloat64) Table(r ...Range) string {
 		}
 
 		for row := start; row <= end; row++ {
-			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, Options{DontLock: true})}
+			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, dontLock)}
 			data = append(data, sVals)
 		}
 
@@ -595,13 +595,13 @@ func (s *SeriesFloat64) String() string {
 			if j == 3 {
 				out = out + "... "
 			}
-			out = out + s.ValueString(row, Options{DontLock: true}) + " "
+			out = out + s.ValueString(row, dontLock) + " "
 		}
 		return out + "]"
 	}
 
 	for row := range s.Values {
-		out = out + s.ValueString(row, Options{DontLock: true}) + " "
+		out = out + s.ValueString(row, dontLock) + " "
 	}
 	return out + "]"
 
@@ -633,7 +633,7 @@ func (s *SeriesFloat64) ToSeriesString(ctx context.Context, removeNil bool, conv
 
 	ec := NewErrorCollection()
 
-	ss := NewSeriesString(s.name, &SeriesInit{Capacity: s.NRows(Options{DontLock: true})})
+	ss := NewSeriesString(s.name, &SeriesInit{Capacity: s.NRows(dontLock)})
 
 	for row, rowVal := range s.Values {
 

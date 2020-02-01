@@ -306,7 +306,7 @@ func (df *DataFrame) ClearRow(row int) {
 	defer df.lock.Unlock()
 
 	for i := range df.Series {
-		df.Series[i].Update(row, nil, Options{DontLock: true}) //???
+		df.Series[i].Update(row, nil, dontLock) //???
 	}
 }
 
@@ -513,7 +513,7 @@ func (df *DataFrame) Copy(r ...Range) *DataFrame {
 	}
 
 	if len(seriess) > 0 {
-		newDF.n = seriess[0].NRows(Options{DontLock: true})
+		newDF.n = seriess[0].NRows(dontLock)
 	}
 
 	return newDF
