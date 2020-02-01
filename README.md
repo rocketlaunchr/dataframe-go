@@ -57,9 +57,9 @@ OUTPUT:
 
 ```go
 
-df.Append(9, 123.6)
+df.Append(nil, 9, 123.6)
 
-df.Append(map[string]interface{}{
+df.Append(nil, map[string]interface{}{
 	"day":   10,
 	"sales": nil,
 })
@@ -88,7 +88,7 @@ OUTPUT:
 
 ```go
 
-df.UpdateRow(0, map[string]interface{}{
+df.UpdateRow(0, nil, map[string]interface{}{
 	"day":   3,
 	"sales": 45,
 })
@@ -267,6 +267,132 @@ OUTPUT:
 +-----+------------+---------+
 
 ```
+
+# Example
+
+## Create some fake data
+
+Let's create a list of "fake" employees with a name, title and base hourly wage rate.
+
+```go
+ctx := context.Background()
+src := rand.NewSource(uint64(time.Now().UTC().UnixNano()))
+df := faker.NewDataFrame(8, src, faker.S("name", 0, "Name"), faker.S("title", 0.5, "JobTitle"), faker.S("base rate", 0, "Number", 15, 50))
+```
+
+```groovy
++-----+----------------+----------------+-----------+
+|     |      NAME      |     TITLE      | BASE RATE |
++-----+----------------+----------------+-----------+
+| 0:  | Cordia Jacobi  |   Consultant   |    42     |
+| 1:  | Nickolas Emard |      NaN       |    22     |
+| 2:  | Hollis Dickens | Representative |    22     |
+| 3:  | Stacy Dietrich |      NaN       |    43     |
+| 4:  |  Aleen Legros  |    Officer     |    21     |
+| 5:  |  Adelia Metz   |   Architect    |    18     |
+| 6:  | Sunny Gerlach  |      NaN       |    28     |
+| 7:  | Austin Hackett |      NaN       |    39     |
++-----+----------------+----------------+-----------+
+| 8X3 |     STRING     |     STRING     |   INT64   |
++-----+----------------+----------------+-----------+
+```
+
+## Apply Function
+
+Let's give a promotion to everyone by doubling their salary.
+
+```go
+s := df.Series[2]
+
+applyFn := dataframe.ApplySeriesFn(func(val interface{}, row, nRows int) interface{} {
+	return 2 * val.(int64)
+})
+
+dataframe.Apply(ctx, s, applyFn, dataframe.FilterOptions{InPlace: true})
+```
+
+```groovy
++-----+----------------+----------------+-----------+
+|     |      NAME      |     TITLE      | BASE RATE |
++-----+----------------+----------------+-----------+
+| 0:  | Cordia Jacobi  |   Consultant   |    84     |
+| 1:  | Nickolas Emard |      NaN       |    44     |
+| 2:  | Hollis Dickens | Representative |    44     |
+| 3:  | Stacy Dietrich |      NaN       |    86     |
+| 4:  |  Aleen Legros  |    Officer     |    42     |
+| 5:  |  Adelia Metz   |   Architect    |    36     |
+| 6:  | Sunny Gerlach  |      NaN       |    56     |
+| 7:  | Austin Hackett |      NaN       |    78     |
++-----+----------------+----------------+-----------+
+| 8X3 |     STRING     |     STRING     |   INT64   |
++-----+----------------+----------------+-----------+
+```
+
+
+## Create a Time series
+
+Let's inform all employees separately on sequential days.
+
+```go
+mts, _ := utime.NewSeriesTime(ctx, "meeting time", "1D", time.Now().UTC(), false, utime.NewSeriesTimeOptions{Size: &[]int{8}[0]})
+df.AddSeries(mts, nil)
+```
+
+```groovy
++-----+----------------+----------------+-----------+--------------------------------+
+|     |      NAME      |     TITLE      | BASE RATE |          MEETING TIME          |
++-----+----------------+----------------+-----------+--------------------------------+
+| 0:  | Cordia Jacobi  |   Consultant   |    84     |   2020-02-02 23:13:53.015324   |
+|     |                |                |           |           +0000 UTC            |
+| 1:  | Nickolas Emard |      NaN       |    44     |   2020-02-03 23:13:53.015324   |
+|     |                |                |           |           +0000 UTC            |
+| 2:  | Hollis Dickens | Representative |    44     |   2020-02-04 23:13:53.015324   |
+|     |                |                |           |           +0000 UTC            |
+| 3:  | Stacy Dietrich |      NaN       |    86     |   2020-02-05 23:13:53.015324   |
+|     |                |                |           |           +0000 UTC            |
+| 4:  |  Aleen Legros  |    Officer     |    42     |   2020-02-06 23:13:53.015324   |
+|     |                |                |           |           +0000 UTC            |
+| 5:  |  Adelia Metz   |   Architect    |    36     |   2020-02-07 23:13:53.015324   |
+|     |                |                |           |           +0000 UTC            |
+| 6:  | Sunny Gerlach  |      NaN       |    56     |   2020-02-08 23:13:53.015324   |
+|     |                |                |           |           +0000 UTC            |
+| 7:  | Austin Hackett |      NaN       |    78     |   2020-02-09 23:13:53.015324   |
+|     |                |                |           |           +0000 UTC            |
++-----+----------------+----------------+-----------+--------------------------------+
+```
+
+## Filtering
+
+Let's filter out our sernior employees (they have titles).
+
+```go
+filterFn := dataframe.FilterDataFrameFn(func(vals map[interface{}]interface{}, row, nRows int) (dataframe.FilterAction, error) {
+	if vals["title"] == nil {
+		return dataframe.DROP, nil
+	}
+	return dataframe.KEEP, nil
+})
+
+seniors, _ := dataframe.Filter(ctx, df, filterFn)
+```
+
+```groovy
++-----+----------------+----------------+-----------+--------------------------------+
+|     |      NAME      |     TITLE      | BASE RATE |          MEETING TIME          |
++-----+----------------+----------------+-----------+--------------------------------+
+| 0:  | Cordia Jacobi  |   Consultant   |    84     |   2020-02-02 23:13:53.015324   |
+|     |                |                |           |           +0000 UTC            |
+| 1:  | Hollis Dickens | Representative |    44     |   2020-02-04 23:13:53.015324   |
+|     |                |                |           |           +0000 UTC            |
+| 2:  |  Aleen Legros  |    Officer     |    42     |   2020-02-06 23:13:53.015324   |
+|     |                |                |           |           +0000 UTC            |
+| 3:  |  Adelia Metz   |   Architect    |    36     |   2020-02-07 23:13:53.015324   |
+|     |                |                |           |           +0000 UTC            |
++-----+----------------+----------------+-----------+--------------------------------+
+| 4X4 |     STRING     |     STRING     |   INT64   |              TIME              |
++-----+----------------+----------------+-----------+--------------------------------+
+```
+
 
 ## Other useful packages
 
