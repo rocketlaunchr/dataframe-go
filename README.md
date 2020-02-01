@@ -366,7 +366,7 @@ df.AddSeries(mts, nil)
 
 ## Filtering
 
-Let's filter out our sernior employees (they have titles).
+Let's filter out our senior employees (they have titles).
 
 ```go
 filterFn := dataframe.FilterDataFrameFn(func(vals map[interface{}]interface{}, row, nRows int) (dataframe.FilterAction, error) {
