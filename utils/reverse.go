@@ -28,7 +28,7 @@ type ReverseOptions struct {
 // Reverse will reverse the order of a Dataframe or Series.
 // If a Range is provided, only the rows within the range are reversed.
 // s will be locked for the duration of the operation.
-func Reverse(ctx context.Context, s common, opts ...ReverseOptions) error {
+func Reverse(ctx context.Context, sdf common, opts ...ReverseOptions) error {
 
 	if len(opts) == 0 {
 		opts = append(opts, ReverseOptions{R: &dataframe.Range{}})
@@ -37,11 +37,11 @@ func Reverse(ctx context.Context, s common, opts ...ReverseOptions) error {
 	}
 
 	if !opts[0].DontLock {
-		s.Lock()
-		defer s.Unlock()
+		sdf.Lock()
+		defer sdf.Unlock()
 	}
 
-	nRows := s.NRows(dataframe.DontLock)
+	nRows := sdf.NRows(dataframe.DontLock)
 	if nRows == 0 {
 		return nil
 	}
@@ -62,7 +62,7 @@ func Reverse(ctx context.Context, s common, opts ...ReverseOptions) error {
 			return err
 		}
 		opp := rRows - 1 - i
-		s.Swap(i+start, opp+start, dataframe.DontLock)
+		sdf.Swap(i+start, opp+start, dataframe.DontLock)
 	}
 
 	return nil

@@ -16,9 +16,9 @@ type ApplySeriesFn func(val interface{}, row, nRows int) interface{}
 // value returned by fn. When s is a DataFrame, fn must be ApplyDataFrameFn. When s is a Series, fn must be ApplySeriesFn.
 //
 // As a special case, if fn returns nil when used with a DataFrame, the existing value is kept.
-func Apply(ctx context.Context, s interface{}, fn interface{}, opts ...FilterOptions) (interface{}, error) {
+func Apply(ctx context.Context, sdf interface{}, fn interface{}, opts ...FilterOptions) (interface{}, error) {
 
-	switch typ := s.(type) {
+	switch typ := sdf.(type) {
 	case Series:
 		s, err := applySeries(ctx, typ, fn.(ApplySeriesFn), opts...)
 		if s == nil {
@@ -32,7 +32,64 @@ func Apply(ctx context.Context, s interface{}, fn interface{}, opts ...FilterOpt
 		}
 		return df, err
 	default:
-		panic("s must be a Series or DataFrame")
+		panic("sdf must be a Series or DataFrame")
+	}
+
+	return nil, nil
+}
+
+func applySeries(ctx context.Context, s Series, fn ApplySeriesFn, opts ...FilterOptions) (Series, error) {
+
+	if fn == nil {
+		panic("fn is required")
+	}
+
+	if len(opts) == 0 {
+		opts = append(opts, FilterOptions{})
+	}
+
+	if !opts[0].DontLock {
+		s.Lock()
+		defer s.Unlock()
+	}
+
+	nRows := s.NRows(dontLock)
+
+	var ns Series
+
+	if !opts[0].InPlace {
+		x, ok := s.(NewSerieser)
+		if !ok {
+			panic("s must implement NewSerieser interface if InPlace is false")
+		}
+
+		// Create a New Series
+		ns = x.NewSeries(s.Name(dontLock), &SeriesInit{Capacity: nRows})
+	}
+
+	iterator := s.ValuesIterator(ValuesOptions{InitialRow: 0, Step: 1, DontReadLock: true})
+
+	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		row, val, nRows := iterator()
+		if row == nil {
+			break
+		}
+
+		newVal := fn(val, *row, nRows)
+
+		if opts[0].InPlace {
+			s.Update(*row, newVal, dontLock)
+		} else {
+			ns.Append(newVal, dontLock)
+		}
+	}
+
+	if !opts[0].InPlace {
+		return ns, nil
 	}
 
 	return nil, nil
@@ -76,7 +133,7 @@ func applyDataFrame(ctx context.Context, df *DataFrame, fn ApplyDataFrameFn, opt
 		ndf = NewDataFrame(seriess...)
 	}
 
-	iterator := df.ValuesIterator(ValuesOptions{InitialRow: 0, Step: 1, DontReadLock: !opts[0].DontLock})
+	iterator := df.ValuesIterator(ValuesOptions{InitialRow: 0, Step: 1, DontReadLock: true})
 
 	for {
 		if err := ctx.Err(); err != nil {
@@ -92,7 +149,7 @@ func applyDataFrame(ctx context.Context, df *DataFrame, fn ApplyDataFrameFn, opt
 
 		if opts[0].InPlace {
 			if newVals != nil {
-				df.UpdateRow(*row, &Options{DontLock: !opts[0].DontLock}, newVals)
+				df.UpdateRow(*row, &dontLock, newVals)
 			}
 		} else {
 			if newVals != nil {
@@ -105,63 +162,6 @@ func applyDataFrame(ctx context.Context, df *DataFrame, fn ApplyDataFrameFn, opt
 
 	if !opts[0].InPlace {
 		return ndf, nil
-	}
-
-	return nil, nil
-}
-
-func applySeries(ctx context.Context, s Series, fn ApplySeriesFn, opts ...FilterOptions) (Series, error) {
-
-	if fn == nil {
-		panic("fn is required")
-	}
-
-	if len(opts) == 0 {
-		opts = append(opts, FilterOptions{})
-	}
-
-	if !opts[0].DontLock {
-		s.Lock()
-		defer s.Unlock()
-	}
-
-	nRows := s.NRows(Options{DontLock: !opts[0].DontLock})
-
-	var ns Series
-
-	if !opts[0].InPlace {
-		x, ok := s.(NewSerieser)
-		if !ok {
-			panic("s must implement NewSerieser interface if InPlace is false")
-		}
-
-		// Create a New Series
-		ns = x.NewSeries(s.Name(dontLock), &SeriesInit{Capacity: nRows})
-	}
-
-	iterator := s.ValuesIterator(ValuesOptions{InitialRow: 0, Step: 1, DontReadLock: !opts[0].DontLock})
-
-	for {
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-
-		row, val, nRows := iterator()
-		if row == nil {
-			break
-		}
-
-		newVal := fn(val, *row, nRows)
-
-		if opts[0].InPlace {
-			s.Update(*row, newVal, Options{DontLock: !opts[0].DontLock})
-		} else {
-			ns.Append(newVal, dontLock)
-		}
-	}
-
-	if !opts[0].InPlace {
-		return ns, nil
 	}
 
 	return nil, nil
