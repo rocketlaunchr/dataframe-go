@@ -272,9 +272,12 @@ OUTPUT:
 
 ## Create some fake data
 
-Let's create a list of "fake" employees with a name, title and base hourly wage rate.
+Let's create a list of 8 "fake" employees with a name, title and base hourly wage rate.
 
 ```go
+import "golang.org/x/exp/rand"
+import "rocketlaunchr/dataframe-go/utils/faker"
+
 ctx := context.Background()
 src := rand.NewSource(uint64(time.Now().UTC().UnixNano()))
 df := faker.NewDataFrame(8, src, faker.S("name", 0, "Name"), faker.S("title", 0.5, "JobTitle"), faker.S("base rate", 0, "Number", 15, 50))
