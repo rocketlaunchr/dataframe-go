@@ -119,7 +119,7 @@ func (df *DataFrame) Sort(ctx context.Context, keys []SortKey, opts ...SortOptio
 
 		name, ok := key.Key.(string)
 		if ok {
-			col, err := df.NameToColumn(name)
+			col, err := df.NameToColumn(name, dontLock)
 			if err != nil {
 				panic(err)
 			}

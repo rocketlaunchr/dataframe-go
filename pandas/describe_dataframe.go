@@ -27,7 +27,7 @@ func describeDataframe(ctx context.Context, df *dataframe.DataFrame, opts ...Des
 		case int:
 			wl[_v] = struct{}{}
 		case string:
-			idx, err := df.NameToColumn(_v)
+			idx, err := df.NameToColumn(_v, dataframe.DontLock)
 			if err != nil {
 				continue
 			}
@@ -42,7 +42,7 @@ func describeDataframe(ctx context.Context, df *dataframe.DataFrame, opts ...Des
 		case int:
 			bl[_v] = struct{}{}
 		case string:
-			idx, err := df.NameToColumn(_v)
+			idx, err := df.NameToColumn(_v, dataframe.DontLock)
 			if err != nil {
 				continue
 			}

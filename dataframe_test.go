@@ -31,22 +31,22 @@ func TestInsertAndRemove(t *testing.T) {
 	s2 := NewSeriesFloat64("sales", nil, 50.3, 23.4, 56.2)
 	df := NewDataFrame(s1, s2)
 
-	df.Append(9, 123.6)
+	df.Append(&dontLock, 9, 123.6)
 
-	df.Append(map[string]interface{}{
+	df.Append(&dontLock, map[string]interface{}{
 		"day":   10,
 		"sales": nil,
 	})
 
 	df.Remove(0)
 
-	df.Prepend(map[string]interface{}{
+	df.Prepend(&dontLock, map[string]interface{}{
 		"day":   99,
 		"sales": 199.99,
 	})
 
-	df.Prepend(1000, 10000)
-	df.UpdateRow(0, 10000, 1000)
+	df.Prepend(&dontLock, 1000, 10000)
+	df.UpdateRow(0, &dontLock, 10000, 1000)
 	df.Update(0, 1, 9000)
 
 	expected := `+-----+-------+---------+
@@ -191,7 +191,7 @@ func TestSort(t *testing.T) {
 		for key, val := range vals {
 			switch colName := key.(type) {
 			case string:
-				idx, _ := df.NameToColumn(colName)
+				idx, _ := df.NameToColumn(colName, dontLock)
 
 				expected := expectedValues[idx][*row]
 				actual := val //df.Series[idx].Value(*row)

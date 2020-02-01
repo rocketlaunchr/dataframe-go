@@ -332,9 +332,9 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 		}
 
 		if init == nil {
-			df.Append(make([]interface{}, len(df.Series))...)
+			df.Append(&dataframe.DontLock, make([]interface{}, len(df.Series))...)
 		}
-		df.UpdateRow(row-1, insertVals)
+		df.UpdateRow(row-1, &dataframe.DontLock, insertVals)
 
 	}
 	if err := rows.Err(); err != nil {
