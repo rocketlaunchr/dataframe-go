@@ -1,6 +1,10 @@
 Dataframes for Go [![GoDoc](http://godoc.org/github.com/rocketlaunchr/dataframe-go?status.svg)](http://godoc.org/github.com/rocketlaunchr/dataframe-go) [![gocover.io](http://gocover.io/_badge/github.com/rocketlaunchr/dataframe-go)](https://gocover.io/github.com/rocketlaunchr/dataframe-go) [![Go Report Card](https://goreportcard.com/badge/github.com/rocketlaunchr/dataframe-go)](https://goreportcard.com/report/github.com/rocketlaunchr/dataframe-go)
 ===============
 
+<p align="center">
+<img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/logo.png" alt="dataframe-go" />
+</p>
+
 Dataframes are used for statistics and data manipulation. You can think of a Dataframe as an excel spreadsheet.
 This package is designed to be light-weight and intuitive.
 
