@@ -451,6 +451,22 @@ func (df *DataFrame) RemoveSeries(seriesName string, opts ...Options) error {
 	return nil
 }
 
+// AddSeries will add a Series to the end of the DataFrame.
+func (df *DataFrame) AddSeries(s Series, opts ...Options) error {
+	if len(opts) == 0 || !opts[0].DontLock {
+		df.lock.Lock()
+		defer df.lock.Unlock()
+	}
+
+	if s.NRows(dontLock) != df.n {
+		panic("different number of rows in series")
+	}
+
+	df.Series = append(df.Series, s)
+
+	return nil
+}
+
 // Swap is used to swap 2 values based on their row position.
 func (df *DataFrame) Swap(row1, row2 int, opts ...Options) {
 	if len(opts) == 0 || !opts[0].DontLock {
