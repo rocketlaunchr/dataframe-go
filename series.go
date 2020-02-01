@@ -25,10 +25,10 @@ type ValueToStringFormatter func(val interface{}) string
 type Series interface {
 
 	// Name returns the series name.
-	Name() string
+	Name(options ...Options) string
 
 	// Rename renames the series.
-	Rename(n string)
+	Rename(n string, options ...Options)
 
 	// Type returns the type of data the series holds.
 	Type() string
@@ -109,10 +109,10 @@ type Series interface {
 	Copy(r ...Range) Series
 
 	// ContainsNil will return whether or not the series contains any nil values.
-	ContainsNil() bool
+	ContainsNil(options ...Options) bool
 
 	// NilCount will return how many nil values are in the series.
-	NilCount() int
+	NilCount(options ...Options) int
 }
 
 // NewSerieser is an interface for a Series to create a new initialized Series of the same type.

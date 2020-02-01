@@ -90,17 +90,21 @@ func (s *SeriesString) NewSeries(name string, init *SeriesInit) Series {
 }
 
 // Name returns the series name.
-func (s *SeriesString) Name() string {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+func (s *SeriesString) Name(options ...Options) string {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
 
 	return s.name
 }
 
 // Rename renames the series.
-func (s *SeriesString) Rename(n string) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+func (s *SeriesString) Rename(n string, options ...Options) {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
 
 	s.name = n
 }
@@ -573,16 +577,22 @@ func (s *SeriesString) String() string {
 }
 
 // ContainsNil will return whether or not the series contains any nil values.
-func (s *SeriesString) ContainsNil() bool {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+func (s *SeriesString) ContainsNil(options ...Options) bool {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
 	return s.nilCount > 0
 }
 
 // NilCount will return how many nil values are in the series.
-func (s *SeriesString) NilCount() int {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+func (s *SeriesString) NilCount(options ...Options) int {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
 	return s.nilCount
 }
 
