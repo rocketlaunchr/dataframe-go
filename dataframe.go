@@ -451,8 +451,8 @@ func (df *DataFrame) RemoveSeries(seriesName string, opts ...Options) error {
 	return nil
 }
 
-// AddSeries will add a Series to the end of the DataFrame.
-func (df *DataFrame) AddSeries(s Series, opts ...Options) error {
+// AddSeries will add a Series to the end of the DataFrame, unless set by ColN.
+func (df *DataFrame) AddSeries(s Series, colN *int, opts ...Options) error {
 	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.Lock()
 		defer df.lock.Unlock()
@@ -462,7 +462,13 @@ func (df *DataFrame) AddSeries(s Series, opts ...Options) error {
 		panic("different number of rows in series")
 	}
 
-	df.Series = append(df.Series, s)
+	if colN == nil {
+		df.Series = append(df.Series, s)
+	} else {
+		df.Series = append(df.Series, nil)
+		copy(df.Series[*colN+1:], df.Series[*colN:])
+		df.Series[*colN] = s
+	}
 
 	return nil
 }
