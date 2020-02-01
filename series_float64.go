@@ -324,6 +324,21 @@ func (s *SeriesFloat64) valToPointer(v interface{}) float64 {
 	switch val := v.(type) {
 	case nil:
 		return nan()
+	case *bool:
+		if val == nil {
+			return nan()
+		}
+		if *val == true {
+			return float64(1)
+		} else {
+			return float64(0)
+		}
+	case bool:
+		if val == true {
+			return float64(1)
+		} else {
+			return float64(0)
+		}
 	case *int:
 		if val == nil {
 			return nan()

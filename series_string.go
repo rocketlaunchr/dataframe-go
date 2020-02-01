@@ -324,6 +324,21 @@ func (s *SeriesString) valToPointer(v interface{}) *string {
 	switch val := v.(type) {
 	case nil:
 		return nil
+	case *bool:
+		if val == nil {
+			return nil
+		}
+		if *val == true {
+			return &[]string{"1"}[0]
+		} else {
+			return &[]string{"0"}[0]
+		}
+	case bool:
+		if val == true {
+			return &[]string{"1"}[0]
+		} else {
+			return &[]string{"0"}[0]
+		}
 	case *string:
 		if val == nil {
 			return nil

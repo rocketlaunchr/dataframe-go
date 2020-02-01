@@ -343,6 +343,21 @@ func (s *SeriesComplex128) valToPointer(v interface{}) complex128 {
 		return *val
 	case complex128:
 		return val
+	case *bool:
+		if val == nil {
+			return cmplx.NaN()
+		}
+		if *val == true {
+			return complex(float64(1), 0)
+		} else {
+			return complex(float64(0), 0)
+		}
+	case bool:
+		if val == true {
+			return complex(float64(1), 0)
+		} else {
+			return complex(float64(0), 0)
+		}
 	case *int:
 		if val == nil {
 			return cmplx.NaN()
