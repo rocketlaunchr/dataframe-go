@@ -5,6 +5,7 @@ package dataframe
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"golang.org/x/exp/rand"
 	"sort"
@@ -16,7 +17,9 @@ import (
 
 // SeriesMixed is used for series containing mixed data.
 type SeriesMixed struct {
-	valFormatter ValueToStringFormatter
+	valFormatter   ValueToStringFormatter
+	isEqualFunc    IsEqualFunc
+	isLessThanFunc IsLessThanFunc
 
 	lock     sync.RWMutex
 	name     string
@@ -27,9 +30,10 @@ type SeriesMixed struct {
 // NewSeriesMixed creates a new series with the underlying type as interface{}.
 func NewSeriesMixed(name string, init *SeriesInit, vals ...interface{}) *SeriesMixed {
 	s := &SeriesMixed{
-		name:     name,
-		values:   []float64{},
-		nilCount: 0,
+		isEqualFunc: DefaultIsEqualFunc,
+		name:        name,
+		values:      []float64{},
+		nilCount:    0,
 	}
 
 	var (
@@ -410,39 +414,43 @@ func (s *SeriesMixed) Swap(row1, row2 int, options ...Options) {
 // IsEqualFunc returns true if a is equal to b.
 func (s *SeriesMixed) IsEqualFunc(a, b interface{}) bool {
 
-	if a == nil {
-		if b == nil {
-			return true
-		}
-		return false
+	if s.isEqualFunc == nil {
+		panic(errors.New("IsEqualFunc not set"))
 	}
 
-	if b == nil {
-		return false
-	}
-	f1 := a.(float64)
-	f2 := b.(float64)
-
-	return f1 == f2
+	return s.isEqualFunc(a, b)
 }
 
 // IsLessThanFunc returns true if a is less than b.
 func (s *SeriesMixed) IsLessThanFunc(a, b interface{}) bool {
 
-	if a == nil {
-		if b == nil {
-			return true
-		}
-		return true
+	if s.isLessThanFunc == nil {
+		panic(errors.New("IsLessThanFunc not set"))
 	}
 
-	if b == nil {
-		return false
-	}
-	f1 := a.(float64)
-	f2 := b.(float64)
+	return s.isLessThanFunc(a, b)
+}
 
-	return f1 < f2
+// SetIsEqualFunc sets a function which can be used to determine
+// if 2 values in the series are equal.
+func (s *SeriesMixed) SetIsEqualFunc(f IsEqualFunc) {
+	if f == nil {
+		// Return to default
+		s.isEqualFunc = DefaultIsEqualFunc
+	} else {
+		s.isEqualFunc = f
+	}
+}
+
+// SetIsLessThanFunc sets a function which can be used to determine
+// if a value is less than another in the series.
+func (s *SeriesMixed) SetIsLessThanFunc(f IsLessThanFunc) {
+	if f == nil {
+		// Return to default
+		s.isLessThanFunc = nil
+	} else {
+		s.isLessThanFunc = f
+	}
 }
 
 // Sort will sort the series.
