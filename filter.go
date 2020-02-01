@@ -40,6 +40,9 @@ type FilterSeriesFn func(val interface{}, row, nRows int) (FilterAction, error)
 // If the function returns DROP, then the row is removed. If KEEP or CHOOSE is chosen, the row is kept.
 type FilterDataFrameFn func(vals map[interface{}]interface{}, row, nRows int) (FilterAction, error)
 
+// Filter is used to filter particular rows in a Series or DataFrame.
+// If the InPlace option is set, the function returns nil. Instead the Series or DataFrame is modified "in place".
+// Alternatively, a new Series or DataFrame is returned.
 func Filter(ctx context.Context, sdf interface{}, fn interface{}, opts ...FilterOptions) (interface{}, error) {
 
 	switch typ := sdf.(type) {
@@ -62,9 +65,6 @@ func Filter(ctx context.Context, sdf interface{}, fn interface{}, opts ...Filter
 	return nil, nil
 }
 
-// FilterSeries is used to filter particular rows in a Series.
-// If the InPlace option is set, this function returns nil. Instead s is modified "in place".
-// Alternatively, a new Series is returned.
 func filterSeries(ctx context.Context, s Series, fn FilterSeriesFn, opts ...FilterOptions) (Series, error) {
 
 	if fn == nil {
@@ -138,9 +138,6 @@ func filterSeries(ctx context.Context, s Series, fn FilterSeriesFn, opts ...Filt
 	return nil, nil
 }
 
-// Filter is used to filter particular rows in a DataFrame.
-// If the InPlace option is set, this function returns nil. Instead df is modified "in place".
-// Alternatively, a new DataFrame is returned.
 func filterDataFrame(ctx context.Context, df *DataFrame, fn FilterDataFrameFn, opts ...FilterOptions) (*DataFrame, error) {
 
 	if fn == nil {

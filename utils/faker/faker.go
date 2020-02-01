@@ -42,7 +42,6 @@ func S(name string, pn float64, fn string, args ...interface{}) s {
 //  import "time"
 //
 //  src := rand.NewSource(uint64(time.Now().UTC().UnixNano()))
-//  uniform := distuv.Uniform{Min: 0, Max: 10000, Src: src}
 //  df := faker.NewDataFrame(5, src, faker.S("name", 0, "FirstName"), faker.S("email", 0, "Email"))
 //
 func NewDataFrame(rows int, src rand.Source, s ...s) *dataframe.DataFrame {
