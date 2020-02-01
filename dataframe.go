@@ -275,7 +275,7 @@ func (df *DataFrame) insert(row int, vals ...interface{}) {
 
 // ClearRow makes an entire row nil.
 func (df *DataFrame) ClearRow(row int, opts ...Options) {
-	if len(opts) == 0 || (len(opts) > 0 && !opts[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.Lock()
 		defer df.lock.Unlock()
 	}
@@ -287,7 +287,7 @@ func (df *DataFrame) ClearRow(row int, opts ...Options) {
 
 // Remove deletes a row.
 func (df *DataFrame) Remove(row int, opts ...Options) {
-	if len(opts) == 0 || (len(opts) > 0 && !opts[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.Lock()
 		defer df.lock.Unlock()
 	}
@@ -301,7 +301,7 @@ func (df *DataFrame) Remove(row int, opts ...Options) {
 // Update is used to update a specific entry.
 // col can be the name of the series or the column number.
 func (df *DataFrame) Update(row int, col interface{}, val interface{}, opts ...Options) {
-	if len(opts) == 0 || (len(opts) > 0 && !opts[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.Lock()
 		defer df.lock.Unlock()
 	}
@@ -366,7 +366,7 @@ func (df *DataFrame) UpdateRow(row int, opts *Options, vals ...interface{}) {
 
 // Names will return a list of all the series names.
 func (df *DataFrame) Names(opts ...Options) []string {
-	if len(opts) == 0 || (len(opts) > 0 && !opts[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.RLock()
 		defer df.lock.RUnlock()
 	}
@@ -382,7 +382,7 @@ func (df *DataFrame) Names(opts ...Options) []string {
 // NameToColumn returns the index of the series based on the name.
 // The starting index is 0.
 func (df *DataFrame) NameToColumn(seriesName string, opts ...Options) (int, error) {
-	if len(opts) == 0 || (len(opts) > 0 && !opts[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.RLock()
 		defer df.lock.RUnlock()
 	}
@@ -400,7 +400,7 @@ func (df *DataFrame) NameToColumn(seriesName string, opts ...Options) (int, erro
 // column names. The length of newOrder must match the number of columns
 // in the Dataframe. The column names in newOrder must be unique.
 func (df *DataFrame) ReorderColumns(newOrder []string, opts ...Options) error {
-	if len(opts) == 0 || (len(opts) > 0 && !opts[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.Lock()
 		defer df.lock.Unlock()
 	}
@@ -437,7 +437,7 @@ func (df *DataFrame) ReorderColumns(newOrder []string, opts ...Options) error {
 
 // RemoveSeries will remove a Series from the Dataframe.
 func (df *DataFrame) RemoveSeries(seriesName string, opts ...Options) error {
-	if len(opts) == 0 || (len(opts) > 0 && !opts[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.Lock()
 		defer df.lock.Unlock()
 	}
@@ -453,7 +453,7 @@ func (df *DataFrame) RemoveSeries(seriesName string, opts ...Options) error {
 
 // Swap is used to swap 2 values based on their row position.
 func (df *DataFrame) Swap(row1, row2 int, opts ...Options) {
-	if len(opts) == 0 || (len(opts) > 0 && !opts[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.Lock()
 		defer df.lock.Unlock()
 	}
