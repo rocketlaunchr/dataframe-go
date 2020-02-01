@@ -517,7 +517,7 @@ func (s *SeriesGeneric) Table(r ...Range) string {
 		}
 
 		for row := start; row <= end; row++ {
-			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, Options{DontLock: true})}
+			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, dontLock)}
 			data = append(data, sVals)
 		}
 
@@ -553,13 +553,13 @@ func (s *SeriesGeneric) String() string {
 			if j == 3 {
 				out = out + "... "
 			}
-			out = out + s.ValueString(row, Options{DontLock: true}) + " "
+			out = out + s.ValueString(row, dontLock) + " "
 		}
 		return out + "]"
 	}
 
 	for row := range s.values {
-		out = out + s.ValueString(row, Options{DontLock: true}) + " "
+		out = out + s.ValueString(row, dontLock) + " "
 	}
 	return out + "]"
 }

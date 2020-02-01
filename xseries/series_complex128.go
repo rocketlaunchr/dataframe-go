@@ -578,7 +578,7 @@ func (s *SeriesComplex128) Table(r ...dataframe.Range) string {
 		}
 
 		for row := start; row <= end; row++ {
-			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, dataframe.Options{DontLock: true})}
+			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, dataframe.DontLock)}
 			data = append(data, sVals)
 		}
 
@@ -614,13 +614,13 @@ func (s *SeriesComplex128) String() string {
 			if j == 3 {
 				out = out + "... "
 			}
-			out = out + s.ValueString(row, dataframe.Options{DontLock: true}) + " "
+			out = out + s.ValueString(row, dataframe.DontLock) + " "
 		}
 		return out + "]"
 	}
 
 	for row := range s.Values {
-		out = out + s.ValueString(row, dataframe.Options{DontLock: true}) + " "
+		out = out + s.ValueString(row, dataframe.DontLock) + " "
 	}
 	return out + "]"
 
@@ -661,7 +661,7 @@ func (s *SeriesComplex128) ToSeriesString(ctx context.Context, removeNil bool, c
 
 	ec := dataframe.NewErrorCollection()
 
-	ss := dataframe.NewSeriesString(s.name, &dataframe.SeriesInit{Capacity: s.NRows(dataframe.Options{DontLock: true})})
+	ss := dataframe.NewSeriesString(s.name, &dataframe.SeriesInit{Capacity: s.NRows(dataframe.DontLock)})
 
 	for row, rowVal := range s.Values {
 
@@ -674,19 +674,19 @@ func (s *SeriesComplex128) ToSeriesString(ctx context.Context, removeNil bool, c
 			if removeNil {
 				continue
 			}
-			ss.Append(nil, dataframe.Options{DontLock: true})
+			ss.Append(nil, dataframe.DontLock)
 		} else {
 			if len(conv) == 0 {
 				cv := s.valFormatter(rowVal)
-				ss.Append(cv, dataframe.Options{DontLock: true})
+				ss.Append(cv, dataframe.DontLock)
 			} else {
 				cv, err := conv[0](rowVal)
 				if err != nil {
 					// interpret as nil
-					ss.Append(nil, dataframe.Options{DontLock: true})
+					ss.Append(nil, dataframe.DontLock)
 					ec.AddError(&dataframe.RowError{Row: row, Err: err}, false)
 				} else {
-					ss.Append(cv, dataframe.Options{DontLock: true})
+					ss.Append(cv, dataframe.DontLock)
 				}
 			}
 		}
@@ -705,7 +705,7 @@ func (s *SeriesComplex128) ToSeriesFloat64(ctx context.Context, removeNil bool, 
 
 	ec := dataframe.NewErrorCollection()
 
-	ss := dataframe.NewSeriesFloat64(s.name, &dataframe.SeriesInit{Capacity: s.NRows(dataframe.Options{DontLock: true})})
+	ss := dataframe.NewSeriesFloat64(s.name, &dataframe.SeriesInit{Capacity: s.NRows(dataframe.DontLock)})
 
 	for _, rowVal := range s.Values {
 
@@ -718,32 +718,32 @@ func (s *SeriesComplex128) ToSeriesFloat64(ctx context.Context, removeNil bool, 
 			if removeNil {
 				continue
 			}
-			ss.Append(nil, dataframe.Options{DontLock: true})
+			ss.Append(nil, dataframe.DontLock)
 		} else {
 			r := real(rowVal)
 			i := imag(rowVal)
 
 			if r >= 0 {
 				if i >= 0 {
-					ss.Append(cmplx.Abs(rowVal), dataframe.Options{DontLock: true})
+					ss.Append(cmplx.Abs(rowVal), dataframe.DontLock)
 				} else {
 					// i is neg
 					if math.Abs(r) > math.Abs(i) {
-						ss.Append(cmplx.Abs(rowVal), dataframe.Options{DontLock: true})
+						ss.Append(cmplx.Abs(rowVal), dataframe.DontLock)
 					} else {
-						ss.Append(-cmplx.Abs(rowVal), dataframe.Options{DontLock: true})
+						ss.Append(-cmplx.Abs(rowVal), dataframe.DontLock)
 					}
 				}
 			} else {
 				if i >= 0 {
 					// r is neg
 					if math.Abs(r) > math.Abs(i) {
-						ss.Append(-cmplx.Abs(rowVal), dataframe.Options{DontLock: true})
+						ss.Append(-cmplx.Abs(rowVal), dataframe.DontLock)
 					} else {
-						ss.Append(cmplx.Abs(rowVal), dataframe.Options{DontLock: true})
+						ss.Append(cmplx.Abs(rowVal), dataframe.DontLock)
 					}
 				} else {
-					ss.Append(-cmplx.Abs(rowVal), dataframe.Options{DontLock: true})
+					ss.Append(-cmplx.Abs(rowVal), dataframe.DontLock)
 				}
 			}
 		}
