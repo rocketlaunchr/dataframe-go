@@ -99,7 +99,7 @@ func (df *DataFrame) Sort(ctx context.Context, keys []SortKey, opts ...SortOptio
 		}
 	}()
 
-	if len(opts) == 0 || (len(opts) != 0 && !opts[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		// Default
 		df.lock.Lock()
 		defer df.lock.Unlock()
@@ -135,7 +135,7 @@ func (df *DataFrame) Sort(ctx context.Context, keys []SortKey, opts ...SortOptio
 		ctx:  ctx,
 	}
 
-	if len(opts) == 0 || (len(opts) != 0 && !opts[0].Stable) {
+	if len(opts) == 0 || !opts[0].Stable {
 		// Default
 		sort.Sort(s)
 	} else {
