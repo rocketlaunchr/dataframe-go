@@ -20,6 +20,7 @@ const (
 	CHOOSE FilterAction = 1
 )
 
+// FilterOptions modifies the behaviour of the Filter function.
 type FilterOptions struct {
 
 	// InPlace will perform the filter operation on the current Series or DataFrame.
@@ -27,21 +28,44 @@ type FilterOptions struct {
 	// on the filter operation. The original Series or DataFrame will be unmodified.
 	InPlace bool
 
-	Series []interface{} // Which series to keep
-
+	// DontLock can be set to true if the series should not be locked.
 	DontLock bool
 }
 
-type FilterSeriesFn func(ctx context.Context, val interface{}, row, nRows int) (FilterAction, error)
-
-// FilterFn is used by the Filter function to determine which rows are selected.
+// FilterSeriesFn is used by the Filter function to determine which rows are selected.
 // If the function returns DROP, then the row is removed. If KEEP or CHOOSE is chosen, the row is kept.
-type FilterFn func(ctx context.Context, vals map[interface{}]interface{}, row, nRows int) (FilterAction, error)
+type FilterSeriesFn func(val interface{}, row, nRows int) (FilterAction, error)
+
+// FilterDataFrameFn is used by the Filter function to determine which rows are selected.
+// If the function returns DROP, then the row is removed. If KEEP or CHOOSE is chosen, the row is kept.
+type FilterDataFrameFn func(vals map[interface{}]interface{}, row, nRows int) (FilterAction, error)
+
+func Filter(ctx context.Context, sdf interface{}, fn interface{}, opts ...FilterOptions) (interface{}, error) {
+
+	switch typ := sdf.(type) {
+	case Series:
+		s, err := filterSeries(ctx, typ, fn.(FilterSeriesFn), opts...)
+		if s == nil {
+			return nil, err
+		}
+		return s, err
+	case *DataFrame:
+		df, err := filterDataFrame(ctx, typ, fn.(FilterDataFrameFn), opts...)
+		if df == nil {
+			return nil, err
+		}
+		return df, err
+	default:
+		panic("df must be a Series or DataFrame")
+	}
+
+	return nil, nil
+}
 
 // FilterSeries is used to filter particular rows in a Series.
 // If the InPlace option is set, this function returns nil. Instead s is modified "in place".
 // Alternatively, a new Series is returned.
-func FilterSeries(ctx context.Context, s Series, fn FilterSeriesFn, opts ...FilterOptions) (Series, error) {
+func filterSeries(ctx context.Context, s Series, fn FilterSeriesFn, opts ...FilterOptions) (Series, error) {
 
 	if fn == nil {
 		panic("fn is required")
@@ -65,15 +89,19 @@ func FilterSeries(ctx context.Context, s Series, fn FilterSeriesFn, opts ...Filt
 
 	transfer := []int{}
 
-	iterator := s.ValuesIterator(ValuesOptions{InitialRow: 0, Step: 1, DontReadLock: !opts[0].DontLock})
+	iterator := s.ValuesIterator(ValuesOptions{InitialRow: 0, Step: 1, DontReadLock: true})
 
 	for {
-		row, val, nRow := iterator()
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		row, val, nRows := iterator()
 		if row == nil {
 			break
 		}
 
-		fa, err := fn(ctx, val, *row, nRow)
+		fa, err := fn(val, *row, nRows)
 		if err != nil {
 			return nil, err
 		}
@@ -95,15 +123,15 @@ func FilterSeries(ctx context.Context, s Series, fn FilterSeriesFn, opts ...Filt
 		// Create a New Series
 		ns := (s.(NewSerieser)).NewSeries(s.Name(), &SeriesInit{Capacity: len(transfer)})
 		for _, rowToTransfer := range transfer {
-			val := s.Value(rowToTransfer, Options{DontLock: opts[0].DontLock})
-			ns.Append(val, Options{DontLock: true})
+			val := s.Value(rowToTransfer, dontLock)
+			ns.Append(val, dontLock)
 		}
 		return ns, nil
 	} else {
 		// Remove rows that need to be removed
 		for idx := len(transfer) - 1; idx >= 0; idx-- {
 			rowToRemove := transfer[idx]
-			s.Remove(rowToRemove, Options{DontLock: opts[0].DontLock})
+			s.Remove(rowToRemove, dontLock)
 		}
 	}
 
@@ -113,7 +141,7 @@ func FilterSeries(ctx context.Context, s Series, fn FilterSeriesFn, opts ...Filt
 // Filter is used to filter particular rows in a DataFrame.
 // If the InPlace option is set, this function returns nil. Instead df is modified "in place".
 // Alternatively, a new DataFrame is returned.
-func Filter(ctx context.Context, df *DataFrame, fn FilterFn, opts ...FilterOptions) (*DataFrame, error) {
+func filterDataFrame(ctx context.Context, df *DataFrame, fn FilterDataFrameFn, opts ...FilterOptions) (*DataFrame, error) {
 
 	if fn == nil {
 		panic("fn is required")
@@ -139,15 +167,19 @@ func Filter(ctx context.Context, df *DataFrame, fn FilterFn, opts ...FilterOptio
 
 	transfer := []int{}
 
-	iterator := df.ValuesIterator(ValuesOptions{InitialRow: 0, Step: 1, DontReadLock: !opts[0].DontLock})
+	iterator := df.ValuesIterator(ValuesOptions{InitialRow: 0, Step: 1, DontReadLock: true})
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		row, vals, nRow := iterator()
 		if row == nil {
 			break
 		}
 
-		fa, err := fn(ctx, vals, *row, nRow)
+		fa, err := fn(vals, *row, nRow)
 		if err != nil {
 			return nil, err
 		}
@@ -169,22 +201,22 @@ func Filter(ctx context.Context, df *DataFrame, fn FilterFn, opts ...FilterOptio
 		// Create all series
 		seriess := []Series{}
 		for i := range df.Series {
-			seriess = append(seriess, (df.Series[i].(NewSerieser)).NewSeries(df.Series[i].Name(), &SeriesInit{Capacity: len(transfer)}))
+			seriess = append(seriess, (df.Series[i].(NewSerieser)).NewSeries(df.Series[i].Name(dontLock), &SeriesInit{Capacity: len(transfer)}))
 		}
 
 		// Create a new dataframe
 		ndf := NewDataFrame(seriess...)
 
 		for _, rowToTransfer := range transfer {
-			vals := df.Row(rowToTransfer, opts[0].DontLock, SeriesName)
-			ndf.Append(vals)
+			vals := df.Row(rowToTransfer, true, SeriesName)
+			ndf.Append(&dontLock, vals)
 		}
 		return ndf, nil
 	} else {
 		// Remove rows that need to be removed
 		for idx := len(transfer) - 1; idx >= 0; idx-- {
 			rowToRemove := transfer[idx]
-			df.Remove(rowToRemove)
+			df.Remove(rowToRemove, dontLock)
 		}
 	}
 

@@ -27,7 +27,7 @@ type ShuffleOptions struct {
 // Shuffle will randomly shuffle the rows in a Dataframe or Series.
 // If a Range is provided, only the rows within the range are shuffled.
 // s will be locked for the duration of the operation.
-func Shuffle(ctx context.Context, s common, opts ...ShuffleOptions) (rErr error) {
+func Shuffle(ctx context.Context, sdf common, opts ...ShuffleOptions) (rErr error) {
 
 	defer func() {
 		if x := recover(); x != nil {
@@ -42,11 +42,11 @@ func Shuffle(ctx context.Context, s common, opts ...ShuffleOptions) (rErr error)
 	}
 
 	if !opts[0].DontLock {
-		s.Lock()
-		defer s.Unlock()
+		sdf.Lock()
+		defer sdf.Unlock()
 	}
 
-	nRows := s.NRows(dataframe.DontLock)
+	nRows := sdf.NRows(dataframe.DontLock)
 	if nRows == 0 {
 		return nil
 	}
@@ -66,7 +66,7 @@ func Shuffle(ctx context.Context, s common, opts ...ShuffleOptions) (rErr error)
 		if err := ctx.Err(); err != nil {
 			panic(err)
 		}
-		s.Swap(i+start, j+start, dataframe.DontLock)
+		sdf.Swap(i+start, j+start, dataframe.DontLock)
 	})
 
 	return nil
