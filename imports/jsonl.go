@@ -198,9 +198,9 @@ func LoadFromJSON(ctx context.Context, r io.ReadSeeker, options ...JSONLoadOptio
 			}
 
 			if init == nil {
-				df.Append(make([]interface{}, len(df.Series))...)
+				df.Append(&dataframe.DontLock, make([]interface{}, len(df.Series))...)
 			}
-			df.UpdateRow(row-1, insertVals)
+			df.UpdateRow(row-1, &dataframe.DontLock, insertVals)
 
 		} else {
 
@@ -262,9 +262,9 @@ func LoadFromJSON(ctx context.Context, r io.ReadSeeker, options ...JSONLoadOptio
 			}
 
 			if init == nil {
-				df.Append(make([]interface{}, len(df.Series))...)
+				df.Append(&dataframe.DontLock, make([]interface{}, len(df.Series))...)
 			}
-			df.UpdateRow(row-1, insertVals)
+			df.UpdateRow(row-1, &dataframe.DontLock, insertVals)
 
 		}
 	}
@@ -274,7 +274,7 @@ func LoadFromJSON(ctx context.Context, r io.ReadSeeker, options ...JSONLoadOptio
 	}
 
 	// The order is not stable
-	names := df.Names()
+	names := df.Names(dataframe.DontLock)
 	sort.Strings(names)
 	df.ReorderColumns(names)
 

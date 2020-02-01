@@ -62,7 +62,7 @@ func ExportToExcel(ctx context.Context, outputFilePath string, df *dataframe.Dat
 	// Add first row to excel sheet for header fields
 	sheetRow = sheet.AddRow()
 	// Write Header fields first
-	for _, field := range df.Names() {
+	for _, field := range df.Names(dataframe.DontLock) {
 		cell = sheetRow.AddCell() // set column cell
 		cell.Value = field        // assign field to cell
 	}

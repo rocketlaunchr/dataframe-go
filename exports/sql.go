@@ -177,7 +177,7 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 		columnNames = append(columnNames, pk.PrimaryKey)
 	}
 
-	for _, seriesName := range df.Names() {
+	for _, seriesName := range df.Names(dataframe.DontLock) {
 
 		colName, exists := seriesToColumn[seriesName]
 		if exists && colName == nil {

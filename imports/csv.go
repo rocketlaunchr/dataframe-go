@@ -171,7 +171,7 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 
 				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
 
-					name := df.Names()[idx]
+					name := df.Names(dataframe.DontLock)[idx]
 
 					// Check if a datatype is dictated
 					typ, exists := options[0].DictateDataType[name]
@@ -236,9 +236,9 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 			}
 
 			if init == nil {
-				df.Append(insertVals...)
+				df.Append(&dataframe.DontLock, insertVals...)
 			} else {
-				df.UpdateRow(row-1, insertVals...)
+				df.UpdateRow(row-1, &dataframe.DontLock, insertVals...)
 			}
 
 		}
