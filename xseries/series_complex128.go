@@ -103,17 +103,21 @@ func (s *SeriesComplex128) NewSeries(name string, init *dataframe.SeriesInit) da
 }
 
 // Name returns the series name.
-func (s *SeriesComplex128) Name() string {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+func (s *SeriesComplex128) Name(options ...dataframe.Options) string {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
 
 	return s.name
 }
 
 // Rename renames the series.
-func (s *SeriesComplex128) Rename(n string) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+func (s *SeriesComplex128) Rename(n string, options ...dataframe.Options) {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
 
 	s.name = n
 }
@@ -623,16 +627,22 @@ func (s *SeriesComplex128) String() string {
 }
 
 // ContainsNil will return whether or not the series contains any nil values.
-func (s *SeriesComplex128) ContainsNil() bool {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+func (s *SeriesComplex128) ContainsNil(options ...dataframe.Options) bool {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
 	return s.nilCount > 0
 }
 
 // NilCount will return how many nil values are in the series.
-func (s *SeriesComplex128) NilCount() int {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+func (s *SeriesComplex128) NilCount(options ...dataframe.Options) int {
+	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
 	return s.nilCount
 }
 
