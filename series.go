@@ -25,58 +25,58 @@ type ValueToStringFormatter func(val interface{}) string
 type Series interface {
 
 	// Name returns the series name.
-	Name(options ...Options) string
+	Name(opts ...Options) string
 
 	// Rename renames the series.
-	Rename(n string, options ...Options)
+	Rename(n string, opts ...Options)
 
 	// Type returns the type of data the series holds.
 	Type() string
 
 	// NRows returns how many rows the series contains.
-	NRows(options ...Options) int
+	NRows(opts ...Options) int
 
 	// Value returns the value of a particular row.
 	// The return value could be nil or the concrete type
 	// the data type held by the series.
 	// Pointers are never returned.
-	Value(row int, options ...Options) interface{}
+	Value(row int, opts ...Options) interface{}
 
 	// ValueString returns a string representation of a
 	// particular row. The string representation is defined
 	// by the function set in SetValueToStringFormatter.
 	// By default, a nil value is returned as "NaN".
-	ValueString(row int, options ...Options) string
+	ValueString(row int, opts ...Options) string
 
 	// Prepend is used to set a value to the beginning of the
 	// series. val can be a concrete data type or nil. Nil
 	// represents the absence of a value.
-	Prepend(val interface{}, options ...Options)
+	Prepend(val interface{}, opts ...Options)
 
 	// Append is used to set a value to the end of the series.
 	// val can be a concrete data type or nil. Nil represents
 	// the absence of a value.
-	Append(val interface{}, options ...Options) int
+	Append(val interface{}, opts ...Options) int
 
 	// Insert is used to set a value at an arbitrary row in
 	// the series. All existing values from that row onwards
 	// are shifted by 1. val can be a concrete data type or nil.
 	// Nil represents the absence of a value.
-	Insert(row int, val interface{}, options ...Options)
+	Insert(row int, val interface{}, opts ...Options)
 
 	// Remove is used to delete the value of a particular row.
-	Remove(row int, options ...Options)
+	Remove(row int, opts ...Options)
 
 	// Reset is used clear all data contained in the Series.
-	Reset(options ...Options)
+	Reset(opts ...Options)
 
 	// ValuesIterator will return an iterator that can be used to iterate through all the values.
-	ValuesIterator(options ...ValuesOptions) func() (*int, interface{}, int)
+	ValuesIterator(opts ...ValuesOptions) func() (*int, interface{}, int)
 
 	// Update is used to update the value of a particular row.
 	// val can be a concrete data type or nil. Nil represents
 	// the absence of a value.
-	Update(row int, val interface{}, options ...Options)
+	Update(row int, val interface{}, opts ...Options)
 
 	// SetValueToStringFormatter is used to set a function
 	// to convert the value of a particular row to a string
@@ -94,7 +94,7 @@ type Series interface {
 	IsLessThanFunc(a, b interface{}) bool
 
 	// Swap is used to swap 2 values based on their row position.
-	Swap(row1, row2 int, options ...Options)
+	Swap(row1, row2 int, opts ...Options)
 
 	// Lock will lock the Series allowing you to directly manipulate
 	// the underlying slice with confidence.
@@ -109,10 +109,10 @@ type Series interface {
 	Copy(r ...Range) Series
 
 	// ContainsNil will return whether or not the series contains any nil values.
-	ContainsNil(options ...Options) bool
+	ContainsNil(opts ...Options) bool
 
 	// NilCount will return how many nil values are in the series.
-	NilCount(options ...Options) int
+	NilCount(opts ...Options) int
 }
 
 // NewSerieser is an interface for a Series to create a new initialized Series of the same type.

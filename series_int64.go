@@ -90,8 +90,8 @@ func (s *SeriesInt64) NewSeries(name string, init *SeriesInit) Series {
 }
 
 // Name returns the series name.
-func (s *SeriesInt64) Name(options ...Options) string {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesInt64) Name(opts ...Options) string {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -100,8 +100,8 @@ func (s *SeriesInt64) Name(options ...Options) string {
 }
 
 // Rename renames the series.
-func (s *SeriesInt64) Rename(n string, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesInt64) Rename(n string, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -115,8 +115,8 @@ func (s *SeriesInt64) Type() string {
 }
 
 // NRows returns how many rows the series contains.
-func (s *SeriesInt64) NRows(options ...Options) int {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesInt64) NRows(opts ...Options) int {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -128,8 +128,8 @@ func (s *SeriesInt64) NRows(options ...Options) int {
 // The return value could be nil or the concrete type
 // the data type held by the series.
 // Pointers are never returned.
-func (s *SeriesInt64) Value(row int, options ...Options) interface{} {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesInt64) Value(row int, opts ...Options) interface{} {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -145,15 +145,15 @@ func (s *SeriesInt64) Value(row int, options ...Options) interface{} {
 // particular row. The string representation is defined
 // by the function set in SetValueToStringFormatter.
 // By default, a nil value is returned as "NaN".
-func (s *SeriesInt64) ValueString(row int, options ...Options) string {
-	return s.valFormatter(s.Value(row, options...))
+func (s *SeriesInt64) ValueString(row int, opts ...Options) string {
+	return s.valFormatter(s.Value(row, opts...))
 }
 
 // Prepend is used to set a value to the beginning of the
 // series. val can be a concrete data type or nil. Nil
 // represents the absence of a value.
-func (s *SeriesInt64) Prepend(val interface{}, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesInt64) Prepend(val interface{}, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -175,9 +175,9 @@ func (s *SeriesInt64) Prepend(val interface{}, options ...Options) {
 // Append is used to set a value to the end of the series.
 // val can be a concrete data type or nil. Nil represents
 // the absence of a value.
-func (s *SeriesInt64) Append(val interface{}, options ...Options) int {
+func (s *SeriesInt64) Append(val interface{}, opts ...Options) int {
 	var locked bool
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 		locked = true
@@ -192,8 +192,8 @@ func (s *SeriesInt64) Append(val interface{}, options ...Options) int {
 // the series. All existing values from that row onwards
 // are shifted by 1. val can be a concrete data type or nil.
 // Nil represents the absence of a value.
-func (s *SeriesInt64) Insert(row int, val interface{}, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesInt64) Insert(row int, val interface{}, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -233,8 +233,8 @@ func (s *SeriesInt64) insert(row int, val interface{}) {
 }
 
 // Remove is used to delete the value of a particular row.
-func (s *SeriesInt64) Remove(row int, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesInt64) Remove(row int, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -247,8 +247,8 @@ func (s *SeriesInt64) Remove(row int, options ...Options) {
 }
 
 // Reset is used clear all data contained in the Series.
-func (s *SeriesInt64) Reset(options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesInt64) Reset(opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -260,8 +260,8 @@ func (s *SeriesInt64) Reset(options ...Options) {
 // Update is used to update the value of a particular row.
 // val can be a concrete data type or nil. Nil represents
 // the absence of a value.
-func (s *SeriesInt64) Update(row int, val interface{}, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesInt64) Update(row int, val interface{}, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -390,12 +390,12 @@ func (s *SeriesInt64) SetValueToStringFormatter(f ValueToStringFormatter) {
 }
 
 // Swap is used to swap 2 values based on their row position.
-func (s *SeriesInt64) Swap(row1, row2 int, options ...Options) {
+func (s *SeriesInt64) Swap(row1, row2 int, opts ...Options) {
 	if row1 == row2 {
 		return
 	}
 
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -616,8 +616,8 @@ func (s *SeriesInt64) String() string {
 }
 
 // ContainsNil will return whether or not the series contains any nil values.
-func (s *SeriesInt64) ContainsNil(options ...Options) bool {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesInt64) ContainsNil(opts ...Options) bool {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -626,8 +626,8 @@ func (s *SeriesInt64) ContainsNil(options ...Options) bool {
 }
 
 // NilCount will return how many nil values are in the series.
-func (s *SeriesInt64) NilCount(options ...Options) int {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesInt64) NilCount(opts ...Options) int {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}

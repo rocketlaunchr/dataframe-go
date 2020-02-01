@@ -103,8 +103,8 @@ func (s *SeriesComplex128) NewSeries(name string, init *dataframe.SeriesInit) da
 }
 
 // Name returns the series name.
-func (s *SeriesComplex128) Name(options ...dataframe.Options) string {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesComplex128) Name(opts ...dataframe.Options) string {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -113,8 +113,8 @@ func (s *SeriesComplex128) Name(options ...dataframe.Options) string {
 }
 
 // Rename renames the series.
-func (s *SeriesComplex128) Rename(n string, options ...dataframe.Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesComplex128) Rename(n string, opts ...dataframe.Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -128,8 +128,8 @@ func (s *SeriesComplex128) Type() string {
 }
 
 // NRows returns how many rows the series contains.
-func (s *SeriesComplex128) NRows(options ...dataframe.Options) int {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesComplex128) NRows(opts ...dataframe.Options) int {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -141,8 +141,8 @@ func (s *SeriesComplex128) NRows(options ...dataframe.Options) int {
 // The return value could be nil or the concrete type
 // the data type held by the series.
 // Pointers are never returned.
-func (s *SeriesComplex128) Value(row int, options ...dataframe.Options) interface{} {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesComplex128) Value(row int, opts ...dataframe.Options) interface{} {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -158,15 +158,15 @@ func (s *SeriesComplex128) Value(row int, options ...dataframe.Options) interfac
 // particular row. The string representation is defined
 // by the function set in SetValueToStringFormatter.
 // By default, a nil value is returned as "NaN".
-func (s *SeriesComplex128) ValueString(row int, options ...dataframe.Options) string {
-	return s.valFormatter(s.Value(row, options...))
+func (s *SeriesComplex128) ValueString(row int, opts ...dataframe.Options) string {
+	return s.valFormatter(s.Value(row, opts...))
 }
 
 // Prepend is used to set a value to the beginning of the
 // series. val can be a concrete data type or nil. Nil
 // represents the absence of a value.
-func (s *SeriesComplex128) Prepend(val interface{}, options ...dataframe.Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesComplex128) Prepend(val interface{}, opts ...dataframe.Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -188,9 +188,9 @@ func (s *SeriesComplex128) Prepend(val interface{}, options ...dataframe.Options
 // Append is used to set a value to the end of the series.
 // val can be a concrete data type or nil. Nil represents
 // the absence of a value.
-func (s *SeriesComplex128) Append(val interface{}, options ...dataframe.Options) int {
+func (s *SeriesComplex128) Append(val interface{}, opts ...dataframe.Options) int {
 	var locked bool
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 		locked = true
@@ -205,8 +205,8 @@ func (s *SeriesComplex128) Append(val interface{}, options ...dataframe.Options)
 // the series. All existing values from that row onwards
 // are shifted by 1. val can be a concrete data type or nil.
 // Nil represents the absence of a value.
-func (s *SeriesComplex128) Insert(row int, val interface{}, options ...dataframe.Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesComplex128) Insert(row int, val interface{}, opts ...dataframe.Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -247,8 +247,8 @@ func (s *SeriesComplex128) insert(row int, val interface{}) {
 }
 
 // Remove is used to delete the value of a particular row.
-func (s *SeriesComplex128) Remove(row int, options ...dataframe.Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesComplex128) Remove(row int, opts ...dataframe.Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -261,8 +261,8 @@ func (s *SeriesComplex128) Remove(row int, options ...dataframe.Options) {
 }
 
 // Reset is used clear all data contained in the Series.
-func (s *SeriesComplex128) Reset(options ...dataframe.Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesComplex128) Reset(opts ...dataframe.Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -274,8 +274,8 @@ func (s *SeriesComplex128) Reset(options ...dataframe.Options) {
 // Update is used to update the value of a particular row.
 // val can be a concrete data type or nil. Nil represents
 // the absence of a value.
-func (s *SeriesComplex128) Update(row int, val interface{}, options ...dataframe.Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesComplex128) Update(row int, val interface{}, opts ...dataframe.Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -415,12 +415,12 @@ func (s *SeriesComplex128) SetValueToStringFormatter(f dataframe.ValueToStringFo
 }
 
 // Swap is used to swap 2 values based on their row position.
-func (s *SeriesComplex128) Swap(row1, row2 int, options ...dataframe.Options) {
+func (s *SeriesComplex128) Swap(row1, row2 int, opts ...dataframe.Options) {
 	if row1 == row2 {
 		return
 	}
 
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -642,8 +642,8 @@ func (s *SeriesComplex128) String() string {
 }
 
 // ContainsNil will return whether or not the series contains any nil values.
-func (s *SeriesComplex128) ContainsNil(options ...dataframe.Options) bool {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesComplex128) ContainsNil(opts ...dataframe.Options) bool {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -652,8 +652,8 @@ func (s *SeriesComplex128) ContainsNil(options ...dataframe.Options) bool {
 }
 
 // NilCount will return how many nil values are in the series.
-func (s *SeriesComplex128) NilCount(options ...dataframe.Options) int {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesComplex128) NilCount(opts ...dataframe.Options) int {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}

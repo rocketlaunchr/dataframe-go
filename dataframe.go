@@ -50,8 +50,8 @@ func NewDataFrame(se ...Series) *DataFrame {
 
 // NRows returns the number of rows of data.
 // Each series must contain the same number of rows.
-func (df *DataFrame) NRows(options ...Options) int {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (df *DataFrame) NRows(opts ...Options) int {
+	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.RLock()
 		defer df.lock.RUnlock()
 	}
