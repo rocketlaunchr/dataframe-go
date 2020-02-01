@@ -268,9 +268,9 @@ OUTPUT:
 
 ```
 
-## Example
+# Example
 
-### Create some fake data
+## Create some fake data
 
 Let's create a list of "fake" employees with a name, title and base hourly wage rate.
 
@@ -297,7 +297,7 @@ df := faker.NewDataFrame(8, src, faker.S("name", 0, "Name"), faker.S("title", 0.
 +-----+----------------+----------------+-----------+
 ```
 
-### Apply Function
+## Apply Function
 
 Let's give a promotion to everyone by doubling their salary.
 
@@ -329,7 +329,7 @@ dataframe.Apply(ctx, s, applyFn, dataframe.FilterOptions{InPlace: true})
 ```
 
 
-### Create a Time series
+## Create a Time series
 
 Let's inform all employees separately on sequential days.
 
@@ -361,7 +361,7 @@ df.AddSeries(mts, nil)
 +-----+----------------+----------------+-----------+--------------------------------+
 ```
 
-### Filtering
+## Filtering
 
 Let's filter out our sernior employees (they have titles).
 
