@@ -44,3 +44,16 @@ type ToSeriesFloat64 interface {
 	// NOTE: The returned ErrorCollection should contain RowError objects.
 	ToSeriesFloat64(context.Context, bool, ...func(interface{}) (float64, error)) (*SeriesFloat64, error)
 }
+
+// ToSeriesMixed is an interface used by the Dataframe to know if a particular
+// Series can be converted to a ToSeriesMixed Series.
+type ToSeriesMixed interface {
+
+	// ToSeriesMixed is used to convert a particular Series to a ToSeriesMixed.
+	// If the returned Series is not nil but an error is still provided,
+	// it means that some rows were not able to be converted. You can inspect
+	// the error to determine which rows were unconverted.
+	//
+	// NOTE: The returned ErrorCollection should contain RowError objects.
+	ToSeriesMixed(context.Context, bool, ...func(interface{}) (interface{}, error)) (*SeriesMixed, error)
+}

@@ -337,6 +337,8 @@ dataframe.Apply(ctx, s, applyFn, dataframe.FilterOptions{InPlace: true})
 Let's inform all employees separately on sequential days.
 
 ```go
+import "rocketlaunchr/dataframe-go/utils/utime"
+
 mts, _ := utime.NewSeriesTime(ctx, "meeting time", "1D", time.Now().UTC(), false, utime.NewSeriesTimeOptions{Size: &[]int{8}[0]})
 df.AddSeries(mts, nil)
 ```
