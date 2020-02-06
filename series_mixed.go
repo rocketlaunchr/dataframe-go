@@ -7,11 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"golang.org/x/exp/rand"
 	"reflect"
 	"sort"
 	"sync"
-
-	"golang.org/x/exp/rand"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -59,10 +58,10 @@ func NewSeriesMixed(name string, init *SeriesInit, vals ...interface{}) *SeriesM
 		if idx == 0 {
 			if fs, ok := vals[0].([]interface{}); ok {
 				for _, v := range fs {
-					if reflect.ValueOf(v).IsNil() {
+					val := s.valToPointer(v)
+					if val == nil {
 						s.nilCount++
 					}
-					val := s.valToPointer(v)
 					if idx < size {
 						s.values[idx] = val
 					} else {
@@ -73,10 +72,10 @@ func NewSeriesMixed(name string, init *SeriesInit, vals ...interface{}) *SeriesM
 			}
 		}
 
-		if v == nil {
+		val := s.valToPointer(v)
+		if val == nil {
 			s.nilCount++
 		}
-		val := s.valToPointer(v)
 
 		if idx < size {
 			s.values[idx] = val
@@ -87,10 +86,6 @@ func NewSeriesMixed(name string, init *SeriesInit, vals ...interface{}) *SeriesM
 
 	if len(vals) < size {
 		s.nilCount = s.nilCount + size - len(vals)
-		// Fill with NaN
-		for i := len(vals); i < size; i++ {
-			s.values[i] = nan()
-		}
 	}
 
 	return s
@@ -364,7 +359,6 @@ func (s *SeriesMixed) valToPointer(v interface{}) interface{} {
 		return *val
 	case int64:
 		return val
-
 	case *uint:
 		if val == nil {
 			return nil
@@ -400,12 +394,17 @@ func (s *SeriesMixed) valToPointer(v interface{}) interface{} {
 		return *val
 	case uint64:
 		return val
-
 	default:
-		if reflect.ValueOf(val).IsNil() {
-			return nil
+		rv := reflect.ValueOf(val)
+		switch rv.Kind() {
+		case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+			if rv.IsNil() {
+				return nil
+			}
+			return val
+		default:
+			return val
 		}
-		return val
 	}
 }
 
@@ -521,8 +520,8 @@ func (s *SeriesMixed) Sort(ctx context.Context, opts ...SortOptions) (completed 
 			return true
 		}
 
-		if reflect.ValueOf(right).IsNil() {
-			// i has value and j is nil
+		if right == nil {
+			// left has value and right is nil
 			return false
 		}
 		// Both are not nil
@@ -739,7 +738,7 @@ func (s *SeriesMixed) FillRand(src rand.Source, probNil float64, rander Rander, 
 	for i := 0; i < length; i++ {
 		if rng.Float64() < probNil {
 			// nil
-			s.values[i] = nan()
+			s.values[i] = nil
 			s.nilCount++
 		} else {
 			s.values[i] = rander.Rand()
@@ -751,7 +750,7 @@ func (s *SeriesMixed) FillRand(src rand.Source, probNil float64, rander Rander, 
 		for i := 0; i < excess; i++ {
 			if rng.Float64() < probNil {
 				// nil
-				s.values = append(s.values, nan())
+				s.values = append(s.values, nil)
 				s.nilCount++
 			} else {
 				s.values = append(s.values, rander.Rand())
