@@ -7,10 +7,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/exp/rand"
+	"reflect"
 	"sort"
-	"strconv"
 	"sync"
+
+	"golang.org/x/exp/rand"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -23,7 +24,7 @@ type SeriesMixed struct {
 
 	lock     sync.RWMutex
 	name     string
-	values   []float64
+	values   []interface{}
 	nilCount int
 }
 
@@ -32,7 +33,7 @@ func NewSeriesMixed(name string, init *SeriesInit, vals ...interface{}) *SeriesM
 	s := &SeriesMixed{
 		isEqualFunc: DefaultIsEqualFunc,
 		name:        name,
-		values:      []float64{},
+		values:      []interface{}{},
 		nilCount:    0,
 	}
 
@@ -49,19 +50,19 @@ func NewSeriesMixed(name string, init *SeriesInit, vals ...interface{}) *SeriesM
 		}
 	}
 
-	s.values = make([]float64, size, capacity) // Warning: filled with 0.0 (not NaN)
+	s.values = make([]interface{}, size, capacity)
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
 
 		// Special case
 		if idx == 0 {
-			if fs, ok := vals[0].([]float64); ok {
+			if fs, ok := vals[0].([]interface{}); ok {
 				for _, v := range fs {
-					val := s.valToPointer(v)
-					if isNaN(val) {
+					if reflect.ValueOf(v).IsNil() {
 						s.nilCount++
 					}
+					val := s.valToPointer(v)
 					if idx < size {
 						s.values[idx] = val
 					} else {
@@ -72,10 +73,10 @@ func NewSeriesMixed(name string, init *SeriesInit, vals ...interface{}) *SeriesM
 			}
 		}
 
-		val := s.valToPointer(v)
-		if isNaN(val) {
+		if v == nil {
 			s.nilCount++
 		}
+		val := s.valToPointer(v)
 
 		if idx < size {
 			s.values[idx] = val
@@ -146,9 +147,10 @@ func (s *SeriesMixed) Value(row int, options ...Options) interface{} {
 	}
 
 	val := s.values[row]
-	if isNaN(val) {
+	if val == nil {
 		return nil
 	}
+
 	return val
 }
 
@@ -214,10 +216,10 @@ func (s *SeriesMixed) Insert(row int, val interface{}, options ...Options) {
 
 func (s *SeriesMixed) insert(row int, val interface{}) {
 	switch V := val.(type) {
-	case []float64:
+	case []interface{}:
 		// count how many NaN
 		for _, v := range V {
-			if isNaN(v) {
+			if reflect.ValueOf(v).IsNil() {
 				s.nilCount++
 			}
 		}
@@ -225,13 +227,13 @@ func (s *SeriesMixed) insert(row int, val interface{}) {
 		return
 	}
 
-	s.values = append(s.values, nan())
+	s.values = append(s.values, nil)
 	copy(s.values[row+1:], s.values[row:])
 
-	v := s.valToPointer(val)
-	if isNaN(v) {
+	if val == nil {
 		s.nilCount++
 	}
+	v := s.valToPointer(val)
 
 	s.values[row] = v
 }
@@ -243,7 +245,7 @@ func (s *SeriesMixed) Remove(row int, options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	if isNaN(s.values[row]) {
+	if s.values[row] == nil {
 		s.nilCount--
 	}
 
@@ -257,7 +259,7 @@ func (s *SeriesMixed) Reset(options ...Options) {
 		defer s.lock.Unlock()
 	}
 
-	s.values = []float64{}
+	s.values = []interface{}{}
 	s.nilCount = 0
 }
 
@@ -272,9 +274,9 @@ func (s *SeriesMixed) Update(row int, val interface{}, options ...Options) {
 
 	newVal := s.valToPointer(val)
 
-	if isNaN(s.values[row]) && !isNaN(newVal) {
+	if s.values[row] == nil && newVal != nil {
 		s.nilCount--
-	} else if !isNaN(s.values[row]) && isNaN(newVal) {
+	} else if s.values[row] != nil && newVal == nil {
 		s.nilCount++
 	}
 
@@ -314,7 +316,7 @@ func (s *SeriesMixed) ValuesIterator(opts ...ValuesOptions) func() (*int, interf
 		}
 
 		var out interface{} = s.values[row]
-		if isNaN(out.(float64)) {
+		if reflect.ValueOf(out).IsNil() {
 			out = nil
 		}
 		row = row + step
@@ -322,67 +324,88 @@ func (s *SeriesMixed) ValuesIterator(opts ...ValuesOptions) func() (*int, interf
 	}
 }
 
-func (s *SeriesMixed) valToPointer(v interface{}) float64 {
+func (s *SeriesMixed) valToPointer(v interface{}) interface{} {
+
 	switch val := v.(type) {
 	case nil:
-		return nan()
-	case *bool:
-		if val == nil {
-			return nan()
-		}
-		if *val == true {
-			return float64(1)
-		} else {
-			return float64(0)
-		}
-	case bool:
-		if val == true {
-			return float64(1)
-		} else {
-			return float64(0)
-		}
+		return nil
 	case *int:
 		if val == nil {
-			return nan()
+			return nil
 		}
-		return float64(*val)
+		return int64(*val)
 	case int:
-		return float64(val)
+		return int64(val)
+	case *int8:
+		if val == nil {
+			return nil
+		}
+		return int64(*val)
+	case int8:
+		return int64(val)
+	case *int16:
+		if val == nil {
+			return nil
+		}
+		return int64(*val)
+	case int16:
+		return int64(val)
+	case *int32:
+		if val == nil {
+			return nil
+		}
+		return int64(*val)
+	case int32:
+		return int64(val)
 	case *int64:
 		if val == nil {
-			return nan()
-		}
-		return float64(*val)
-	case int64:
-		return float64(val)
-	case *float64:
-		if val == nil {
-			return nan()
+			return nil
 		}
 		return *val
-	case float64:
+	case int64:
 		return val
-	case *string:
+
+	case *uint:
 		if val == nil {
-			return nan()
+			return nil
 		}
-		f, err := strconv.ParseFloat(*val, 64)
-		if err != nil {
-			_ = v.(float64) // Intentionally panic
+		return uint64(*val)
+	case uint:
+		return uint64(val)
+	case *uint8:
+		if val == nil {
+			return nil
 		}
-		return f
-	case string:
-		f, err := strconv.ParseFloat(val, 64)
-		if err != nil {
-			_ = v.(float64) // Intentionally panic
+		return uint64(*val)
+	case uint8:
+		return uint64(val)
+	case *uint16:
+		if val == nil {
+			return nil
 		}
-		return f
+		return uint64(*val)
+	case uint16:
+		return uint64(val)
+	case *uint32:
+		if val == nil {
+			return nil
+		}
+		return uint64(*val)
+	case uint32:
+		return uint64(val)
+	case *uint64:
+		if val == nil {
+			return nil
+		}
+		return *val
+	case uint64:
+		return val
+
 	default:
-		f, err := strconv.ParseFloat(fmt.Sprintf("%v", v), 64)
-		if err != nil {
-			_ = v.(float64) // Intentionally panic
+		if reflect.ValueOf(val).IsNil() {
+			return nil
 		}
-		return f
+		return val
 	}
 }
 
@@ -457,6 +480,10 @@ func (s *SeriesMixed) SetIsLessThanFunc(f IsLessThanFunc) {
 // It will return true if sorting was completed or false when the context is canceled.
 func (s *SeriesMixed) Sort(ctx context.Context, opts ...SortOptions) (completed bool) {
 
+	if s.isLessThanFunc == nil {
+		panic(fmt.Errorf("cannot sort without setting IsLessThanFunc"))
+	}
+
 	defer func() {
 		if x := recover(); x != nil {
 			completed = false
@@ -483,23 +510,23 @@ func (s *SeriesMixed) Sort(ctx context.Context, opts ...SortOptions) (completed 
 			}
 		}()
 
-		if isNaN(s.values[i]) {
-			if isNaN(s.values[j]) {
+		left := s.values[i]
+		right := s.values[j]
+
+		if reflect.ValueOf(left).IsNil() {
+			if reflect.ValueOf(right).IsNil() {
 				// both are nil
 				return true
 			}
 			return true
 		}
 
-		if isNaN(s.values[j]) {
+		if reflect.ValueOf(right).IsNil() {
 			// i has value and j is nil
 			return false
 		}
 		// Both are not nil
-		ti := s.values[i]
-		tj := s.values[j]
-
-		return ti < tj
+		return s.isLessThanFunc(left, right)
 	}
 
 	if opts[0].Stable {
@@ -531,7 +558,7 @@ func (s *SeriesMixed) Copy(r ...Range) Series {
 		return &SeriesMixed{
 			valFormatter: s.valFormatter,
 			name:         s.name,
-			values:       []float64{},
+			values:       []interface{}{},
 			nilCount:     s.nilCount,
 		}
 	}
@@ -663,7 +690,7 @@ func (s *SeriesMixed) ToSeriesString(ctx context.Context, removeNil bool, conv .
 			return nil, err
 		}
 
-		if isNaN(rowVal) {
+		if rowVal == nil {
 			if removeNil {
 				continue
 			}
@@ -671,7 +698,7 @@ func (s *SeriesMixed) ToSeriesString(ctx context.Context, removeNil bool, conv .
 			ss.nilCount++
 		} else {
 			if len(conv) == 0 {
-				cv := strconv.FormatFloat(rowVal, 'G', -1, 64)
+				cv := ss.valFormatter(rowVal)
 				ss.values = append(ss.values, &cv)
 			} else {
 				cv, err := conv[0](rowVal)
