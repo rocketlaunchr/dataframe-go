@@ -7,11 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"golang.org/x/exp/rand"
 	"reflect"
 	"sort"
 	"sync"
-
-	"golang.org/x/exp/rand"
 
 	"github.com/olekukonko/tablewriter"
 )
