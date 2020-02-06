@@ -6,13 +6,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"golang.org/x/exp/rand"
 	"math"
 	"math/cmplx"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+
+	"golang.org/x/exp/rand"
 
 	"github.com/olekukonko/tablewriter"
 	dataframe "github.com/rocketlaunchr/dataframe-go"
@@ -759,6 +760,50 @@ func (s *SeriesComplex128) ToSeriesFloat64(ctx context.Context, removeNil bool, 
 					}
 				} else {
 					ss.Append(-cmplx.Abs(rowVal), dataframe.DontLock)
+				}
+			}
+		}
+	}
+
+	if !ec.IsNil(false) {
+		return ss, ec
+	}
+
+	return ss, nil
+}
+
+// ToSeriesMixed will convert the Series to a SeriesString.
+// The operation does not lock the Series.
+func (s *SeriesComplex128) ToSeriesMixed(ctx context.Context, removeNil bool, conv ...func(interface{}) (*string, error)) (*dataframe.SeriesMixed, error) {
+
+	ec := dataframe.NewErrorCollection()
+
+	ss := dataframe.NewSeriesMixed(s.name, &dataframe.SeriesInit{Capacity: s.NRows(dataframe.DontLock)})
+
+	for row, rowVal := range s.Values {
+
+		// Cancel operation
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if cmplx.IsNaN(rowVal) {
+			if removeNil {
+				continue
+			}
+			ss.Append(nil, dataframe.DontLock)
+		} else {
+			if len(conv) == 0 {
+				cv := rowVal
+				ss.Append(cv, dataframe.DontLock)
+			} else {
+				cv, err := conv[0](rowVal)
+				if err != nil {
+					// interpret as nil
+					ss.Append(nil, dataframe.DontLock)
+					ec.AddError(&dataframe.RowError{Row: row, Err: err}, false)
+				} else {
+					ss.Append(cv, dataframe.DontLock)
 				}
 			}
 		}

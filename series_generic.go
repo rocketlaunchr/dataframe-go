@@ -583,3 +583,51 @@ func (s *SeriesGeneric) NilCount(opts ...Options) int {
 
 	return s.nilCount
 }
+
+// ToSeriesMixed will convert the Series to a SeriesMIxed.
+// The operation does not lock the Series.
+func (s *SeriesGeneric) ToSeriesMixed(ctx context.Context, removeNil bool, conv ...func(interface{}) (interface{}, error)) (*SeriesMixed, error) {
+	ec := NewErrorCollection()
+
+	ss := NewSeriesMixed(s.name, &SeriesInit{Capacity: s.NRows(dontLock)})
+
+	for row, rowVal := range s.values {
+
+		// Cancel operation
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if rowVal == nil {
+			if removeNil {
+				continue
+			}
+			ss.values = append(ss.values, nil)
+			ss.nilCount++
+		} else {
+			if len(conv) == 0 {
+				cv := rowVal
+				ss.values = append(ss.values, cv)
+			} else {
+				cv, err := conv[0](rowVal)
+				if err != nil {
+					// interpret as nil
+					ss.values = append(ss.values, nil)
+					ss.nilCount++
+					ec.AddError(&RowError{Row: row, Err: err}, false)
+				} else {
+					if cv == nil {
+						ss.nilCount++
+					}
+					ss.values = append(ss.values, cv)
+				}
+			}
+		}
+	}
+
+	if !ec.IsNil(false) {
+		return ss, ec
+	}
+
+	return ss, nil
+}

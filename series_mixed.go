@@ -521,7 +521,7 @@ func (s *SeriesMixed) Sort(ctx context.Context, opts ...SortOptions) (completed 
 			return true
 		}
 
-		if reflect.ValueOf(right).IsNil() {
+		if right == nil {
 			// i has value and j is nil
 			return false
 		}
