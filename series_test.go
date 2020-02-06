@@ -289,6 +289,11 @@ func TestSeriesSort(t *testing.T) {
 		return g1.Before(g2)
 	})
 
+	(init[4].(*SeriesMixed)).SetIsLessThanFunc(func(a, b interface{}) bool {
+
+		return b.(int) > a.(int)
+	})
+
 	// Sort values
 	for i := range init {
 		s := init[i]
@@ -465,4 +470,15 @@ func TestSeriesCopy(t *testing.T) {
 		}
 	}
 
+}
+
+func TestToSeriesString(t *testing.T) {
+	ctx := context.Background()
+
+	sm := NewSeriesMixed("test", &SeriesInit{1, 0}, 1, nil, 2, 3)
+	ss, err := sm.ToSeriesString(ctx, false)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+	fmt.Println(ss.Type())
 }
