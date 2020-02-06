@@ -276,23 +276,23 @@ func TestSeriesSort(t *testing.T) {
 		NewSeriesInt64("test", &SeriesInit{1, 0}, nil, 1, 2, 3, nil),
 		NewSeriesString("test", &SeriesInit{1, 0}, nil, "1", "2", "3", nil),
 		NewSeriesTime("test", &SeriesInit{1, 0}, nil, tRef, tRef.Add(24*time.Hour), tRef.Add(2*24*time.Hour), nil),
-		NewSeriesMixed("test", &SeriesInit{1, 0}, nil, 1, 2, 3, nil),
 		NewSeriesGeneric("test", civil.Date{}, &SeriesInit{0, 1}, nil, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}, nil),
+		//		NewSeriesMixed("test", &SeriesInit{1, 0}, nil, 1, 2, 3, nil),
 	}
 
 	// Set IsLessThanFunc(a, b interface{}) bool
-	(init[5].(*SeriesGeneric)).SetIsLessThanFunc(nil)
-	(init[5].(*SeriesGeneric)).SetIsLessThanFunc(func(a, b interface{}) bool {
+	(init[4].(*SeriesGeneric)).SetIsLessThanFunc(nil)
+	(init[4].(*SeriesGeneric)).SetIsLessThanFunc(func(a, b interface{}) bool {
 		g1 := a.(civil.Date)
 		g2 := b.(civil.Date)
 
 		return g1.Before(g2)
 	})
 
-	(init[4].(*SeriesMixed)).SetIsLessThanFunc(func(a, b interface{}) bool {
+	// (init[5].(*SeriesMixed)).SetIsLessThanFunc(func(a, b interface{}) bool {
 
-		return b.(int) > a.(int)
-	})
+	// 	return b.(int) > a.(int)
+	// })
 
 	// Sort values
 	for i := range init {
@@ -305,8 +305,8 @@ func TestSeriesSort(t *testing.T) {
 		{3, 2, 1, "NaN", "NaN"},
 		{"3", "2", "1", "NaN", "NaN"},
 		{tRef.Add(2 * 24 * time.Hour), tRef.Add(24 * time.Hour), tRef, "NaN", "NaN"},
-		{3, 2, 1, "NaN", "NaN"},
 		{civil.Date{2018, time.May, 3}, civil.Date{2018, time.May, 2}, civil.Date{2018, time.May, 1}, "NaN", "NaN"},
+		// {3, 2, 1, "NaN", "NaN"},
 	}
 
 	for i := range init {
