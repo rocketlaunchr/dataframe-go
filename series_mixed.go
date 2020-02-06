@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"golang.org/x/exp/rand"
+	"math/cmplx"
 	"reflect"
 	"sort"
 	"sync"
@@ -324,6 +325,16 @@ func (s *SeriesMixed) valToPointer(v interface{}) interface{} {
 	switch val := v.(type) {
 	case nil:
 		return nil
+	case float64:
+		if isNaN(val) {
+			return nil
+		}
+		return val
+	case complex128:
+		if cmplx.IsNaN(val) {
+			return nil
+		}
+		return val
 	case *int:
 		if val == nil {
 			return nil
