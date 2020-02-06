@@ -513,8 +513,8 @@ func (s *SeriesMixed) Sort(ctx context.Context, opts ...SortOptions) (completed 
 		left := s.values[i]
 		right := s.values[j]
 
-		if reflect.ValueOf(left).IsNil() {
-			if reflect.ValueOf(right).IsNil() {
+		if left == nil {
+			if right == nil {
 				// both are nil
 				return true
 			}
