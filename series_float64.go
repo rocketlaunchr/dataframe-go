@@ -55,7 +55,7 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 		// Special case
 		if idx == 0 {
 			if fs, ok := vals[0].([]float64); ok {
-				for _, v := range fs {
+				for idx, v := range fs {
 					val := s.valToPointer(v)
 					if isNaN(val) {
 						s.nilCount++
@@ -66,7 +66,7 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 						s.Values = append(s.Values, val)
 					}
 				}
-				continue
+				break
 			}
 		}
 
@@ -82,10 +82,19 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 		}
 	}
 
-	if len(vals) < size {
-		s.nilCount = s.nilCount + size - len(vals)
+	var lVals int
+	if len(vals) > 0 {
+		if fs, ok := vals[0].([]float64); ok {
+			lVals = len(fs)
+		} else {
+			lVals = len(vals)
+		}
+	}
+
+	if lVals < size {
+		s.nilCount = s.nilCount + size - lVals
 		// Fill with NaN
-		for i := len(vals); i < size; i++ {
+		for i := lVals; i < size; i++ {
 			s.Values[i] = nan()
 		}
 	}

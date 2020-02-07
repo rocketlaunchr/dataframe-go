@@ -6,14 +6,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"golang.org/x/exp/rand"
 	"math"
 	"math/cmplx"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-
-	"golang.org/x/exp/rand"
 
 	"github.com/olekukonko/tablewriter"
 	dataframe "github.com/rocketlaunchr/dataframe-go"
@@ -60,7 +59,7 @@ func NewSeriesComplex128(name string, init *dataframe.SeriesInit, vals ...interf
 		// Special case
 		if idx == 0 {
 			if cs, ok := vals[0].([]float64); ok {
-				for _, v := range cs {
+				for idx, v := range cs {
 					val := s.valToPointer(v)
 					if cmplx.IsNaN(val) {
 						s.nilCount++
@@ -71,7 +70,7 @@ func NewSeriesComplex128(name string, init *dataframe.SeriesInit, vals ...interf
 						s.Values = append(s.Values, val)
 					}
 				}
-				continue
+				break
 			}
 		}
 
@@ -87,10 +86,19 @@ func NewSeriesComplex128(name string, init *dataframe.SeriesInit, vals ...interf
 		}
 	}
 
-	if len(vals) < size {
-		s.nilCount = s.nilCount + size - len(vals)
+	var lVals int
+	if len(vals) > 0 {
+		if cs, ok := vals[0].([]float64); ok {
+			lVals = len(cs)
+		} else {
+			lVals = len(vals)
+		}
+	}
+
+	if lVals < size {
+		s.nilCount = s.nilCount + size - lVals
 		// Fill with NaN
-		for i := len(vals); i < size; i++ {
+		for i := lVals; i < size; i++ {
 			s.Values[i] = cmplx.NaN()
 		}
 	}
