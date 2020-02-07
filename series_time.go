@@ -6,12 +6,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"golang.org/x/exp/rand"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
-
-	"golang.org/x/exp/rand"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -56,7 +55,7 @@ func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTi
 		// Special case
 		if idx == 0 {
 			if ts, ok := vals[0].([]time.Time); ok {
-				for _, v := range ts {
+				for idx, v := range ts {
 					val := s.valToPointer(v)
 					if idx < size {
 						s.Values[idx] = val
@@ -64,7 +63,7 @@ func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTi
 						s.Values = append(s.Values, val)
 					}
 				}
-				continue
+				break
 			}
 		}
 
@@ -80,8 +79,17 @@ func NewSeriesTime(name string, init *SeriesInit, vals ...interface{}) *SeriesTi
 		}
 	}
 
-	if len(vals) < size {
-		s.nilCount = s.nilCount + size - len(vals)
+	var lVals int
+	if len(vals) > 0 {
+		if ts, ok := vals[0].([]time.Time); ok {
+			lVals = len(ts)
+		} else {
+			lVals = len(vals)
+		}
+	}
+
+	if lVals < size {
+		s.nilCount = s.nilCount + size - lVals
 	}
 
 	return s

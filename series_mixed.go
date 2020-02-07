@@ -57,8 +57,8 @@ func NewSeriesMixed(name string, init *SeriesInit, vals ...interface{}) *SeriesM
 
 		// Special case
 		if idx == 0 {
-			if fs, ok := vals[0].([]interface{}); ok {
-				for _, v := range fs {
+			if ms, ok := vals[0].([]interface{}); ok {
+				for idx, v := range ms {
 					val := s.valToPointer(v)
 					if val == nil {
 						s.nilCount++
@@ -69,7 +69,7 @@ func NewSeriesMixed(name string, init *SeriesInit, vals ...interface{}) *SeriesM
 						s.values = append(s.values, val)
 					}
 				}
-				continue
+				break
 			}
 		}
 
@@ -85,8 +85,17 @@ func NewSeriesMixed(name string, init *SeriesInit, vals ...interface{}) *SeriesM
 		}
 	}
 
-	if len(vals) < size {
-		s.nilCount = s.nilCount + size - len(vals)
+	var lVals int
+	if len(vals) > 0 {
+		if ms, ok := vals[0].([]interface{}); ok {
+			lVals = len(ms)
+		} else {
+			lVals = len(vals)
+		}
+	}
+
+	if lVals < size {
+		s.nilCount = s.nilCount + size - lVals
 	}
 
 	return s

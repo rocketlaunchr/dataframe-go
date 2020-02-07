@@ -53,7 +53,7 @@ func NewSeriesInt64(name string, init *SeriesInit, vals ...interface{}) *SeriesI
 		// Special case
 		if idx == 0 {
 			if is, ok := vals[0].([]int64); ok {
-				for _, v := range is {
+				for idx, v := range is {
 					val := s.valToPointer(v)
 					if idx < size {
 						s.values[idx] = val
@@ -61,7 +61,7 @@ func NewSeriesInt64(name string, init *SeriesInit, vals ...interface{}) *SeriesI
 						s.values = append(s.values, val)
 					}
 				}
-				continue
+				break
 			}
 		}
 
@@ -77,8 +77,17 @@ func NewSeriesInt64(name string, init *SeriesInit, vals ...interface{}) *SeriesI
 		}
 	}
 
-	if len(vals) < size {
-		s.nilCount = s.nilCount + size - len(vals)
+	var lVals int
+	if len(vals) > 0 {
+		if is, ok := vals[0].([]int64); ok {
+			lVals = len(is)
+		} else {
+			lVals = len(vals)
+		}
+	}
+
+	if lVals < size {
+		s.nilCount = s.nilCount + size - lVals
 	}
 
 	return s

@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
-	
+
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -53,7 +53,7 @@ func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *Series
 		// Special case
 		if idx == 0 {
 			if ss, ok := vals[0].([]string); ok {
-				for _, v := range ss {
+				for idx, v := range ss {
 					val := s.valToPointer(v)
 					if idx < size {
 						s.values[idx] = val
@@ -61,7 +61,7 @@ func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *Series
 						s.values = append(s.values, val)
 					}
 				}
-				continue
+				break
 			}
 		}
 
@@ -77,8 +77,17 @@ func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *Series
 		}
 	}
 
-	if len(vals) < size {
-		s.nilCount = s.nilCount + size - len(vals)
+	var lVals int
+	if len(vals) > 0 {
+		if ss, ok := vals[0].([]string); ok {
+			lVals = len(ss)
+		} else {
+			lVals = len(vals)
+		}
+	}
+
+	if lVals < size {
+		s.nilCount = s.nilCount + size - lVals
 	}
 
 	return s
