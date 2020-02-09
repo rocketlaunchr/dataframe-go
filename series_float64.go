@@ -6,10 +6,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"golang.org/x/exp/rand"
 	"sort"
 	"strconv"
 	"sync"
+
+	"golang.org/x/exp/rand"
 
 	"github.com/olekukonko/tablewriter"
 )
