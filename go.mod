@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	cloud.google.com/go v0.52.0
+	github.com/bradfitz/iter v0.0.0-20191230175014-e8f45d346db8
 	github.com/brianvoe/gofakeit/v4 v4.2.1
 	github.com/google/go-cmp v0.4.0
 	github.com/olekukonko/tablewriter v0.0.4
