@@ -2,22 +2,34 @@ package utime
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 )
 
 func TestUtime(t *testing.T) {
 	ctx := context.Background()
+	now := time.Now()
 
-	size := 10
 	opts := NewSeriesTimeOptions{
-		Size: &size,
+		Size: &[]int{10}[0],
 	}
 
-	timeSeries, err := NewSeriesTime(ctx, "Time Series", "1D", time.Now(), false, opts)
-	if err != nil {
-		t.Errorf("error encountered: %s", err)
+	freqs := []string{
+		"1D",
+		"1M",
+		"1h",
 	}
-	fmt.Println(timeSeries.Table())
+
+	for _, f := range freqs {
+		ts, err := NewSeriesTime(ctx, "Time Series", f, now, false, opts)
+		if err != nil {
+			t.Errorf("error encountered: %v", err)
+		} else {
+			err := ValidateSeriesTime(ctx, ts, f, ValidateSeriesTimeOptions{})
+			if err != nil {
+				t.Errorf("error encountered: %v", err)
+			}
+		}
+	}
+
 }
