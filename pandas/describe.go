@@ -10,6 +10,8 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
+// DescribeOutput contains statistical data for a DataFrame or Series.
+// It is not intended to be perused. Use fmt package to view data.
 type DescribeOutput struct {
 	Count       []int
 	NilCount    []int
@@ -24,6 +26,7 @@ type DescribeOutput struct {
 	headers     []string
 }
 
+// String implements the Stringer interface in fmt package.
 func (do DescribeOutput) String() string {
 
 	out := map[string][]interface{}{}
@@ -71,10 +74,17 @@ func (do DescribeOutput) String() string {
 	return printMap(do.headers, out)
 }
 
+// DescribeOptions configures what Describe should return or display.
 type DescribeOptions struct {
+
+	// Percentiles sets which Quantiles to return.
 	Percentiles []float64
-	Whitelist   []interface{}
-	Blacklist   []interface{}
+
+	// Whitelist sets which Series to provided statistics for.
+	Whitelist []interface{}
+
+	// Blacklist sets which Series to NOT provide statistics for.
+	Blacklist []interface{}
 }
 
 // Describe outputs various statistical information a Series or Dataframe.

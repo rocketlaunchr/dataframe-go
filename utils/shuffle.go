@@ -14,7 +14,7 @@ func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
 }
 
-// ShuffleOptions
+// ShuffleOptions modifies the behavior of Shuffle.
 type ShuffleOptions struct {
 
 	// R is used to limit the range of the Series for search purposes.

@@ -14,7 +14,7 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
-// SearchOptions
+// SearchOptions modifies the behavior of Search.
 type SearchOptions struct {
 
 	// Max is used to stop the search after it finds Max number of results.

@@ -12,16 +12,17 @@ import (
 
 var (
 
-	// ErrCantValidate
+	// ErrCantValidate means that the validation algorithm could not determine whether the Series was in the reverse direction or not.
 	ErrCantValidate = errors.New("can't validate")
 
-	// ErrCantReplace
+	// ErrCantReplace means that the Validation algorithm was not able to determine what a missing value should be replaced as.
 	ErrCantReplace = errors.New("can't replace")
 
-	// ErrValidationFailed
+	// ErrValidationFailed means that validation of the SeriesTime failed.
 	ErrValidationFailed = errors.New("validation failed")
 )
 
+// MissingValueOption sets how the ValidateSeriesTime behaves when a missing (nil) value is encountered.
 type MissingValueOption int
 
 const (
@@ -35,6 +36,7 @@ const (
 	Error MissingValueOption = 2
 )
 
+// ValidateSeriesTimeOptions configures how ValidateSeriesTime behaves.
 type ValidateSeriesTimeOptions struct {
 
 	// MissingValue configures what must happen when a nil Value is encountered.

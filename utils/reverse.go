@@ -15,7 +15,7 @@ type common interface {
 	Swap(row1, row2 int, options ...dataframe.Options)
 }
 
-// ReverseOptions
+// ReverseOptions modifies the behavior of Reverse.
 type ReverseOptions struct {
 
 	// R is used to limit the range of the Series for search purposes.

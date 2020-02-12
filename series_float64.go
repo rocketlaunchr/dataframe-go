@@ -339,15 +339,13 @@ func (s *SeriesFloat64) valToPointer(v interface{}) float64 {
 		}
 		if *val == true {
 			return float64(1)
-		} else {
-			return float64(0)
 		}
+		return float64(0)
 	case bool:
 		if val == true {
 			return float64(1)
-		} else {
-			return float64(0)
 		}
+		return float64(0)
 	case *int:
 		if val == nil {
 			return nan()

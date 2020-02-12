@@ -484,7 +484,7 @@ func TestToSeriesString(t *testing.T) {
 	// convert SeriesString back to SeriesMixed
 	_, err = ss.ToSeriesMixed(ctx, false)
 	if err != nil {
-		t.Errorf("error encounterd: %s\n", err)
+		t.Errorf("error encountered: %s\n", err)
 	}
 
 }

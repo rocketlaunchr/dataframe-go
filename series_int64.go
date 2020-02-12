@@ -340,15 +340,13 @@ func (s *SeriesInt64) valToPointer(v interface{}) *int64 {
 		}
 		if *val == true {
 			return &[]int64{1}[0]
-		} else {
-			return &[]int64{0}[0]
 		}
+		return &[]int64{0}[0]
 	case bool:
 		if val == true {
 			return &[]int64{1}[0]
-		} else {
-			return &[]int64{0}[0]
 		}
+		return &[]int64{0}[0]
 	case *int:
 		if val == nil {
 			return nil

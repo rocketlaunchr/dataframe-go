@@ -846,12 +846,12 @@ func parseComplex(s string) (complex128, error) {
 		return 0, err
 	}
 
-	lastChar := s[len(s)-1 : len(s)]
+	lastChar := s[len(s)-1:]
 
 	// Remove brackets
 	if len(s) > 1 && s[0:1] == "(" && lastChar == ")" {
 		s = s[1 : len(s)-1]
-		lastChar = s[len(s)-1 : len(s)]
+		lastChar = s[len(s)-1:]
 	}
 
 	// Is last character an i?

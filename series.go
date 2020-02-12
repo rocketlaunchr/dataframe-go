@@ -132,6 +132,7 @@ type Rander interface {
 	Rand() float64
 }
 
+// FillRandOptions configures how FillRand should behave.
 type FillRandOptions struct {
 
 	// R is used to only randomly fill a range of rows.

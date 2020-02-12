@@ -127,12 +127,12 @@ func filterSeries(ctx context.Context, s Series, fn FilterSeriesFn, opts ...Filt
 			ns.Append(val, dontLock)
 		}
 		return ns, nil
-	} else {
-		// Remove rows that need to be removed
-		for idx := len(transfer) - 1; idx >= 0; idx-- {
-			rowToRemove := transfer[idx]
-			s.Remove(rowToRemove, dontLock)
-		}
+	}
+
+	// Remove rows that need to be removed
+	for idx := len(transfer) - 1; idx >= 0; idx-- {
+		rowToRemove := transfer[idx]
+		s.Remove(rowToRemove, dontLock)
 	}
 
 	return nil, nil
@@ -209,12 +209,12 @@ func filterDataFrame(ctx context.Context, df *DataFrame, fn FilterDataFrameFn, o
 			ndf.Append(&dontLock, vals)
 		}
 		return ndf, nil
-	} else {
-		// Remove rows that need to be removed
-		for idx := len(transfer) - 1; idx >= 0; idx-- {
-			rowToRemove := transfer[idx]
-			df.Remove(rowToRemove, dontLock)
-		}
+	}
+
+	// Remove rows that need to be removed
+	for idx := len(transfer) - 1; idx >= 0; idx-- {
+		rowToRemove := transfer[idx]
+		df.Remove(rowToRemove, dontLock)
 	}
 
 	return nil, nil
