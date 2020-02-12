@@ -1,4 +1,4 @@
-// Copyright 2018 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
 package imports
 
@@ -36,7 +36,7 @@ type CSVLoadOptions struct {
 	TrimLeadingSpace bool
 
 	// LargeDataSet should be set to true for large datasets.
-	// It will set the capacity of the underlying slices of the dataframe by performing a basic parse
+	// It will set the capacity of the underlying slices of the Dataframe by performing a basic parse
 	// of the full dataset before processing the data fully.
 	// Preallocating memory can provide speed improvements. Benchmarks should be performed for your use-case.
 	LargeDataSet bool
@@ -44,6 +44,8 @@ type CSVLoadOptions struct {
 	// DictateDataType is used to inform LoadFromCSV what the true underlying data type is for a given field name.
 	// The value for a given key must be of the data type of the data.
 	// eg. For a string use "". For a int64 use int64(0). What is relevant is the data type and not the value itself.
+	//
+	// NOTE: A custom Series must implement NewSerieser interface and be able to interpret strings to work.
 	DictateDataType map[string]interface{}
 
 	// NilValue allows you to set what string value in the CSV file should be interpreted as a nil value for
@@ -62,6 +64,9 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 	cr.ReuseRecord = true
 	if len(options) > 0 {
 		cr.Comma = options[0].Comma
+		if cr.Comma == 0 {
+			cr.Comma = ','
+		}
 		cr.Comment = options[0].Comment
 		cr.TrimLeadingSpace = options[0].TrimLeadingSpace
 
@@ -131,8 +136,15 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 						seriess = append(seriess, dataframe.NewSeriesString(name, init))
 					case time.Time:
 						seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+					case dataframe.NewSerieser:
+						seriess = append(seriess, T.NewSeries(name, init))
 					case Converter:
-						seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
+						switch T.ConcreteType.(type) {
+						case time.Time:
+							seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+						default:
+							seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
+						}
 					default:
 						seriess = append(seriess, dataframe.NewSeriesGeneric(name, typ, init))
 					}
@@ -159,7 +171,7 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 
 				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
 
-					name := df.Names()[idx]
+					name := df.Names(dataframe.DontLock)[idx]
 
 					// Check if a datatype is dictated
 					typ, exists := options[0].DictateDataType[name]
@@ -177,18 +189,18 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 							} else if v == "FALSE" || v == "false" || v == "0" {
 								insertVals = append(insertVals, int64(0))
 							} else {
-								return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, name)
+								return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", v, row-1, name)
 							}
 						case int64:
 							i, err := strconv.ParseInt(v, 10, 64)
 							if err != nil {
-								return nil, fmt.Errorf("can't force string to int64. row: %d field: %s", row-1, name)
+								return nil, fmt.Errorf("can't force string: %s to int64. row: %d field: %s", v, row-1, name)
 							}
 							insertVals = append(insertVals, i)
 						case float64:
 							f, err := strconv.ParseFloat(v, 64)
 							if err != nil {
-								return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, name)
+								return nil, fmt.Errorf("can't force string: %s to float64. row: %d field: %s", v, row-1, name)
 							}
 							insertVals = append(insertVals, f)
 						case time.Time:
@@ -197,15 +209,18 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 								// Assume unix timestamp
 								sec, err := strconv.ParseInt(v, 10, 64)
 								if err != nil {
-									return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", time.RFC3339, row-1, name)
+									return nil, fmt.Errorf("can't force string: %s to time.Time (%s). row: %d field: %s", v, time.RFC3339, row-1, name)
 								}
 								insertVals = append(insertVals, time.Unix(sec, 0))
+							} else {
+								insertVals = append(insertVals, t)
 							}
-							insertVals = append(insertVals, t)
+						case dataframe.NewSerieser:
+							insertVals = append(insertVals, v)
 						case Converter:
 							cv, err := T.ConverterFunc(v)
 							if err != nil {
-								return nil, fmt.Errorf("can't force string to generic data type. row: %d field: %s", row-1, name)
+								return nil, fmt.Errorf("can't force string: %s to generic data type. row: %d field: %s", v, row-1, name)
 							}
 							insertVals = append(insertVals, cv)
 						default:
@@ -221,9 +236,9 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 			}
 
 			if init == nil {
-				df.Append(insertVals...)
+				df.Append(&dataframe.DontLock, insertVals...)
 			} else {
-				df.UpdateRow(row-1, insertVals...)
+				df.UpdateRow(row-1, &dataframe.DontLock, insertVals...)
 			}
 
 		}

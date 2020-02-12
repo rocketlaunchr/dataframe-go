@@ -1,4 +1,4 @@
-// Copyright 2019 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+// Copyright 2019-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
 package imports
 
@@ -11,6 +11,7 @@ import (
 	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
+	rlSql "github.com/rocketlaunchr/mysql-go"
 )
 
 // Database is used to set the Database.
@@ -24,10 +25,36 @@ const (
 	MySQL Database = 1
 )
 
+type queryContexter1 interface {
+	QueryContext(ctx context.Context, args ...interface{}) (*sql.Rows, error)
+}
+
+type queryContexter2 interface {
+	QueryContext(ctx context.Context, args ...interface{}) (*rlSql.Rows, error)
+}
+
+type queryContexter3 interface {
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+}
+
+type queryContexter4 interface {
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*rlSql.Rows, error)
+}
+
+type rows interface {
+	Close() error
+	ColumnTypes() ([]*sql.ColumnType, error)
+	Columns() ([]string, error)
+	Err() error
+	Next() bool
+	NextResultSet() bool
+	Scan(dest ...interface{}) error
+}
+
 // SQLLoadOptions is likely to change.
 type SQLLoadOptions struct {
 
-	// KnownRowCount is used to set the capacity of the underlying slices of the dataframe.
+	// KnownRowCount is used to set the capacity of the underlying slices of the Dataframe.
 	// The maximum number of rows supported (on a 64-bit machine) is 9,223,372,036,854,775,807 (half of 64 bit range).
 	// Preallocating memory can provide speed improvements. Benchmarks should be performed for your use-case.
 	//
@@ -37,14 +64,24 @@ type SQLLoadOptions struct {
 	// DictateDataType is used to inform LoadFromSQL what the true underlying data type is for a given field name.
 	// The value for a given key must be of the data type of the data.
 	// eg. For a string use "". For a int64 use int64(0). What is relevant is the data type and not the value itself.
+	//
+	// NOTE: A custom Series must implement NewSerieser interface and be able to interpret strings to work.
 	DictateDataType map[string]interface{}
 
 	// Database is used to set the Database.
 	Database Database
+
+	// Query can be set to the sql stmt if a *sql.DB, *sql.TX, *sql.Conn or the equivalent from the mysql-go package is provided.
+	//
+	// See: https://godoc.org/github.com/rocketlaunchr/mysql-go
+	Query string
 }
 
 // LoadFromSQL will load data from a sql database.
-func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, args ...interface{}) (*dataframe.DataFrame, error) {
+// stmt must be a *sql.Stmt or the equivalent from the mysql-go package.
+//
+// See: https://godoc.org/github.com/rocketlaunchr/mysql-go#Stmt
+func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions, args ...interface{}) (*dataframe.DataFrame, error) {
 
 	var (
 		init     *dataframe.SeriesInit
@@ -67,7 +104,32 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 		}
 	}
 
-	rows, err := stmt.QueryContext(ctx, args...)
+	var (
+		rows rows
+		err  error
+	)
+
+	switch stmt := stmt.(type) {
+	case queryContexter1:
+		rows, err = stmt.QueryContext(ctx, args...)
+	case queryContexter2:
+		rows, err = stmt.QueryContext(ctx, args...)
+	case queryContexter3:
+		query := ""
+		if options != nil {
+			query = (*options).Query
+		}
+		rows, err = stmt.QueryContext(ctx, query, args...)
+	case queryContexter4:
+		query := ""
+		if options != nil {
+			query = (*options).Query
+		}
+		rows, err = stmt.QueryContext(ctx, query, args...)
+	default:
+		panic(fmt.Sprintf("interface conversion: %T is not a valid Stmt", stmt))
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +161,15 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 					seriess = append(seriess, dataframe.NewSeriesString(name, init))
 				case time.Time:
 					seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+				case dataframe.NewSerieser:
+					seriess = append(seriess, T.NewSeries(name, init))
 				case Converter:
-					seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
+					switch T.ConcreteType.(type) {
+					case time.Time:
+						seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+					default:
+						seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
+					}
 				default:
 					seriess = append(seriess, dataframe.NewSeriesGeneric(name, typ, init))
 				}
@@ -166,13 +235,13 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 					case float64:
 						f, err := strconv.ParseFloat(*val, 64)
 						if err != nil {
-							return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, fieldName)
+							return nil, fmt.Errorf("can't force string: %s to float64. row: %d field: %s", *val, row-1, fieldName)
 						}
 						insertVals[fieldName] = f
 					case int64:
 						n, err := strconv.ParseInt(*val, 10, 64)
 						if err != nil {
-							return nil, fmt.Errorf("can't force string to Int. row: %d field: %s", row-1, fieldName)
+							return nil, fmt.Errorf("can't force string: %s to Int. row: %d field: %s", *val, row-1, fieldName)
 						}
 						insertVals[fieldName] = n
 					case string:
@@ -183,7 +252,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 						} else if *val == "false" || *val == "FALSE" || *val == "0" {
 							insertVals[fieldName] = int64(0)
 						} else {
-							return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, fieldName)
+							return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", *val, row-1, fieldName)
 						}
 					case time.Time:
 						layout := time.RFC3339 // Default for PostgreSQL
@@ -196,15 +265,17 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 							// Assume unix timestamp
 							sec, err := strconv.ParseInt(*val, 10, 64)
 							if err != nil {
-								return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", layout, row-1, fieldName)
+								return nil, fmt.Errorf("can't force string: %s to time.Time (%s). row: %d field: %s", *val, layout, row-1, fieldName)
 							}
 							t = time.Unix(sec, 0)
 						}
 						insertVals[fieldName] = t
+					case dataframe.NewSerieser:
+						insertVals[fieldName] = *val
 					case Converter:
 						cv, err := T.ConverterFunc(*val)
 						if err != nil {
-							return nil, fmt.Errorf("can't force string to generic data type. row: %d field: %s", row-1, fieldName)
+							return nil, fmt.Errorf("can't force string: %s to generic data type. row: %d field: %s", *val, row-1, fieldName)
 						}
 						insertVals[fieldName] = cv
 					default:
@@ -221,13 +292,13 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 			case "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "FLOAT4", "FLOAT8":
 				f, err := strconv.ParseFloat(*val, 64)
 				if err != nil {
-					return nil, fmt.Errorf("can't force string to float64. row: %d field: %s", row-1, fieldName)
+					return nil, fmt.Errorf("can't force string: %s to float64. row: %d field: %s", *val, row-1, fieldName)
 				}
 				insertVals[fieldName] = f
 			case "INT", "TINYINT", "INT2", "INT4", "INT8", "MEDIUMINT", "SMALLINT", "BIGINT":
 				n, err := strconv.ParseInt(*val, 10, 64)
 				if err != nil {
-					return nil, fmt.Errorf("can't force string to Int. row: %d field: %s", row-1, fieldName)
+					return nil, fmt.Errorf("can't force string: %s to Int. row: %d field: %s", *val, row-1, fieldName)
 				}
 				insertVals[fieldName] = n
 			case "BOOL":
@@ -236,7 +307,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 				} else if *val == "false" || *val == "FALSE" || *val == "0" {
 					insertVals[fieldName] = int64(0)
 				} else {
-					return nil, fmt.Errorf("can't force string to bool. row: %d field: %s", row-1, fieldName)
+					return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", *val, row-1, fieldName)
 				}
 			case "DATETIME", "TIMESTAMP", "TIMESTAMPTZ":
 				layout := time.RFC3339 // Default for PostgreSQL
@@ -249,7 +320,7 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 					// Assume unix timestamp
 					sec, err := strconv.ParseInt(*val, 10, 64)
 					if err != nil {
-						return nil, fmt.Errorf("can't force string to time.Time (%s). row: %d field: %s", layout, row-1, fieldName)
+						return nil, fmt.Errorf("can't force string: %s to time.Time (%s). row: %d field: %s", *val, layout, row-1, fieldName)
 					}
 					t = time.Unix(sec, 0)
 				}
@@ -261,9 +332,9 @@ func LoadFromSQL(ctx context.Context, stmt *sql.Stmt, options *SQLLoadOptions, a
 		}
 
 		if init == nil {
-			df.Append(make([]interface{}, len(df.Series))...)
+			df.Append(&dataframe.DontLock, make([]interface{}, len(df.Series))...)
 		}
-		df.UpdateRow(row-1, insertVals)
+		df.UpdateRow(row-1, &dataframe.DontLock, insertVals)
 
 	}
 	if err := rows.Err(); err != nil {

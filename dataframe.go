@@ -1,9 +1,10 @@
-// Copyright 2018 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
 package dataframe
 
 import (
 	"errors"
+	"golang.org/x/exp/rand"
 	"sync"
 )
 
@@ -49,14 +50,56 @@ func NewDataFrame(se ...Series) *DataFrame {
 
 // NRows returns the number of rows of data.
 // Each series must contain the same number of rows.
-func (df *DataFrame) NRows(options ...Options) int {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (df *DataFrame) NRows(opts ...Options) int {
+	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.RLock()
 		defer df.lock.RUnlock()
 	}
 
 	return df.n
+}
 
+// SeriesReturnOpt is used to control if Row/Values method returns
+// the series index, series name or both as map keys.
+type SeriesReturnOpt uint8
+
+func (s SeriesReturnOpt) has(x SeriesReturnOpt) bool {
+	return s&x != 0
+}
+
+const (
+	// SeriesIdx forces the series' index to be returned as a map key.
+	SeriesIdx SeriesReturnOpt = 1 << iota
+	// SeriesName forces the series' name to be returned as a map key.
+	SeriesName
+)
+
+// Row returns the series' values for a particular row.
+//
+// Example:
+//
+//  df.Row(5, dataframe.SeriesIdx|dataframe.SeriesName)
+//
+func (df *DataFrame) Row(row int, dontReadLock bool, retOpt ...SeriesReturnOpt) map[interface{}]interface{} {
+	if !dontReadLock {
+		df.lock.RLock()
+		defer df.lock.RUnlock()
+	}
+
+	out := map[interface{}]interface{}{}
+
+	for idx, aSeries := range df.Series {
+		val := aSeries.Value(row)
+
+		if len(retOpt) == 0 || retOpt[0].has(SeriesIdx) {
+			out[idx] = val
+		}
+		if len(retOpt) == 0 || retOpt[0].has(SeriesName) {
+			out[aSeries.Name()] = val
+		}
+	}
+
+	return out
 }
 
 // ValuesOptions is used to modify the behaviour of Values().
@@ -76,15 +119,15 @@ type ValuesOptions struct {
 	DontReadLock bool
 }
 
-// Values will return an iterator that can be used to iterate through all the values.
+// ValuesIterator will return an iterator that can be used to iterate through all the values.
 //
 // Example:
 //
-//  iterator := df.Values(dataframe.ValuesOptions{0, 1, true})
+//  iterator := df.ValuesIterator(dataframe.ValuesOptions{0, 1, true})
 //
 //  df.Lock()
 //  for {
-//     row, vals := iterator()
+//     row, vals, _ := iterator()
 //     if row == nil {
 //        break
 //     }
@@ -92,10 +135,12 @@ type ValuesOptions struct {
 //  }
 //  df.Unlock()
 //
-func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interface{}]interface{}) {
+func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int) {
 
-	var row int
-	var step int = 1
+	var (
+		row  int
+		step int = 1
+	)
 
 	var dontReadLock bool
 
@@ -109,7 +154,8 @@ func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interfac
 		}
 	}
 
-	return func() (*int, map[interface{}]interface{}) {
+	return func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int) {
+		// Should this be on the outside?
 		if !dontReadLock {
 			df.lock.RLock()
 			defer df.lock.RUnlock()
@@ -117,74 +163,44 @@ func (df *DataFrame) Values(options ...ValuesOptions) func() (*int, map[interfac
 
 		if row > df.n-1 || row < 0 {
 			// Don't iterate further
-			return nil, nil
+			return nil, nil, 0
 		}
 
 		out := map[interface{}]interface{}{}
 
 		for idx, aSeries := range df.Series {
 			val := aSeries.Value(row)
-			out[aSeries.Name()] = val
-			out[idx] = val
+
+			if len(retOpt) == 0 || retOpt[0].has(SeriesIdx) {
+				out[idx] = val
+			}
+			if len(retOpt) == 0 || retOpt[0].has(SeriesName) {
+				out[aSeries.Name()] = val
+			}
 		}
 
 		row = row + step
 
-		return &[]int{row - step}[0], out
+		return &[]int{row - step}[0], out, df.n
 	}
 }
 
 // Prepend inserts a row at the beginning.
-func (df *DataFrame) Prepend(vals ...interface{}) {
-	df.lock.Lock()
-	defer df.lock.Unlock()
-
-	if len(vals) > 0 {
-
-		switch v := vals[0].(type) {
-		case map[string]interface{}:
-
-			names := map[string]struct{}{}
-			for name := range v {
-				names[name] = struct{}{}
-			}
-
-			// Check if number of vals is equal to number of series
-			if len(names) != len(df.Series) {
-				panic("no. of args not equal to no. of series")
-			}
-
-			for name, val := range v {
-				col, err := df.NameToColumn(name)
-				if err != nil {
-					panic(err)
-				}
-				df.Series[col].Prepend(val)
-			}
-		default:
-			// Check if number of vals is equal to number of series
-			if len(vals) != len(df.Series) {
-				panic("no. of args not equal to no. of series")
-			}
-
-			for idx, val := range vals {
-				df.Series[idx].Prepend(val)
-			}
-		}
-
-		df.n++
-	}
+func (df *DataFrame) Prepend(opts *Options, vals ...interface{}) {
+	df.Insert(0, opts, vals...)
 }
 
 // Append inserts a row at the end.
-func (df *DataFrame) Append(vals ...interface{}) {
-	df.Insert(df.n, vals...)
+func (df *DataFrame) Append(opts *Options, vals ...interface{}) {
+	df.Insert(df.n, opts, vals...)
 }
 
 // Insert adds a row to a particular position.
-func (df *DataFrame) Insert(row int, vals ...interface{}) {
-	df.lock.Lock()
-	defer df.lock.Unlock()
+func (df *DataFrame) Insert(row int, opts *Options, vals ...interface{}) {
+	if opts == nil || !opts.DontLock {
+		df.lock.Lock()
+		defer df.lock.Unlock()
+	}
 
 	df.insert(row, vals...)
 }
@@ -196,22 +212,51 @@ func (df *DataFrame) insert(row int, vals ...interface{}) {
 		switch v := vals[0].(type) {
 		case map[string]interface{}:
 
-			names := map[string]struct{}{}
-			for name := range v {
-				names[name] = struct{}{}
-			}
-
 			// Check if number of vals is equal to number of series
-			if len(names) != len(df.Series) {
+			if len(v) != len(df.Series) {
 				panic("no. of args not equal to no. of series")
 			}
 
 			for name, val := range v {
-				col, err := df.NameToColumn(name)
+				col, err := df.NameToColumn(name, dontLock)
 				if err != nil {
 					panic(err)
 				}
 				df.Series[col].Insert(row, val)
+			}
+		case map[interface{}]interface{}:
+
+			// Check if number of vals is equal to number of series
+			names := map[string]struct{}{}
+
+			for key := range v {
+				switch kTyp := key.(type) {
+				case int:
+					names[df.Series[kTyp].Name(dontLock)] = struct{}{}
+				case string:
+					names[kTyp] = struct{}{}
+				default:
+					panic("unknown type in insert argument. Must be an int or string.")
+				}
+			}
+
+			if len(names) != len(df.Series) {
+				panic("no. of args not equal to no. of series")
+			}
+
+			for C, val := range v {
+				switch CTyp := C.(type) {
+				case int:
+					df.Series[CTyp].Insert(row, val)
+				case string:
+					col, err := df.NameToColumn(CTyp, dontLock)
+					if err != nil {
+						panic(err)
+					}
+					df.Series[col].Insert(row, val)
+				default:
+					panic("unknown type in insert argument. Must be an int or string.")
+				}
 			}
 		default:
 			// Check if number of vals is equal to number of series
@@ -228,10 +273,24 @@ func (df *DataFrame) insert(row int, vals ...interface{}) {
 	}
 }
 
+// ClearRow makes an entire row nil.
+func (df *DataFrame) ClearRow(row int, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		df.lock.Lock()
+		defer df.lock.Unlock()
+	}
+
+	for i := range df.Series {
+		df.Series[i].Update(row, nil, dontLock) //???
+	}
+}
+
 // Remove deletes a row.
-func (df *DataFrame) Remove(row int) {
-	df.lock.Lock()
-	defer df.lock.Unlock()
+func (df *DataFrame) Remove(row int, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		df.lock.Lock()
+		defer df.lock.Unlock()
+	}
 
 	for i := range df.Series {
 		df.Series[i].Remove(row)
@@ -241,15 +300,15 @@ func (df *DataFrame) Remove(row int) {
 
 // Update is used to update a specific entry.
 // col can be the name of the series or the column number.
-func (df *DataFrame) Update(row int, col interface{}, val interface{}, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (df *DataFrame) Update(row int, col interface{}, val interface{}, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.Lock()
 		defer df.lock.Unlock()
 	}
 
 	switch name := col.(type) {
 	case string:
-		_col, err := df.NameToColumn(name)
+		_col, err := df.NameToColumn(name, dontLock)
 		if err != nil {
 			panic(err)
 		}
@@ -260,20 +319,37 @@ func (df *DataFrame) Update(row int, col interface{}, val interface{}, options .
 }
 
 // UpdateRow will update an entire row.
-func (df *DataFrame) UpdateRow(row int, vals ...interface{}) {
-	df.lock.Lock()
-	defer df.lock.Unlock()
+func (df *DataFrame) UpdateRow(row int, opts *Options, vals ...interface{}) {
+	if opts == nil || !opts.DontLock {
+		df.lock.Lock()
+		defer df.lock.Unlock()
+	}
 
 	if len(vals) > 0 {
 
 		switch v := vals[0].(type) {
 		case map[string]interface{}:
 			for name, val := range v {
-				col, err := df.NameToColumn(name)
+				col, err := df.NameToColumn(name, dontLock)
 				if err != nil {
 					panic(err)
 				}
 				df.Series[col].Update(row, val)
+			}
+		case map[interface{}]interface{}:
+			for C, val := range v {
+				switch CTyp := C.(type) {
+				case int:
+					df.Series[CTyp].Update(row, val)
+				case string:
+					col, err := df.NameToColumn(CTyp, dontLock)
+					if err != nil {
+						panic(err)
+					}
+					df.Series[col].Update(row, val)
+				default:
+					panic("unknown type in UpdateRow argument. Must be an int or string.")
+				}
 			}
 		default:
 			// Check if number of vals is equal to number of series
@@ -289,9 +365,13 @@ func (df *DataFrame) UpdateRow(row int, vals ...interface{}) {
 }
 
 // Names will return a list of all the series names.
-func (df *DataFrame) Names() []string {
-	names := []string{}
+func (df *DataFrame) Names(opts ...Options) []string {
+	if len(opts) == 0 || !opts[0].DontLock {
+		df.lock.RLock()
+		defer df.lock.RUnlock()
+	}
 
+	names := []string{}
 	for _, aSeries := range df.Series {
 		names = append(names, aSeries.Name())
 	}
@@ -301,7 +381,12 @@ func (df *DataFrame) Names() []string {
 
 // NameToColumn returns the index of the series based on the name.
 // The starting index is 0.
-func (df *DataFrame) NameToColumn(seriesName string) (int, error) {
+func (df *DataFrame) NameToColumn(seriesName string, opts ...Options) (int, error) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		df.lock.RLock()
+		defer df.lock.RUnlock()
+	}
+
 	for idx, aSeries := range df.Series {
 		if aSeries.Name() == seriesName {
 			return idx, nil
@@ -313,10 +398,12 @@ func (df *DataFrame) NameToColumn(seriesName string) (int, error) {
 
 // ReorderColumns reorders the columns based on an ordered list of
 // column names. The length of newOrder must match the number of columns
-// in the dataframe. The column names in newOrder must be unique.
-func (df *DataFrame) ReorderColumns(newOrder []string) error {
-	df.lock.Lock()
-	defer df.lock.Unlock()
+// in the Dataframe. The column names in newOrder must be unique.
+func (df *DataFrame) ReorderColumns(newOrder []string, opts ...Options) error {
+	if len(opts) == 0 || !opts[0].DontLock {
+		df.lock.Lock()
+		defer df.lock.Unlock()
+	}
 
 	if len(newOrder) != len(df.Series) {
 		return errors.New("length of newOrder must match number of columns")
@@ -335,7 +422,7 @@ func (df *DataFrame) ReorderColumns(newOrder []string) error {
 	series := []Series{}
 
 	for _, v := range newOrder {
-		idx, err := df.NameToColumn(v)
+		idx, err := df.NameToColumn(v, dontLock)
 		if err != nil {
 			return errors.New(err.Error() + ": " + v)
 		}
@@ -348,12 +435,14 @@ func (df *DataFrame) ReorderColumns(newOrder []string) error {
 	return nil
 }
 
-// RemoveSeries will remove a series from the dataframe.
-func (df *DataFrame) RemoveSeries(seriesName string) error {
-	df.lock.Lock()
-	defer df.lock.Unlock()
+// RemoveSeries will remove a Series from the Dataframe.
+func (df *DataFrame) RemoveSeries(seriesName string, opts ...Options) error {
+	if len(opts) == 0 || !opts[0].DontLock {
+		df.lock.Lock()
+		defer df.lock.Unlock()
+	}
 
-	idx, err := df.NameToColumn(seriesName)
+	idx, err := df.NameToColumn(seriesName, dontLock)
 	if err != nil {
 		return errors.New(err.Error() + ": " + seriesName)
 	}
@@ -362,9 +451,31 @@ func (df *DataFrame) RemoveSeries(seriesName string) error {
 	return nil
 }
 
+// AddSeries will add a Series to the end of the DataFrame, unless set by ColN.
+func (df *DataFrame) AddSeries(s Series, colN *int, opts ...Options) error {
+	if len(opts) == 0 || !opts[0].DontLock {
+		df.lock.Lock()
+		defer df.lock.Unlock()
+	}
+
+	if s.NRows(dontLock) != df.n {
+		panic("different number of rows in series")
+	}
+
+	if colN == nil {
+		df.Series = append(df.Series, s)
+	} else {
+		df.Series = append(df.Series, nil)
+		copy(df.Series[*colN+1:], df.Series[*colN:])
+		df.Series[*colN] = s
+	}
+
+	return nil
+}
+
 // Swap is used to swap 2 values based on their row position.
-func (df *DataFrame) Swap(row1, row2 int, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (df *DataFrame) Swap(row1, row2 int, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.Lock()
 		defer df.lock.Unlock()
 	}
@@ -374,19 +485,31 @@ func (df *DataFrame) Swap(row1, row2 int, options ...Options) {
 	}
 }
 
-// Lock will lock the dataframe allowing you to directly manipulate
-// the underlying series with confidence.
-func (df *DataFrame) Lock() {
+// Lock will lock the Dataframe allowing you to directly manipulate
+// the underlying Series with confidence.
+func (df *DataFrame) Lock(deepLock ...bool) {
 	df.lock.Lock()
+
+	if len(deepLock) > 0 && deepLock[0] {
+		for i := range df.Series {
+			df.Series[i].Lock()
+		}
+	}
 }
 
-// Unlock will unlock the dataframe that was previously locked.
-func (df *DataFrame) Unlock() {
+// Unlock will unlock the Dataframe that was previously locked.
+func (df *DataFrame) Unlock(deepUnlock ...bool) {
+	if len(deepUnlock) > 0 && deepUnlock[0] {
+		for i := range df.Series {
+			df.Series[i].Unlock()
+		}
+	}
+
 	df.lock.Unlock()
 }
 
-// Copy will create a new copy of the dataframe.
-// It is recommended that you lock the dataframe
+// Copy will create a new copy of the Dataframe.
+// It is recommended that you lock the Dataframe
 // before attempting to Copy.
 func (df *DataFrame) Copy(r ...Range) *DataFrame {
 
@@ -404,8 +527,17 @@ func (df *DataFrame) Copy(r ...Range) *DataFrame {
 	}
 
 	if len(seriess) > 0 {
-		newDF.n = seriess[0].NRows(Options{true, false})
+		newDF.n = seriess[0].NRows(dontLock)
 	}
 
 	return newDF
+}
+
+// FillRand will randomly fill all the Series in the Dataframe.
+func (df *DataFrame) FillRand(src rand.Source, probNil float64, rander Rander, opts ...FillRandOptions) {
+	for _, s := range df.Series {
+		if sfr, ok := s.(FillRander); ok {
+			sfr.FillRand(src, probNil, rander, opts...)
+		}
+	}
 }

@@ -5,31 +5,36 @@ package dataframe
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"golang.org/x/exp/rand"
+	"math/cmplx"
+	"reflect"
 	"sort"
-	"strconv"
 	"sync"
 
 	"github.com/olekukonko/tablewriter"
 )
 
-// SeriesString is used for series containing string data.
-type SeriesString struct {
-	valFormatter ValueToStringFormatter
+// SeriesMixed is used for series containing mixed data.
+type SeriesMixed struct {
+	valFormatter   ValueToStringFormatter
+	isEqualFunc    IsEqualFunc
+	isLessThanFunc IsLessThanFunc
 
 	lock     sync.RWMutex
 	name     string
-	values   []*string
+	values   []interface{}
 	nilCount int
 }
 
-// NewSeriesString creates a new series with the underlying type as string.
-func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *SeriesString {
-	s := &SeriesString{
-		name:     name,
-		values:   []*string{},
-		nilCount: 0,
+// NewSeriesMixed creates a new series with the underlying type as interface{}.
+func NewSeriesMixed(name string, init *SeriesInit, vals ...interface{}) *SeriesMixed {
+	s := &SeriesMixed{
+		isEqualFunc: DefaultIsEqualFunc,
+		name:        name,
+		values:      []interface{}{},
+		nilCount:    0,
 	}
 
 	var (
@@ -45,16 +50,19 @@ func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *Series
 		}
 	}
 
-	s.values = make([]*string, size, capacity)
+	s.values = make([]interface{}, size, capacity)
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
 
 		// Special case
 		if idx == 0 {
-			if ss, ok := vals[0].([]string); ok {
-				for idx, v := range ss {
+			if ms, ok := vals[0].([]interface{}); ok {
+				for idx, v := range ms {
 					val := s.valToPointer(v)
+					if val == nil {
+						s.nilCount++
+					}
 					if idx < size {
 						s.values[idx] = val
 					} else {
@@ -79,8 +87,8 @@ func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *Series
 
 	var lVals int
 	if len(vals) > 0 {
-		if ss, ok := vals[0].([]string); ok {
-			lVals = len(ss)
+		if ms, ok := vals[0].([]interface{}); ok {
+			lVals = len(ms)
 		} else {
 			lVals = len(vals)
 		}
@@ -93,13 +101,13 @@ func NewSeriesString(name string, init *SeriesInit, vals ...interface{}) *Series
 	return s
 }
 
-// NewSeries creates a new initialized SeriesString.
-func (s *SeriesString) NewSeries(name string, init *SeriesInit) Series {
-	return NewSeriesString(name, init)
+// NewSeries creates a new initialized SeriesMixed.
+func (s *SeriesMixed) NewSeries(name string, init *SeriesInit) Series {
+	return NewSeriesMixed(name, init)
 }
 
 // Name returns the series name.
-func (s *SeriesString) Name(opts ...Options) string {
+func (s *SeriesMixed) Name(opts ...Options) string {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
@@ -109,7 +117,7 @@ func (s *SeriesString) Name(opts ...Options) string {
 }
 
 // Rename renames the series.
-func (s *SeriesString) Rename(n string, opts ...Options) {
+func (s *SeriesMixed) Rename(n string, opts ...Options) {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
@@ -119,12 +127,12 @@ func (s *SeriesString) Rename(n string, opts ...Options) {
 }
 
 // Type returns the type of data the series holds.
-func (s *SeriesString) Type() string {
-	return "string"
+func (s *SeriesMixed) Type() string {
+	return "mixed"
 }
 
 // NRows returns how many rows the series contains.
-func (s *SeriesString) NRows(opts ...Options) int {
+func (s *SeriesMixed) NRows(opts ...Options) int {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
@@ -137,7 +145,7 @@ func (s *SeriesString) NRows(opts ...Options) int {
 // The return value could be nil or the concrete type
 // the data type held by the series.
 // Pointers are never returned.
-func (s *SeriesString) Value(row int, opts ...Options) interface{} {
+func (s *SeriesMixed) Value(row int, opts ...Options) interface{} {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
@@ -147,21 +155,22 @@ func (s *SeriesString) Value(row int, opts ...Options) interface{} {
 	if val == nil {
 		return nil
 	}
-	return *val
+
+	return val
 }
 
 // ValueString returns a string representation of a
 // particular row. The string representation is defined
 // by the function set in SetValueToStringFormatter.
 // By default, a nil value is returned as "NaN".
-func (s *SeriesString) ValueString(row int, opts ...Options) string {
+func (s *SeriesMixed) ValueString(row int, opts ...Options) string {
 	return s.valFormatter(s.Value(row, opts...))
 }
 
 // Prepend is used to set a value to the beginning of the
 // series. val can be a concrete data type or nil. Nil
 // represents the absence of a value.
-func (s *SeriesString) Prepend(val interface{}, opts ...Options) {
+func (s *SeriesMixed) Prepend(val interface{}, opts ...Options) {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
@@ -184,7 +193,7 @@ func (s *SeriesString) Prepend(val interface{}, opts ...Options) {
 // Append is used to set a value to the end of the series.
 // val can be a concrete data type or nil. Nil represents
 // the absence of a value.
-func (s *SeriesString) Append(val interface{}, opts ...Options) int {
+func (s *SeriesMixed) Append(val interface{}, opts ...Options) int {
 	var locked bool
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
@@ -201,7 +210,7 @@ func (s *SeriesString) Append(val interface{}, opts ...Options) int {
 // the series. All existing values from that row onwards
 // are shifted by 1. val can be a concrete data type or nil.
 // Nil represents the absence of a value.
-func (s *SeriesString) Insert(row int, val interface{}, opts ...Options) {
+func (s *SeriesMixed) Insert(row int, val interface{}, opts ...Options) {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
@@ -210,19 +219,12 @@ func (s *SeriesString) Insert(row int, val interface{}, opts ...Options) {
 	s.insert(row, val)
 }
 
-func (s *SeriesString) insert(row int, val interface{}) {
+func (s *SeriesMixed) insert(row int, val interface{}) {
 	switch V := val.(type) {
-	case []string:
-		var vals []*string
+	case []interface{}:
+		// count how many NaN
 		for _, v := range V {
-			v := v
-			vals = append(vals, &v)
-		}
-		s.values = append(s.values[:row], append(vals, s.values[row:]...)...)
-		return
-	case []*string:
-		for _, v := range V {
-			if v == nil {
+			if reflect.ValueOf(v).IsNil() {
 				s.nilCount++
 			}
 		}
@@ -233,16 +235,16 @@ func (s *SeriesString) insert(row int, val interface{}) {
 	s.values = append(s.values, nil)
 	copy(s.values[row+1:], s.values[row:])
 
-	v := s.valToPointer(val)
-	if v == nil {
+	if val == nil {
 		s.nilCount++
 	}
+	v := s.valToPointer(val)
 
-	s.values[row] = s.valToPointer(v)
+	s.values[row] = v
 }
 
 // Remove is used to delete the value of a particular row.
-func (s *SeriesString) Remove(row int, opts ...Options) {
+func (s *SeriesMixed) Remove(row int, opts ...Options) {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
@@ -251,24 +253,25 @@ func (s *SeriesString) Remove(row int, opts ...Options) {
 	if s.values[row] == nil {
 		s.nilCount--
 	}
+
 	s.values = append(s.values[:row], s.values[row+1:]...)
 }
 
 // Reset is used clear all data contained in the Series.
-func (s *SeriesString) Reset(opts ...Options) {
+func (s *SeriesMixed) Reset(opts ...Options) {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
 
-	s.values = []*string{}
+	s.values = []interface{}{}
 	s.nilCount = 0
 }
 
 // Update is used to update the value of a particular row.
 // val can be a concrete data type or nil. Nil represents
 // the absence of a value.
-func (s *SeriesString) Update(row int, val interface{}, opts ...Options) {
+func (s *SeriesMixed) Update(row int, val interface{}, opts ...Options) {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
@@ -286,7 +289,7 @@ func (s *SeriesString) Update(row int, val interface{}, opts ...Options) {
 }
 
 // ValuesIterator will return an iterator that can be used to iterate through all the values.
-func (s *SeriesString) ValuesIterator(opts ...ValuesOptions) func() (*int, interface{}, int) {
+func (s *SeriesMixed) ValuesIterator(opts ...ValuesOptions) func() (*int, interface{}, int) {
 
 	var (
 		row  int
@@ -317,54 +320,118 @@ func (s *SeriesString) ValuesIterator(opts ...ValuesOptions) func() (*int, inter
 			return nil, nil, 0
 		}
 
-		val := s.values[row]
-		var out interface{}
-		if val == nil {
+		var out interface{} = s.values[row]
+		if reflect.ValueOf(out).IsNil() {
 			out = nil
-		} else {
-			out = *val
 		}
 		row = row + step
 		return &[]int{row - step}[0], out, len(s.values)
 	}
 }
 
-func (s *SeriesString) valToPointer(v interface{}) *string {
+func (s *SeriesMixed) valToPointer(v interface{}) interface{} {
+
 	switch val := v.(type) {
 	case nil:
 		return nil
-	case *bool:
+	case float64:
+		if isNaN(val) {
+			return nil
+		}
+		return val
+	case complex128:
+		if cmplx.IsNaN(val) {
+			return nil
+		}
+		return val
+	case *int:
 		if val == nil {
 			return nil
 		}
-		if *val == true {
-			return &[]string{"1"}[0]
-		} else {
-			return &[]string{"0"}[0]
-		}
-	case bool:
-		if val == true {
-			return &[]string{"1"}[0]
-		} else {
-			return &[]string{"0"}[0]
-		}
-	case *string:
+		return int64(*val)
+	case int:
+		return int64(val)
+	case *int8:
 		if val == nil {
 			return nil
 		}
-		return &[]string{*val}[0]
-	case string:
-		return &val
+		return int64(*val)
+	case int8:
+		return int64(val)
+	case *int16:
+		if val == nil {
+			return nil
+		}
+		return int64(*val)
+	case int16:
+		return int64(val)
+	case *int32:
+		if val == nil {
+			return nil
+		}
+		return int64(*val)
+	case int32:
+		return int64(val)
+	case *int64:
+		if val == nil {
+			return nil
+		}
+		return *val
+	case int64:
+		return val
+	case *uint:
+		if val == nil {
+			return nil
+		}
+		return uint64(*val)
+	case uint:
+		return uint64(val)
+	case *uint8:
+		if val == nil {
+			return nil
+		}
+		return uint64(*val)
+	case uint8:
+		return uint64(val)
+	case *uint16:
+		if val == nil {
+			return nil
+		}
+		return uint64(*val)
+	case uint16:
+		return uint64(val)
+	case *uint32:
+		if val == nil {
+			return nil
+		}
+		return uint64(*val)
+	case uint32:
+		return uint64(val)
+	case *uint64:
+		if val == nil {
+			return nil
+		}
+		return *val
+	case uint64:
+		return val
 	default:
-		_ = v.(string) // Intentionally panic
-		return nil
+		rv := reflect.ValueOf(val)
+		switch rv.Kind() {
+		case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+			if rv.IsNil() {
+				return nil
+			}
+			return val
+		default:
+			return val
+		}
 	}
 }
 
 // SetValueToStringFormatter is used to set a function
 // to convert the value of a particular row to a string
 // representation.
-func (s *SeriesString) SetValueToStringFormatter(f ValueToStringFormatter) {
+func (s *SeriesMixed) SetValueToStringFormatter(f ValueToStringFormatter) {
 	if f == nil {
 		s.valFormatter = DefaultValueFormatter
 		return
@@ -373,7 +440,7 @@ func (s *SeriesString) SetValueToStringFormatter(f ValueToStringFormatter) {
 }
 
 // Swap is used to swap 2 values based on their row position.
-func (s *SeriesString) Swap(row1, row2 int, opts ...Options) {
+func (s *SeriesMixed) Swap(row1, row2 int, opts ...Options) {
 	if row1 == row2 {
 		return
 	}
@@ -387,48 +454,54 @@ func (s *SeriesString) Swap(row1, row2 int, opts ...Options) {
 }
 
 // IsEqualFunc returns true if a is equal to b.
-func (s *SeriesString) IsEqualFunc(a, b interface{}) bool {
+func (s *SeriesMixed) IsEqualFunc(a, b interface{}) bool {
 
-	if a == nil {
-		if b == nil {
-			return true
-		}
-		return false
+	if s.isEqualFunc == nil {
+		panic(errors.New("IsEqualFunc not set"))
 	}
 
-	if b == nil {
-		return false
-	}
-	s1 := a.(string)
-	s2 := b.(string)
-
-	return s1 == s2
-
+	return s.isEqualFunc(a, b)
 }
 
 // IsLessThanFunc returns true if a is less than b.
-func (s *SeriesString) IsLessThanFunc(a, b interface{}) bool {
+func (s *SeriesMixed) IsLessThanFunc(a, b interface{}) bool {
 
-	if a == nil {
-		if b == nil {
-			return true
-		}
-		return true
+	if s.isLessThanFunc == nil {
+		panic(errors.New("IsLessThanFunc not set"))
 	}
 
-	if b == nil {
-		return false
+	return s.isLessThanFunc(a, b)
+}
+
+// SetIsEqualFunc sets a function which can be used to determine
+// if 2 values in the series are equal.
+func (s *SeriesMixed) SetIsEqualFunc(f IsEqualFunc) {
+	if f == nil {
+		// Return to default
+		s.isEqualFunc = DefaultIsEqualFunc
+	} else {
+		s.isEqualFunc = f
 	}
-	s1 := a.(string)
-	s2 := b.(string)
+}
 
-	return s1 < s2
-
+// SetIsLessThanFunc sets a function which can be used to determine
+// if a value is less than another in the series.
+func (s *SeriesMixed) SetIsLessThanFunc(f IsLessThanFunc) {
+	if f == nil {
+		// Return to default
+		s.isLessThanFunc = nil
+	} else {
+		s.isLessThanFunc = f
+	}
 }
 
 // Sort will sort the series.
 // It will return true if sorting was completed or false when the context is canceled.
-func (s *SeriesString) Sort(ctx context.Context, opts ...SortOptions) (completed bool) {
+func (s *SeriesMixed) Sort(ctx context.Context, opts ...SortOptions) (completed bool) {
+
+	if s.isLessThanFunc == nil {
+		panic(fmt.Errorf("cannot sort without setting IsLessThanFunc"))
+	}
 
 	defer func() {
 		if x := recover(); x != nil {
@@ -456,23 +529,23 @@ func (s *SeriesString) Sort(ctx context.Context, opts ...SortOptions) (completed
 			}
 		}()
 
-		if s.values[i] == nil {
-			if s.values[j] == nil {
+		left := s.values[i]
+		right := s.values[j]
+
+		if left == nil {
+			if right == nil {
 				// both are nil
 				return true
 			}
 			return true
 		}
 
-		if s.values[j] == nil {
-			// i has value and j is nil
+		if right == nil {
+			// left has value and right is nil
 			return false
 		}
 		// Both are not nil
-		ti := *s.values[i]
-		tj := *s.values[j]
-
-		return ti < tj
+		return s.isLessThanFunc(left, right)
 	}
 
 	if opts[0].Stable {
@@ -486,25 +559,25 @@ func (s *SeriesString) Sort(ctx context.Context, opts ...SortOptions) (completed
 
 // Lock will lock the Series allowing you to directly manipulate
 // the underlying slice with confidence.
-func (s *SeriesString) Lock() {
+func (s *SeriesMixed) Lock() {
 	s.lock.Lock()
 }
 
 // Unlock will unlock the Series that was previously locked.
-func (s *SeriesString) Unlock() {
+func (s *SeriesMixed) Unlock() {
 	s.lock.Unlock()
 }
 
 // Copy will create a new copy of the series.
 // It is recommended that you lock the Series before attempting
 // to Copy.
-func (s *SeriesString) Copy(r ...Range) Series {
+func (s *SeriesMixed) Copy(r ...Range) Series {
 
 	if len(s.values) == 0 {
-		return &SeriesString{
+		return &SeriesMixed{
 			valFormatter: s.valFormatter,
 			name:         s.name,
-			values:       []*string{},
+			values:       []interface{}{},
 			nilCount:     s.nilCount,
 		}
 	}
@@ -522,7 +595,7 @@ func (s *SeriesString) Copy(r ...Range) Series {
 	x := s.values[start : end+1]
 	newSlice := append(x[:0:0], x...)
 
-	return &SeriesString{
+	return &SeriesMixed{
 		valFormatter: s.valFormatter,
 		name:         s.name,
 		values:       newSlice,
@@ -531,7 +604,7 @@ func (s *SeriesString) Copy(r ...Range) Series {
 }
 
 // Table will produce the Series in a table.
-func (s *SeriesString) Table(r ...Range) string {
+func (s *SeriesMixed) Table(r ...Range) string {
 
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -575,7 +648,7 @@ func (s *SeriesString) Table(r ...Range) string {
 }
 
 // String implements Stringer interface.
-func (s *SeriesString) String() string {
+func (s *SeriesMixed) String() string {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 
@@ -592,16 +665,17 @@ func (s *SeriesString) String() string {
 			out = out + s.ValueString(row, dontLock) + " "
 		}
 		return out + "]"
-	} else {
-		for row := range s.values {
-			out = out + s.ValueString(row, dontLock) + " "
-		}
-		return out + "]"
 	}
+
+	for row := range s.values {
+		out = out + s.ValueString(row, dontLock) + " "
+	}
+	return out + "]"
+
 }
 
 // ContainsNil will return whether or not the series contains any nil values.
-func (s *SeriesString) ContainsNil(opts ...Options) bool {
+func (s *SeriesMixed) ContainsNil(opts ...Options) bool {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
@@ -611,7 +685,7 @@ func (s *SeriesString) ContainsNil(opts ...Options) bool {
 }
 
 // NilCount will return how many nil values are in the series.
-func (s *SeriesString) NilCount(opts ...Options) int {
+func (s *SeriesMixed) NilCount(opts ...Options) int {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
@@ -620,13 +694,13 @@ func (s *SeriesString) NilCount(opts ...Options) int {
 	return s.nilCount
 }
 
-// ToSeriesInt64 will convert the Series to a SeriesInt64.
+// ToSeriesString will convert the Series to a SeriesString.
 // The operation does not lock the Series.
-func (s *SeriesString) ToSeriesInt64(ctx context.Context, removeNil bool, conv ...func(interface{}) (*int64, error)) (*SeriesInt64, error) {
+func (s *SeriesMixed) ToSeriesString(ctx context.Context, removeNil bool, conv ...func(interface{}) (*string, error)) (*SeriesString, error) {
 
 	ec := NewErrorCollection()
 
-	ss := NewSeriesInt64(s.name, &SeriesInit{Capacity: s.NRows(dontLock)})
+	ss := NewSeriesString(s.name, &SeriesInit{Capacity: s.NRows(dontLock)})
 
 	for row, rowVal := range s.values {
 
@@ -643,15 +717,8 @@ func (s *SeriesString) ToSeriesInt64(ctx context.Context, removeNil bool, conv .
 			ss.nilCount++
 		} else {
 			if len(conv) == 0 {
-				cv, err := strconv.ParseInt(*rowVal, 10, 64)
-				if err != nil {
-					// interpret as nil
-					ss.values = append(ss.values, nil)
-					ss.nilCount++
-					ec.AddError(&RowError{Row: row, Err: err}, false)
-				} else {
-					ss.values = append(ss.values, &cv)
-				}
+				cv := ss.valFormatter(rowVal)
+				ss.values = append(ss.values, &cv)
 			} else {
 				cv, err := conv[0](rowVal)
 				if err != nil {
@@ -678,123 +745,9 @@ func (s *SeriesString) ToSeriesInt64(ctx context.Context, removeNil bool, conv .
 	return ss, nil
 }
 
-// ToSeriesFloat64 will convert the Series to a SeriesFloat64.
-// The operation does not lock the Series.
-func (s *SeriesString) ToSeriesFloat64(ctx context.Context, removeNil bool, conv ...func(interface{}) (float64, error)) (*SeriesFloat64, error) {
-
-	ec := NewErrorCollection()
-
-	ss := NewSeriesFloat64(s.name, &SeriesInit{Capacity: s.NRows(dontLock)})
-
-	for row, rowVal := range s.values {
-
-		// Cancel operation
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-
-		if rowVal == nil {
-			if removeNil {
-				continue
-			}
-			ss.Values = append(ss.Values, nan())
-			ss.nilCount++
-		} else {
-			if len(conv) == 0 {
-				cv, err := strconv.ParseFloat(*rowVal, 64)
-				if err != nil {
-					// interpret as nil
-					ss.Values = append(ss.Values, nan())
-					ss.nilCount++
-					ec.AddError(&RowError{Row: row, Err: err}, false)
-				} else {
-					ss.Values = append(ss.Values, cv)
-				}
-			} else {
-				cv, err := conv[0](rowVal)
-				if err != nil {
-					// interpret as nil
-					ss.Values = append(ss.Values, nan())
-					ss.nilCount++
-					ec.AddError(&RowError{Row: row, Err: err}, false)
-				} else {
-					if isNaN(cv) {
-						ss.nilCount++
-					}
-					ss.Values = append(ss.Values, cv)
-				}
-			}
-		}
-	}
-
-	if !ec.IsNil(false) {
-		return ss, ec
-	}
-
-	return ss, nil
-}
-
-// ToSeriesMixed will convert the Series to a SeriesMIxed.
-// The operation does not lock the Series.
-func (s *SeriesString) ToSeriesMixed(ctx context.Context, removeNil bool, conv ...func(interface{}) (interface{}, error)) (*SeriesMixed, error) {
-	ec := NewErrorCollection()
-
-	ss := NewSeriesMixed(s.name, &SeriesInit{Capacity: s.NRows(dontLock)})
-
-	for row, rowVal := range s.values {
-
-		// Cancel operation
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-
-		if rowVal == nil {
-			if removeNil {
-				continue
-			}
-			ss.values = append(ss.values, nil)
-			ss.nilCount++
-		} else {
-			if len(conv) == 0 {
-				cv := *rowVal
-				ss.values = append(ss.values, cv)
-			} else {
-				cv, err := conv[0](rowVal)
-				if err != nil {
-					// interpret as nil
-					ss.values = append(ss.values, nil)
-					ss.nilCount++
-					ec.AddError(&RowError{Row: row, Err: err}, false)
-				} else {
-					if cv == nil {
-						ss.nilCount++
-					}
-					ss.values = append(ss.values, cv)
-				}
-			}
-		}
-	}
-
-	if !ec.IsNil(false) {
-		return ss, ec
-	}
-
-	return ss, nil
-}
-
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-func randomString(rng *rand.Rand) *string {
-	b := make([]byte, 12)
-	for i := range b {
-		b[i] = charset[rng.Intn(len(charset))]
-	}
-	return &[]string{string(b)}[0]
-}
-
 // FillRand will fill a Series with random data. probNil is a value between between 0 and 1 which
 // determines if a row is given a nil value.
-func (s *SeriesString) FillRand(src rand.Source, probNil float64, rander Rander, opts ...FillRandOptions) {
+func (s *SeriesMixed) FillRand(src rand.Source, probNil float64, rander Rander, opts ...FillRandOptions) {
 
 	rng := rand.New(src)
 
@@ -808,7 +761,7 @@ func (s *SeriesString) FillRand(src rand.Source, probNil float64, rander Rander,
 			s.values[i] = nil
 			s.nilCount++
 		} else {
-			s.values[i] = randomString(rng)
+			s.values[i] = rander.Rand()
 		}
 	}
 
@@ -820,7 +773,7 @@ func (s *SeriesString) FillRand(src rand.Source, probNil float64, rander Rander,
 				s.values = append(s.values, nil)
 				s.nilCount++
 			} else {
-				s.values = append(s.values, randomString(rng))
+				s.values = append(s.values, rander.Rand())
 			}
 		}
 	}

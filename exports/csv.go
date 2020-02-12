@@ -1,3 +1,5 @@
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+
 package exports
 
 import (
@@ -27,7 +29,7 @@ type CSVExportOptions struct {
 	UseCRLF bool
 }
 
-// ExportToCSV exports a dataframe to a CSV file.
+// ExportToCSV exports a Dataframe to a CSV file.
 func ExportToCSV(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...CSVExportOptions) error {
 
 	df.Lock()

@@ -1,4 +1,4 @@
-// Copyright 2018 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
 package imports
 
@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
 	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
@@ -16,7 +17,7 @@ import (
 type JSONLoadOptions struct {
 
 	// LargeDataSet should be set to true for large datasets.
-	// It will set the capacity of the underlying slices of the dataframe by performing a basic parse
+	// It will set the capacity of the underlying slices of the Dataframe by performing a basic parse
 	// of the full dataset before processing the data fully.
 	// Preallocating memory can provide speed improvements. Benchmarks should be performed for your use-case.
 	LargeDataSet bool
@@ -24,6 +25,8 @@ type JSONLoadOptions struct {
 	// DictateDataType is used to inform LoadFromJSON what the true underlying data type is for a given field name.
 	// The value for a given key must be of the data type of the data.
 	// eg. For a string use "". For a int64 use int64(0). What is relevant is the data type and not the value itself.
+	//
+	// NOTE: A custom Series must implement NewSerieser interface and be able to interpret strings to work.
 	DictateDataType map[string]interface{}
 
 	// ErrorOnUnknownFields will generate an error if an unknown field is encountered after the first row.
@@ -124,8 +127,15 @@ func LoadFromJSON(ctx context.Context, r io.ReadSeeker, options ...JSONLoadOptio
 						seriess = append(seriess, dataframe.NewSeriesString(name, init))
 					case time.Time:
 						seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+					case dataframe.NewSerieser:
+						seriess = append(seriess, T.NewSeries(name, init))
 					case Converter:
-						seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
+						switch T.ConcreteType.(type) {
+						case time.Time:
+							seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+						default:
+							seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
+						}
 					default:
 						seriess = append(seriess, dataframe.NewSeriesGeneric(name, typ, init))
 					}
@@ -188,9 +198,9 @@ func LoadFromJSON(ctx context.Context, r io.ReadSeeker, options ...JSONLoadOptio
 			}
 
 			if init == nil {
-				df.Append(make([]interface{}, len(df.Series))...)
+				df.Append(&dataframe.DontLock, make([]interface{}, len(df.Series))...)
 			}
-			df.UpdateRow(row-1, insertVals)
+			df.UpdateRow(row-1, &dataframe.DontLock, insertVals)
 
 		} else {
 
@@ -252,9 +262,9 @@ func LoadFromJSON(ctx context.Context, r io.ReadSeeker, options ...JSONLoadOptio
 			}
 
 			if init == nil {
-				df.Append(make([]interface{}, len(df.Series))...)
+				df.Append(&dataframe.DontLock, make([]interface{}, len(df.Series))...)
 			}
-			df.UpdateRow(row-1, insertVals)
+			df.UpdateRow(row-1, &dataframe.DontLock, insertVals)
 
 		}
 	}
@@ -262,6 +272,11 @@ func LoadFromJSON(ctx context.Context, r io.ReadSeeker, options ...JSONLoadOptio
 	if df == nil {
 		return nil, dataframe.ErrNoRows
 	}
+
+	// The order is not stable
+	names := df.Names(dataframe.DontLock)
+	sort.Strings(names)
+	df.ReorderColumns(names)
 
 	return df, nil
 }

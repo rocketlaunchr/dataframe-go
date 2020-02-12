@@ -1,4 +1,4 @@
-// Copyright 2018 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
 package dataframe
 
@@ -47,4 +47,5 @@ func BoolValueFormatter(v interface{}) string {
 }
 
 // DontLock is short-hand for various functions that permit disabling locking.
-var DontLock = Options{DontLock: true}
+var DontLock = dontLock
+var dontLock = Options{DontLock: true}

@@ -1,9 +1,10 @@
-// Copyright 2018 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
 package dataframe
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -84,17 +85,21 @@ func NewSeriesGeneric(name string, concreteType interface{}, init *SeriesInit, v
 }
 
 // Name returns the series name.
-func (s *SeriesGeneric) Name() string {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+func (s *SeriesGeneric) Name(opts ...Options) string {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
 
 	return s.name
 }
 
 // Rename renames the series.
-func (s *SeriesGeneric) Rename(n string) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+func (s *SeriesGeneric) Rename(n string, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
 
 	s.name = n
 }
@@ -105,8 +110,8 @@ func (s *SeriesGeneric) Type() string {
 }
 
 // NRows returns how many rows the series contains.
-func (s *SeriesGeneric) NRows(options ...Options) int {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesGeneric) NRows(opts ...Options) int {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -118,8 +123,8 @@ func (s *SeriesGeneric) NRows(options ...Options) int {
 // The return value could be nil or the concrete type
 // the data type held by the series.
 // Pointers are never returned.
-func (s *SeriesGeneric) Value(row int, options ...Options) interface{} {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesGeneric) Value(row int, opts ...Options) interface{} {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -135,15 +140,15 @@ func (s *SeriesGeneric) Value(row int, options ...Options) interface{} {
 // particular row. The string representation is defined
 // by the function set in SetValueToStringFormatter.
 // By default, a nil value is returned as "NaN".
-func (s *SeriesGeneric) ValueString(row int, options ...Options) string {
-	return s.valFormatter(s.Value(row, options...))
+func (s *SeriesGeneric) ValueString(row int, opts ...Options) string {
+	return s.valFormatter(s.Value(row, opts...))
 }
 
 // Prepend is used to set a value to the beginning of the
 // series. val can be a concrete data type or nil. Nil
 // represents the absence of a value.
-func (s *SeriesGeneric) Prepend(val interface{}, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesGeneric) Prepend(val interface{}, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -172,9 +177,9 @@ func (s *SeriesGeneric) Prepend(val interface{}, options ...Options) {
 // Append is used to set a value to the end of the series.
 // val can be a concrete data type or nil. Nil represents
 // the absence of a value.
-func (s *SeriesGeneric) Append(val interface{}, options ...Options) int {
+func (s *SeriesGeneric) Append(val interface{}, opts ...Options) int {
 	var locked bool
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 		locked = true
@@ -189,8 +194,8 @@ func (s *SeriesGeneric) Append(val interface{}, options ...Options) int {
 // the series. All existing values from that row onwards
 // are shifted by 1. val can be a concrete data type or nil.
 // Nil represents the absence of a value.
-func (s *SeriesGeneric) Insert(row int, val interface{}, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesGeneric) Insert(row int, val interface{}, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -214,8 +219,8 @@ func (s *SeriesGeneric) insert(row int, val interface{}) {
 }
 
 // Remove is used to delete the value of a particular row.
-func (s *SeriesGeneric) Remove(row int, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesGeneric) Remove(row int, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -227,11 +232,22 @@ func (s *SeriesGeneric) Remove(row int, options ...Options) {
 	s.values = append(s.values[:row], s.values[row+1:]...)
 }
 
+// Reset is used clear all data contained in the Series.
+func (s *SeriesGeneric) Reset(opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+	}
+
+	s.values = []interface{}{}
+	s.nilCount = 0
+}
+
 // Update is used to update the value of a particular row.
 // val can be a concrete data type or nil. Nil represents
 // the absence of a value.
-func (s *SeriesGeneric) Update(row int, val interface{}, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesGeneric) Update(row int, val interface{}, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -249,6 +265,47 @@ func (s *SeriesGeneric) Update(row int, val interface{}, options ...Options) {
 			panic(err)
 		}
 		s.values[row] = val
+	}
+}
+
+// ValuesIterator will return an iterator that can be used to iterate through all the values.
+func (s *SeriesGeneric) ValuesIterator(opts ...ValuesOptions) func() (*int, interface{}, int) {
+
+	var (
+		row  int
+		step int = 1
+	)
+
+	var dontReadLock bool
+
+	if len(opts) > 0 {
+		dontReadLock = opts[0].DontReadLock
+
+		row = opts[0].InitialRow
+		step = opts[0].Step
+		if step == 0 {
+			panic("Step can not be zero")
+		}
+	}
+
+	return func() (*int, interface{}, int) {
+		// Should this be on the outside?
+		if !dontReadLock {
+			s.lock.RLock()
+			defer s.lock.RUnlock()
+		}
+
+		if row > len(s.values)-1 || row < 0 {
+			// Don't iterate further
+			return nil, nil, 0
+		}
+
+		out := s.values[row]
+		if out == nil {
+			out = nil
+		}
+		row = row + step
+		return &[]int{row - step}[0], out, len(s.values)
 	}
 }
 
@@ -306,28 +363,35 @@ func (s *SeriesGeneric) SetIsLessThanFunc(f IsLessThanFunc) {
 }
 
 // Sort will sort the series.
-func (s *SeriesGeneric) Sort(options ...Options) {
+// It will return true if sorting was completed or false when the context is canceled.
+func (s *SeriesGeneric) Sort(ctx context.Context, opts ...SortOptions) (completed bool) {
 
 	if s.isLessThanFunc == nil {
 		panic(fmt.Errorf("cannot sort without setting IsLessThanFunc"))
 	}
 
-	var sortDesc bool
-
-	if len(options) == 0 {
-		s.lock.Lock()
-		defer s.lock.Unlock()
-	} else {
-		if !options[0].DontLock {
-			s.lock.Lock()
-			defer s.lock.Unlock()
+	defer func() {
+		if x := recover(); x != nil {
+			completed = false
 		}
-		sortDesc = options[0].SortDesc
+	}()
+
+	if len(opts) == 0 {
+		opts = append(opts, SortOptions{})
 	}
 
-	sort.SliceStable(s.values, func(i, j int) (ret bool) {
+	if !opts[0].DontLock {
+		s.Lock()
+		defer s.Unlock()
+	}
+
+	sortFunc := func(i, j int) (ret bool) {
+		if err := ctx.Err(); err != nil {
+			panic(err)
+		}
+
 		defer func() {
-			if sortDesc {
+			if opts[0].Desc {
 				ret = !ret
 			}
 		}()
@@ -349,16 +413,24 @@ func (s *SeriesGeneric) Sort(options ...Options) {
 		}
 		// Both are not nil
 		return s.isLessThanFunc(left, right)
-	})
+	}
+
+	if opts[0].Stable {
+		sort.SliceStable(s.values, sortFunc)
+	} else {
+		sort.Slice(s.values, sortFunc)
+	}
+
+	return true
 }
 
 // Swap is used to swap 2 values based on their row position.
-func (s *SeriesGeneric) Swap(row1, row2 int, options ...Options) {
+func (s *SeriesGeneric) Swap(row1, row2 int, opts ...Options) {
 	if row1 == row2 {
 		return
 	}
 
-	if len(options) > 0 && !options[0].DontLock {
+	if len(opts) > 0 && !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -445,7 +517,7 @@ func (s *SeriesGeneric) Table(r ...Range) string {
 		}
 
 		for row := start; row <= end; row++ {
-			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, Options{true, false})}
+			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, dontLock)}
 			data = append(data, sVals)
 		}
 
@@ -481,20 +553,81 @@ func (s *SeriesGeneric) String() string {
 			if j == 3 {
 				out = out + "... "
 			}
-			out = out + s.ValueString(row, Options{true, false}) + " "
+			out = out + s.ValueString(row, dontLock) + " "
 		}
 		return out + "]"
 	}
 
 	for row := range s.values {
-		out = out + s.ValueString(row, Options{true, false}) + " "
+		out = out + s.ValueString(row, dontLock) + " "
 	}
 	return out + "]"
 }
 
 // ContainsNil will return whether or not the series contains any nil values.
-func (s *SeriesGeneric) ContainsNil() bool {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+func (s *SeriesGeneric) ContainsNil(opts ...Options) bool {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
 	return s.nilCount > 0
+}
+
+// NilCount will return how many nil values are in the series.
+func (s *SeriesGeneric) NilCount(opts ...Options) int {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
+	return s.nilCount
+}
+
+// ToSeriesMixed will convert the Series to a SeriesMIxed.
+// The operation does not lock the Series.
+func (s *SeriesGeneric) ToSeriesMixed(ctx context.Context, removeNil bool, conv ...func(interface{}) (interface{}, error)) (*SeriesMixed, error) {
+	ec := NewErrorCollection()
+
+	ss := NewSeriesMixed(s.name, &SeriesInit{Capacity: s.NRows(dontLock)})
+
+	for row, rowVal := range s.values {
+
+		// Cancel operation
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if rowVal == nil {
+			if removeNil {
+				continue
+			}
+			ss.values = append(ss.values, nil)
+			ss.nilCount++
+		} else {
+			if len(conv) == 0 {
+				cv := rowVal
+				ss.values = append(ss.values, cv)
+			} else {
+				cv, err := conv[0](rowVal)
+				if err != nil {
+					// interpret as nil
+					ss.values = append(ss.values, nil)
+					ss.nilCount++
+					ec.AddError(&RowError{Row: row, Err: err}, false)
+				} else {
+					if cv == nil {
+						ss.nilCount++
+					}
+					ss.values = append(ss.values, cv)
+				}
+			}
+		}
+	}
+
+	if !ec.IsNil(false) {
+		return ss, ec
+	}
+
+	return ss, nil
 }

@@ -1,3 +1,5 @@
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+
 package exports
 
 import (
@@ -14,7 +16,7 @@ type ExcelExportOptions struct {
 	// Common options are NULL, \N, NaN, NA.
 	NullString *string
 
-	// Range is used to export a subset of rows from the dataframe.
+	// Range is used to export a subset of rows from the Dataframe.
 	Range dataframe.Range
 
 	// WriteSheet is used to specify a sheet name.
@@ -22,7 +24,7 @@ type ExcelExportOptions struct {
 	WriteSheet *string
 }
 
-// ExportToExcel exports a dataframe to a excel file.
+// ExportToExcel exports a Dataframe to a excel file.
 func ExportToExcel(ctx context.Context, outputFilePath string, df *dataframe.DataFrame, options ...ExcelExportOptions) error {
 
 	df.Lock()
@@ -60,7 +62,7 @@ func ExportToExcel(ctx context.Context, outputFilePath string, df *dataframe.Dat
 	// Add first row to excel sheet for header fields
 	sheetRow = sheet.AddRow()
 	// Write Header fields first
-	for _, field := range df.Names() {
+	for _, field := range df.Names(dataframe.DontLock) {
 		cell = sheetRow.AddCell() // set column cell
 		cell.Value = field        // assign field to cell
 	}

@@ -1,8 +1,9 @@
-// Copyright 2018 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
 package dataframe
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -30,22 +31,22 @@ func TestInsertAndRemove(t *testing.T) {
 	s2 := NewSeriesFloat64("sales", nil, 50.3, 23.4, 56.2)
 	df := NewDataFrame(s1, s2)
 
-	df.Append(9, 123.6)
+	df.Append(&dontLock, 9, 123.6)
 
-	df.Append(map[string]interface{}{
+	df.Append(&dontLock, map[string]interface{}{
 		"day":   10,
 		"sales": nil,
 	})
 
 	df.Remove(0)
 
-	df.Prepend(map[string]interface{}{
+	df.Prepend(&dontLock, map[string]interface{}{
 		"day":   99,
 		"sales": 199.99,
 	})
 
-	df.Prepend(1000, 10000)
-	df.UpdateRow(0, 10000, 1000)
+	df.Prepend(&dontLock, 1000, 10000)
+	df.UpdateRow(0, &dontLock, 10000, 1000)
 	df.Update(0, 1, 9000)
 
 	expected := `+-----+-------+---------+
@@ -79,10 +80,10 @@ func TestSwap(t *testing.T) {
 		{56.2, 23.4, 50.3},
 	}
 
-	iterator := df.Values(ValuesOptions{0, 1, true})
+	iterator := df.ValuesIterator(ValuesOptions{0, 1, true})
 	df.Lock()
 	for {
-		row, vals := iterator()
+		row, vals, _ := iterator()
 		if row == nil {
 			break
 		}
@@ -168,21 +169,21 @@ func TestSort(t *testing.T) {
 	df := NewDataFrame(s1, s2)
 
 	sks := []SortKey{
-		{Key: "sales", SortDesc: true},
-		{Key: "day", SortDesc: false},
+		{Key: "sales", Desc: true},
+		{Key: "day", Desc: false},
 	}
 
-	df.Sort(sks)
+	df.Sort(context.Background(), sks)
 
 	expectedValues := [][]interface{}{
 		{int64(3), int64(1), int64(2), int64(4), nil, nil},
 		{56.2, 50.3, 23.4, 23.4, nil, nil},
 	}
 
-	iterator := df.Values(ValuesOptions{0, 1, true})
+	iterator := df.ValuesIterator(ValuesOptions{0, 1, true})
 	df.Lock()
 	for {
-		row, vals := iterator()
+		row, vals, _ := iterator()
 		if row == nil {
 			break
 		}
@@ -190,7 +191,7 @@ func TestSort(t *testing.T) {
 		for key, val := range vals {
 			switch colName := key.(type) {
 			case string:
-				idx, _ := df.NameToColumn(colName)
+				idx, _ := df.NameToColumn(colName, dontLock)
 
 				expected := expectedValues[idx][*row]
 				actual := val //df.Series[idx].Value(*row)

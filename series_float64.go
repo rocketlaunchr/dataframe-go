@@ -1,10 +1,12 @@
-// Copyright 2018 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
 package dataframe
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"golang.org/x/exp/rand"
 	"sort"
 	"strconv"
 	"sync"
@@ -24,7 +26,7 @@ type SeriesFloat64 struct {
 	nilCount int
 }
 
-// NewSeriesFloat64 creates a new series with the underlying type as float64
+// NewSeriesFloat64 creates a new series with the underlying type as float64.
 func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *SeriesFloat64 {
 	s := &SeriesFloat64{
 		name:     name,
@@ -49,6 +51,25 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 	s.valFormatter = DefaultValueFormatter
 
 	for idx, v := range vals {
+
+		// Special case
+		if idx == 0 {
+			if fs, ok := vals[0].([]float64); ok {
+				for idx, v := range fs {
+					val := s.valToPointer(v)
+					if isNaN(val) {
+						s.nilCount++
+					}
+					if idx < size {
+						s.Values[idx] = val
+					} else {
+						s.Values = append(s.Values, val)
+					}
+				}
+				break
+			}
+		}
+
 		val := s.valToPointer(v)
 		if isNaN(val) {
 			s.nilCount++
@@ -61,10 +82,19 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 		}
 	}
 
-	if len(vals) < size {
-		s.nilCount = s.nilCount + size - len(vals)
+	var lVals int
+	if len(vals) > 0 {
+		if fs, ok := vals[0].([]float64); ok {
+			lVals = len(fs)
+		} else {
+			lVals = len(vals)
+		}
+	}
+
+	if lVals < size {
+		s.nilCount = s.nilCount + size - lVals
 		// Fill with NaN
-		for i := len(vals); i < size; i++ {
+		for i := lVals; i < size; i++ {
 			s.Values[i] = nan()
 		}
 	}
@@ -72,18 +102,27 @@ func NewSeriesFloat64(name string, init *SeriesInit, vals ...interface{}) *Serie
 	return s
 }
 
+// NewSeries creates a new initialized SeriesFloat64.
+func (s *SeriesFloat64) NewSeries(name string, init *SeriesInit) Series {
+	return NewSeriesFloat64(name, init)
+}
+
 // Name returns the series name.
-func (s *SeriesFloat64) Name() string {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+func (s *SeriesFloat64) Name(opts ...Options) string {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
 
 	return s.name
 }
 
 // Rename renames the series.
-func (s *SeriesFloat64) Rename(n string) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
+func (s *SeriesFloat64) Rename(n string, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
 
 	s.name = n
 }
@@ -94,8 +133,8 @@ func (s *SeriesFloat64) Type() string {
 }
 
 // NRows returns how many rows the series contains.
-func (s *SeriesFloat64) NRows(options ...Options) int {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesFloat64) NRows(opts ...Options) int {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -107,8 +146,8 @@ func (s *SeriesFloat64) NRows(options ...Options) int {
 // The return value could be nil or the concrete type
 // the data type held by the series.
 // Pointers are never returned.
-func (s *SeriesFloat64) Value(row int, options ...Options) interface{} {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesFloat64) Value(row int, opts ...Options) interface{} {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
@@ -124,15 +163,15 @@ func (s *SeriesFloat64) Value(row int, options ...Options) interface{} {
 // particular row. The string representation is defined
 // by the function set in SetValueToStringFormatter.
 // By default, a nil value is returned as "NaN".
-func (s *SeriesFloat64) ValueString(row int, options ...Options) string {
-	return s.valFormatter(s.Value(row, options...))
+func (s *SeriesFloat64) ValueString(row int, opts ...Options) string {
+	return s.valFormatter(s.Value(row, opts...))
 }
 
 // Prepend is used to set a value to the beginning of the
 // series. val can be a concrete data type or nil. Nil
 // represents the absence of a value.
-func (s *SeriesFloat64) Prepend(val interface{}, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesFloat64) Prepend(val interface{}, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -154,9 +193,9 @@ func (s *SeriesFloat64) Prepend(val interface{}, options ...Options) {
 // Append is used to set a value to the end of the series.
 // val can be a concrete data type or nil. Nil represents
 // the absence of a value.
-func (s *SeriesFloat64) Append(val interface{}, options ...Options) int {
+func (s *SeriesFloat64) Append(val interface{}, opts ...Options) int {
 	var locked bool
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 		locked = true
@@ -171,8 +210,8 @@ func (s *SeriesFloat64) Append(val interface{}, options ...Options) int {
 // the series. All existing values from that row onwards
 // are shifted by 1. val can be a concrete data type or nil.
 // Nil represents the absence of a value.
-func (s *SeriesFloat64) Insert(row int, val interface{}, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesFloat64) Insert(row int, val interface{}, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -205,8 +244,8 @@ func (s *SeriesFloat64) insert(row int, val interface{}) {
 }
 
 // Remove is used to delete the value of a particular row.
-func (s *SeriesFloat64) Remove(row int, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesFloat64) Remove(row int, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -218,11 +257,22 @@ func (s *SeriesFloat64) Remove(row int, options ...Options) {
 	s.Values = append(s.Values[:row], s.Values[row+1:]...)
 }
 
+// Reset is used clear all data contained in the Series.
+func (s *SeriesFloat64) Reset(opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.Lock()
+		defer s.lock.Unlock()
+	}
+
+	s.Values = []float64{}
+	s.nilCount = 0
+}
+
 // Update is used to update the value of a particular row.
 // val can be a concrete data type or nil. Nil represents
 // the absence of a value.
-func (s *SeriesFloat64) Update(row int, val interface{}, options ...Options) {
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+func (s *SeriesFloat64) Update(row int, val interface{}, opts ...Options) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -238,10 +288,80 @@ func (s *SeriesFloat64) Update(row int, val interface{}, options ...Options) {
 	s.Values[row] = newVal
 }
 
+// ValuesIterator will return an iterator that can be used to iterate through all the values.
+func (s *SeriesFloat64) ValuesIterator(opts ...ValuesOptions) func() (*int, interface{}, int) {
+
+	var (
+		row  int
+		step int = 1
+	)
+
+	var dontReadLock bool
+
+	if len(opts) > 0 {
+		dontReadLock = opts[0].DontReadLock
+
+		row = opts[0].InitialRow
+		step = opts[0].Step
+		if step == 0 {
+			panic("Step can not be zero")
+		}
+	}
+
+	return func() (*int, interface{}, int) {
+		// Should this be on the outside?
+		if !dontReadLock {
+			s.lock.RLock()
+			defer s.lock.RUnlock()
+		}
+
+		if row > len(s.Values)-1 || row < 0 {
+			// Don't iterate further
+			return nil, nil, 0
+		}
+
+		var out interface{} = s.Values[row]
+		if isNaN(out.(float64)) {
+			out = nil
+		}
+		row = row + step
+		return &[]int{row - step}[0], out, len(s.Values)
+	}
+}
+
 func (s *SeriesFloat64) valToPointer(v interface{}) float64 {
 	switch val := v.(type) {
 	case nil:
 		return nan()
+	case *bool:
+		if val == nil {
+			return nan()
+		}
+		if *val == true {
+			return float64(1)
+		} else {
+			return float64(0)
+		}
+	case bool:
+		if val == true {
+			return float64(1)
+		} else {
+			return float64(0)
+		}
+	case *int:
+		if val == nil {
+			return nan()
+		}
+		return float64(*val)
+	case int:
+		return float64(val)
+	case *int64:
+		if val == nil {
+			return nan()
+		}
+		return float64(*val)
+	case int64:
+		return float64(val)
 	case *float64:
 		if val == nil {
 			return nan()
@@ -249,6 +369,21 @@ func (s *SeriesFloat64) valToPointer(v interface{}) float64 {
 		return *val
 	case float64:
 		return val
+	case *string:
+		if val == nil {
+			return nan()
+		}
+		f, err := strconv.ParseFloat(*val, 64)
+		if err != nil {
+			_ = v.(float64) // Intentionally panic
+		}
+		return f
+	case string:
+		f, err := strconv.ParseFloat(val, 64)
+		if err != nil {
+			_ = v.(float64) // Intentionally panic
+		}
+		return f
 	default:
 		f, err := strconv.ParseFloat(fmt.Sprintf("%v", v), 64)
 		if err != nil {
@@ -270,12 +405,12 @@ func (s *SeriesFloat64) SetValueToStringFormatter(f ValueToStringFormatter) {
 }
 
 // Swap is used to swap 2 values based on their row position.
-func (s *SeriesFloat64) Swap(row1, row2 int, options ...Options) {
+func (s *SeriesFloat64) Swap(row1, row2 int, opts ...Options) {
 	if row1 == row2 {
 		return
 	}
 
-	if len(options) == 0 || (len(options) > 0 && !options[0].DontLock) {
+	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.Lock()
 		defer s.lock.Unlock()
 	}
@@ -322,24 +457,31 @@ func (s *SeriesFloat64) IsLessThanFunc(a, b interface{}) bool {
 }
 
 // Sort will sort the series.
-func (s *SeriesFloat64) Sort(options ...Options) {
+// It will return true if sorting was completed or false when the context is canceled.
+func (s *SeriesFloat64) Sort(ctx context.Context, opts ...SortOptions) (completed bool) {
 
-	var sortDesc bool
-
-	if len(options) == 0 {
-		s.lock.Lock()
-		defer s.lock.Unlock()
-	} else {
-		if !options[0].DontLock {
-			s.lock.Lock()
-			defer s.lock.Unlock()
+	defer func() {
+		if x := recover(); x != nil {
+			completed = false
 		}
-		sortDesc = options[0].SortDesc
+	}()
+
+	if len(opts) == 0 {
+		opts = append(opts, SortOptions{})
 	}
 
-	sort.SliceStable(s.Values, func(i, j int) (ret bool) {
+	if !opts[0].DontLock {
+		s.Lock()
+		defer s.Unlock()
+	}
+
+	sortFunc := func(i, j int) (ret bool) {
+		if err := ctx.Err(); err != nil {
+			panic(err)
+		}
+
 		defer func() {
-			if sortDesc {
+			if opts[0].Desc {
 				ret = !ret
 			}
 		}()
@@ -361,7 +503,15 @@ func (s *SeriesFloat64) Sort(options ...Options) {
 		tj := s.Values[j]
 
 		return ti < tj
-	})
+	}
+
+	if opts[0].Stable {
+		sort.SliceStable(s.Values, sortFunc)
+	} else {
+		sort.Slice(s.Values, sortFunc)
+	}
+
+	return true
 }
 
 // Lock will lock the Series allowing you to directly manipulate
@@ -433,7 +583,7 @@ func (s *SeriesFloat64) Table(r ...Range) string {
 		}
 
 		for row := start; row <= end; row++ {
-			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, Options{true, false})}
+			sVals := []string{fmt.Sprintf("%d:", row), s.ValueString(row, dontLock)}
 			data = append(data, sVals)
 		}
 
@@ -469,21 +619,167 @@ func (s *SeriesFloat64) String() string {
 			if j == 3 {
 				out = out + "... "
 			}
-			out = out + s.ValueString(row, Options{true, false}) + " "
+			out = out + s.ValueString(row, dontLock) + " "
 		}
 		return out + "]"
 	}
 
 	for row := range s.Values {
-		out = out + s.ValueString(row, Options{true, false}) + " "
+		out = out + s.ValueString(row, dontLock) + " "
 	}
 	return out + "]"
 
 }
 
 // ContainsNil will return whether or not the series contains any nil values.
-func (s *SeriesFloat64) ContainsNil() bool {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+func (s *SeriesFloat64) ContainsNil(opts ...Options) bool {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
 	return s.nilCount > 0
+}
+
+// NilCount will return how many nil values are in the series.
+func (s *SeriesFloat64) NilCount(opts ...Options) int {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
+	return s.nilCount
+}
+
+// ToSeriesString will convert the Series to a SeriesString.
+// The operation does not lock the Series.
+func (s *SeriesFloat64) ToSeriesString(ctx context.Context, removeNil bool, conv ...func(interface{}) (*string, error)) (*SeriesString, error) {
+
+	ec := NewErrorCollection()
+
+	ss := NewSeriesString(s.name, &SeriesInit{Capacity: s.NRows(dontLock)})
+
+	for row, rowVal := range s.Values {
+
+		// Cancel operation
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if isNaN(rowVal) {
+			if removeNil {
+				continue
+			}
+			ss.values = append(ss.values, nil)
+			ss.nilCount++
+		} else {
+			if len(conv) == 0 {
+				cv := strconv.FormatFloat(rowVal, 'G', -1, 64)
+				ss.values = append(ss.values, &cv)
+			} else {
+				cv, err := conv[0](rowVal)
+				if err != nil {
+					// interpret as nil
+					ss.values = append(ss.values, nil)
+					ss.nilCount++
+					ec.AddError(&RowError{Row: row, Err: err}, false)
+				} else {
+					if cv == nil {
+						ss.values = append(ss.values, nil)
+						ss.nilCount++
+					} else {
+						ss.values = append(ss.values, cv)
+					}
+				}
+			}
+		}
+	}
+
+	if !ec.IsNil(false) {
+		return ss, ec
+	}
+
+	return ss, nil
+}
+
+// ToSeriesMixed will convert the Series to a SeriesMIxed.
+// The operation does not lock the Series.
+func (s *SeriesFloat64) ToSeriesMixed(ctx context.Context, removeNil bool, conv ...func(interface{}) (interface{}, error)) (*SeriesMixed, error) {
+	ec := NewErrorCollection()
+
+	ss := NewSeriesMixed(s.name, &SeriesInit{Capacity: s.NRows(dontLock)})
+
+	for row, rowVal := range s.Values {
+
+		// Cancel operation
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if rowVal == nan() {
+			if removeNil {
+				continue
+			}
+			ss.values = append(ss.values, nan())
+			ss.nilCount++
+		} else {
+			if len(conv) == 0 {
+				cv := rowVal
+				ss.values = append(ss.values, cv)
+			} else {
+				cv, err := conv[0](rowVal)
+				if err != nil {
+					// interpret as nil
+					ss.values = append(ss.values, nil)
+					ss.nilCount++
+					ec.AddError(&RowError{Row: row, Err: err}, false)
+				} else {
+					if cv == nil {
+						ss.nilCount++
+					}
+					ss.values = append(ss.values, cv)
+				}
+			}
+		}
+	}
+
+	if !ec.IsNil(false) {
+		return ss, ec
+	}
+
+	return ss, nil
+}
+
+// FillRand will fill a Series with random data. probNil is a value between between 0 and 1 which
+// determines if a row is given a nil value.
+func (s *SeriesFloat64) FillRand(src rand.Source, probNil float64, rander Rander, opts ...FillRandOptions) {
+
+	rng := rand.New(src)
+
+	capacity := cap(s.Values)
+	length := len(s.Values)
+	s.nilCount = 0
+
+	for i := 0; i < length; i++ {
+		if rng.Float64() < probNil {
+			// nil
+			s.Values[i] = nan()
+			s.nilCount++
+		} else {
+			s.Values[i] = rander.Rand()
+		}
+	}
+
+	if capacity > length {
+		excess := capacity - length
+		for i := 0; i < excess; i++ {
+			if rng.Float64() < probNil {
+				// nil
+				s.Values = append(s.Values, nan())
+				s.nilCount++
+			} else {
+				s.Values = append(s.Values, rander.Rand())
+			}
+		}
+	}
 }
