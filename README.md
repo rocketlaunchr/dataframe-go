@@ -22,10 +22,11 @@ It is recommended your package manager locks to a commit id instead of the maste
 5. Performant
 6. Interoperability with [gonum package](https://godoc.org/gonum.org/v1/gonum).
 7. [pandas sub-package](https://pandas.pydata.org/pandas-docs/stable/reference/frame.html) ![Help Required](https://img.shields.io/badge/help-required-blueviolet)
+8. Fake data generation
 
-# Dataframes
+# DataFrames
 
-## Creating a Dataframe
+## Creating a DataFrame
 
 ```go
 
@@ -125,7 +126,7 @@ OUTPUT:
 ```
 ## Iterating
 
-You can change the step and starting row. It may be wise to lock the Dataframe before iterating.
+You can change the step and starting row. It may be wise to lock the DataFrame before iterating.
 
 The returned values are a map containing the name of the series (`string`) and the order of the series (`int`).
 
@@ -370,7 +371,7 @@ df.AddSeries(mts, nil)
 
 ## Filtering
 
-Let's filter out our senior employees (they have titles).
+Let's filter out our senior employees (they have titles) for no reason.
 
 ```go
 filterFn := dataframe.FilterDataFrameFn(func(vals map[interface{}]interface{}, row, nRows int) (dataframe.FilterAction, error) {
