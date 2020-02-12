@@ -283,7 +283,7 @@ src := rand.NewSource(uint64(time.Now().UTC().UnixNano()))
 df := faker.NewDataFrame(8, src, faker.S("name", 0, "Name"), faker.S("title", 0.5, "JobTitle"), faker.S("base rate", 0, "Number", 15, 50))
 ```
 
-```groovy
+```go
 +-----+----------------+----------------+-----------+
 |     |      NAME      |     TITLE      | BASE RATE |
 +-----+----------------+----------------+-----------+
@@ -314,7 +314,7 @@ applyFn := dataframe.ApplySeriesFn(func(val interface{}, row, nRows int) interfa
 dataframe.Apply(ctx, s, applyFn, dataframe.FilterOptions{InPlace: true})
 ```
 
-```groovy
+```go
 +-----+----------------+----------------+-----------+
 |     |      NAME      |     TITLE      | BASE RATE |
 +-----+----------------+----------------+-----------+
@@ -343,7 +343,7 @@ mts, _ := utime.NewSeriesTime(ctx, "meeting time", "1D", time.Now().UTC(), false
 df.AddSeries(mts, nil)
 ```
 
-```groovy
+```go
 +-----+----------------+----------------+-----------+--------------------------------+
 |     |      NAME      |     TITLE      | BASE RATE |          MEETING TIME          |
 +-----+----------------+----------------+-----------+--------------------------------+
