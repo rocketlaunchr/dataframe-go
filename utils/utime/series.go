@@ -9,6 +9,7 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
+// NewSeriesTimeOptions sets how NewSeriesTime decides at which row to stop.
 type NewSeriesTimeOptions struct {
 
 	// Size determines how many rows are generated.
@@ -20,6 +21,9 @@ type NewSeriesTimeOptions struct {
 	Until *time.Time
 }
 
+// NewSeriesTime will create a new SeriesTime with timeFreq prescribing the intervals between each row. Setting reverse will make the time series decrement per row.
+//
+// See https://godoc.org/github.com/rocketlaunchr/dataframe-go/utils/utime#TimeIntervalGenerator for setting timeFreq.
 func NewSeriesTime(ctx context.Context, name string, timeFreq string, startTime time.Time, reverse bool, opts NewSeriesTimeOptions) (*dataframe.SeriesTime, error) {
 
 	if opts.Size != nil && opts.Until != nil {

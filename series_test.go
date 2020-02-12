@@ -480,11 +480,11 @@ func TestToSeriesString(t *testing.T) {
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
-	fmt.Println(ss.Type())
+
 	// convert SeriesString back to SeriesMixed
-	sm2, err := ss.ToSeriesMixed(ctx, false)
+	_, err = ss.ToSeriesMixed(ctx, false)
 	if err != nil {
 		t.Errorf("error encounterd: %s\n", err)
 	}
-	fmt.Println(sm2.Type())
+
 }
