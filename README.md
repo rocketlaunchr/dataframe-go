@@ -383,7 +383,7 @@ filterFn := dataframe.FilterDataFrameFn(func(vals map[interface{}]interface{}, r
 seniors, _ := dataframe.Filter(ctx, df, filterFn)
 ```
 
-```groovy
+```go
 +-----+----------------+----------------+-----------+--------------------------------+
 |     |      NAME      |     TITLE      | BASE RATE |          MEETING TIME          |
 +-----+----------------+----------------+-----------+--------------------------------+
