@@ -11,7 +11,8 @@ import (
 )
 
 // DescribeOutput contains statistical data for a DataFrame or Series.
-// It is not intended to be perused. Use fmt package to view data.
+// Despite the fields being exported, it is not intended to be inspected.
+// Use the String function to view the information in a table format.
 type DescribeOutput struct {
 	Count       []int
 	NilCount    []int
@@ -26,7 +27,7 @@ type DescribeOutput struct {
 	headers     []string
 }
 
-// String implements the Stringer interface in fmt package.
+// String implements the Stringer interface in the fmt package.
 func (do DescribeOutput) String() string {
 
 	out := map[string][]interface{}{}
@@ -90,7 +91,7 @@ type DescribeOptions struct {
 // Describe outputs various statistical information a Series or Dataframe.
 //
 // See: https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.describe.html#pandas.DataFrame.describe
-func Describe(ctx context.Context, s interface{}, opts ...DescribeOptions) (DescribeOutput, error) {
+func Describe(ctx context.Context, sdf interface{}, opts ...DescribeOptions) (DescribeOutput, error) {
 
 	if len(opts) == 0 {
 		opts = append(opts, DescribeOptions{
@@ -102,12 +103,12 @@ func Describe(ctx context.Context, s interface{}, opts ...DescribeOptions) (Desc
 		}
 	}
 
-	switch _s := s.(type) {
+	switch _sdf := sdf.(type) {
 	case dataframe.Series:
-		return describeSeries(ctx, _s, opts...)
+		return describeSeries(ctx, _sdf, opts...)
 	case *dataframe.DataFrame:
-		return describeDataframe(ctx, _s, opts...)
+		return describeDataframe(ctx, _sdf, opts...)
 	}
 
-	panic(fmt.Sprintf("interface conversion: %T is not a valid Series or DataFrame", s))
+	panic(fmt.Sprintf("interface conversion: %T is not a valid Series or DataFrame", sdf))
 }

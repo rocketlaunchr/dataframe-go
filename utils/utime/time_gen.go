@@ -19,7 +19,7 @@ type TimeGenerator func(startTime time.Time, reverse bool) NextTime
 // TimeIntervalGenerator is used to create a sequence of times based on an interval defined by
 // timeFreq. timeFreq can be in the format: nYnMnWnD, where n is a non-negative integer and
 // Y, M, W and D represent years, months, weeks and days respectively. Alternatively, timeFreq
-// can be a valid input to time.ParseDuration.
+// can be a valid positive input to time.ParseDuration.
 //
 // Example:
 //
@@ -49,9 +49,15 @@ func TimeIntervalGenerator(timeFreq string) (TimeGenerator, error) {
 		if err != nil {
 			return nil, fmt.Errorf("could not parse: %s", timeFreq)
 		}
-		p = &[]parsed{_p}[0]
+		if _p.isZero() {
+			return nil, fmt.Errorf("can't be zero: %s", timeFreq)
+		}
+		p = &_p
 	} else {
-		d = &[]time.Duration{_d}[0]
+		if _d == 0 {
+			return nil, fmt.Errorf("can't be zero: %s", timeFreq)
+		}
+		d = &_d
 	}
 
 	return func(startTime time.Time, reverse bool) NextTime {

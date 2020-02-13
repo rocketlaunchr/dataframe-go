@@ -21,14 +21,14 @@ type s struct {
 	ProbNil  float64
 }
 
-// S is used to configure a new Series.
-// pn is the probability of a row being nil.
-// fn is a selected function from https://godoc.org/github.com/brianvoe/gofakeit .
+// S is used to create a new Series with "fake" data.
+// probNil is the probability of a row being nil.
+// fn is a selected function from https://godoc.org/github.com/brianvoe/gofakeit and
 // args are the arguments to fn.
-func S(name string, pn float64, fn string, args ...interface{}) s {
+func S(name string, probNil float64, fn string, args ...interface{}) s {
 	return s{
 		Name:     name,
-		ProbNil:  pn,
+		ProbNil:  probNil,
 		Function: fn,
 		Args:     args,
 	}
