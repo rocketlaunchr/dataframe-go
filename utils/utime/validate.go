@@ -38,7 +38,6 @@ const (
 
 // ValidateSeriesTimeOptions configures how ValidateSeriesTime behaves.
 type ValidateSeriesTimeOptions struct {
-
 	// MissingValue configures what must happen when a nil Value is encountered.
 	MissingValue MissingValueOption
 
