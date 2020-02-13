@@ -33,3 +33,26 @@ func TestUtime(t *testing.T) {
 	}
 
 }
+
+func TestGuessTimeFreq(t *testing.T) {
+
+	ctx := context.Background()
+	timeFreq := "1Y1M3W"
+	reverse := false
+	now := time.Date(2020, 2, 13, 22, 25, 28, 0, time.UTC)
+
+	opts := NewSeriesTimeOptions{
+		Size: &[]int{10}[0],
+	}
+
+	ts, _ := NewSeriesTime(ctx, "Time Series", timeFreq, now, reverse, opts)
+
+	guess, gReverse, err := GuessTimeFreq(ctx, ts, GuessTimeFreqOptions{})
+	if err != nil {
+		t.Errorf("error encountered: %v", err)
+	} else {
+		if guess != timeFreq || reverse != gReverse {
+			t.Errorf("expected: %v actual %v", timeFreq, guess)
+		}
+	}
+}
