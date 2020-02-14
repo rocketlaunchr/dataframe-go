@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/bradfitz/iter"
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 	pd "github.com/rocketlaunchr/dataframe-go/pandas"
+	"github.com/rocketlaunchr/dataframe-go/utils/utime"
 )
 
 // SesModel is a struct that holds necessary
@@ -23,15 +25,36 @@ type SesModel struct {
 	alpha          float64
 	errorM         *ErrorMeasurement
 	inputIsDf      bool
+	tsInterval     string
+	tsIntReverse   bool
+	tsName         string
+	lastTsVal      time.Time
 }
 
 // SimpleExponentialSmoothing Function receives a series data of type dataframe.Seriesfloat64
 // It returns a SesModel from which Fit and Predict method can be carried out.
-func SimpleExponentialSmoothing(s interface{}) *SesModel {
+func SimpleExponentialSmoothing(ctx context.Context, s interface{}) *SesModel {
 	var (
-		data *dataframe.SeriesFloat64
-		isDf bool
+		data      *dataframe.SeriesFloat64
+		isDf      bool
+		tsInt     string
+		tReverse  bool
+		err       error
+		tsName    string
+		lastTsVal time.Time
 	)
+
+	model := &SesModel{
+		alpha:          0.0,
+		data:           &dataframe.SeriesFloat64{},
+		trainData:      &dataframe.SeriesFloat64{},
+		testData:       &dataframe.SeriesFloat64{},
+		fcastData:      &dataframe.SeriesFloat64{},
+		initialLevel:   0.0,
+		smoothingLevel: 0.0,
+		errorM:         &ErrorMeasurement{},
+		inputIsDf:      false,
+	}
 
 	switch d := s.(type) {
 	case *dataframe.SeriesFloat64:
@@ -49,11 +72,25 @@ func SimpleExponentialSmoothing(s interface{}) *SesModel {
 		} else {
 			if d.Series[0].Type() != "time" {
 				panic("first column/series must be a SeriesTime")
-			} else { // get the current time interval from the seriesTime
+			} else { // get the current time interval/freq from the seriesTime
 				if ts, ok := d.Series[0].(*dataframe.SeriesTime); ok {
-					_ = ts
-					// utime.NextTime()
-					// TODO: Use Utime pkg to Get the time interval from a SeriesTime
+					tsName = ts.Name(dataframe.DontLock)
+
+					rowLen := ts.NRows(dataframe.DontLock)
+					// store the last value in timeSeries column
+					lastTsVal = ts.Value(rowLen-1, dataframe.DontLock).(time.Time)
+
+					// guessing with only half the original time series row length
+					half := rowLen / 2
+					utimeOpts := utime.GuessTimeFreqOptions{
+						R:        &dataframe.Range{End: &half},
+						DontLock: true,
+					}
+
+					tsInt, tReverse, err = utime.GuessTimeFreq(ctx, ts, utimeOpts)
+					if err != nil {
+						panic(fmt.Errorf("error while trying to figure out interval for time series column: %v\n", err))
+					}
 				} else {
 					panic("column 0 not convertible to SeriesTime")
 				}
@@ -75,19 +112,15 @@ func SimpleExponentialSmoothing(s interface{}) *SesModel {
 		panic("unknown data format passed in. make sure you pass in a SeriesFloat64 or a forecast standard two(2) column dataframe.")
 	}
 
-	model := &SesModel{
-		alpha:          0.0,
-		data:           &dataframe.SeriesFloat64{},
-		trainData:      &dataframe.SeriesFloat64{},
-		testData:       &dataframe.SeriesFloat64{},
-		fcastData:      &dataframe.SeriesFloat64{},
-		initialLevel:   0.0,
-		smoothingLevel: 0.0,
-		errorM:         &ErrorMeasurement{},
-		inputIsDf:      isDf,
+	model.data = data
+	if isDf {
+		model.inputIsDf = isDf
+		model.tsInterval = tsInt
+		model.tsIntReverse = tReverse
+		model.tsName = tsName
+		model.lastTsVal = lastTsVal
 	}
 
-	model.data = data
 	return model
 }
 
@@ -228,28 +261,42 @@ func (sm *SesModel) Predict(ctx context.Context, m int) (interface{}, error) {
 		return nil, errors.New("m must be greater than 0")
 	}
 
-	forecast := make([]float64, 0, m)
+	forecast := make([]float64, m)
 	α := sm.alpha
 	Yorigin := sm.originValue
 	st := sm.smoothingLevel
 
 	// Now calculate forecast
+	pos := 0
 	for range iter.N(m) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 
 		st = α*Yorigin + (1-α)*st
-		forecast = append(forecast, st)
+		forecast[pos] = st
+
+		pos++
 	}
 
 	fdf := dataframe.NewSeriesFloat64("Prediction", nil)
 	fdf.Values = forecast
 
 	if sm.inputIsDf {
-		// TODO: generate SeriesTime to continue from where it stopped in data input
-		// this is why getting time interval is required
+
+		size := m
+
+		// generate SeriesTime to start and continue from where it stopped in data input
+		opts := utime.NewSeriesTimeOptions{
+			Size: &size,
+		}
+		ts, err := utime.NewSeriesTime(ctx, sm.tsName, sm.tsInterval, sm.lastTsVal, sm.tsIntReverse, opts)
+		if err != nil {
+			panic(fmt.Errorf("error encountered while generating time interval prediction: %v\n", err))
+		}
+
 		// combine fdf and generated time series into a dataframe and return
+		return dataframe.NewDataFrame(ts, fdf), nil
 	}
 
 	return fdf, nil

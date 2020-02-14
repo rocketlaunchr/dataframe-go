@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/bradfitz/iter"
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 	pd "github.com/rocketlaunchr/dataframe-go/pandas"
+	"github.com/rocketlaunchr/dataframe-go/utils/utime"
 )
 
 // HwModel is a Model Interface that holds necessary
@@ -29,16 +31,43 @@ type HwModel struct {
 	gamma                float64
 	errorM               *ErrorMeasurement
 	inputIsDf            bool
+	tsInterval           string
+	tsIntReverse         bool
+	tsName               string
+	lastTsVal            time.Time
 }
 
 // HoltWinters Function receives a series data of type dataframe.Seriesfloat64
 // It returns a HwModel from which Fit and Predict method can be carried out.
-func HoltWinters(s interface{}) *HwModel {
-
+func HoltWinters(ctx context.Context, s interface{}) *HwModel {
 	var (
-		data *dataframe.SeriesFloat64
-		isDf bool
+		data      *dataframe.SeriesFloat64
+		isDf      bool
+		tsInt     string
+		tReverse  bool
+		err       error
+		tsName    string
+		lastTsVal time.Time
 	)
+
+	model := &HwModel{
+		data:                 &dataframe.SeriesFloat64{},
+		trainData:            &dataframe.SeriesFloat64{},
+		testData:             &dataframe.SeriesFloat64{},
+		fcastData:            &dataframe.SeriesFloat64{},
+		initialSmooth:        0.0,
+		initialTrend:         0.0,
+		initialSeasonalComps: []float64{},
+		smoothingLevel:       0.0,
+		trendLevel:           0.0,
+		seasonalComps:        []float64{},
+		period:               0,
+		alpha:                0.0,
+		beta:                 0.0,
+		gamma:                0.0,
+		errorM:               &ErrorMeasurement{},
+		inputIsDf:            isDf,
+	}
 
 	switch d := s.(type) {
 	case *dataframe.SeriesFloat64:
@@ -56,11 +85,25 @@ func HoltWinters(s interface{}) *HwModel {
 		} else {
 			if d.Series[0].Type() != "time" {
 				panic("first column/series must be a SeriesTime")
-			} else { // get the current time interval from the seriesTime
+			} else { // get the current time interval/freq from the seriesTime
 				if ts, ok := d.Series[0].(*dataframe.SeriesTime); ok {
-					_ = ts
-					// utime.NextTime()
-					// TODO: Use utime pkg to Get the time interval from a SeriesTime
+					tsName = ts.Name(dataframe.DontLock)
+
+					rowLen := ts.NRows(dataframe.DontLock)
+					// store the last value in timeSeries column
+					lastTsVal = ts.Value(rowLen-1, dataframe.DontLock).(time.Time)
+
+					// guessing with only half the original time series row length
+					half := rowLen / 2
+					utimeOpts := utime.GuessTimeFreqOptions{
+						R:        &dataframe.Range{End: &half},
+						DontLock: true,
+					}
+
+					tsInt, tReverse, err = utime.GuessTimeFreq(ctx, ts, utimeOpts)
+					if err != nil {
+						panic(fmt.Errorf("error while trying to figure out interval for time series column: %v\n", err))
+					}
 				} else {
 					panic("column 0 not convertible to SeriesTime")
 				}
@@ -82,26 +125,15 @@ func HoltWinters(s interface{}) *HwModel {
 		panic("unknown data format passed in. make sure you pass in a SeriesFloat64 or standard two(2) column dataframe")
 	}
 
-	model := &HwModel{
-		data:                 &dataframe.SeriesFloat64{},
-		trainData:            &dataframe.SeriesFloat64{},
-		testData:             &dataframe.SeriesFloat64{},
-		fcastData:            &dataframe.SeriesFloat64{},
-		initialSmooth:        0.0,
-		initialTrend:         0.0,
-		initialSeasonalComps: []float64{},
-		smoothingLevel:       0.0,
-		trendLevel:           0.0,
-		seasonalComps:        []float64{},
-		period:               0,
-		alpha:                0.0,
-		beta:                 0.0,
-		gamma:                0.0,
-		errorM:               &ErrorMeasurement{},
-		inputIsDf:            isDf,
+	model.data = data
+	if isDf {
+		model.inputIsDf = isDf
+		model.tsInterval = tsInt
+		model.tsIntReverse = tReverse
+		model.tsName = tsName
+		model.lastTsVal = lastTsVal
 	}
 
-	model.data = data
 	return model
 }
 
@@ -280,7 +312,7 @@ func (hm *HwModel) Predict(ctx context.Context, h int) (interface{}, error) {
 		return nil, errors.New("value of h must be greater than 0")
 	}
 
-	forecast := make([]float64, 0, h)
+	forecast := make([]float64, h)
 
 	st := hm.smoothingLevel
 	seasonals := hm.seasonalComps
@@ -288,6 +320,7 @@ func (hm *HwModel) Predict(ctx context.Context, h int) (interface{}, error) {
 	period := hm.period
 
 	m := 1
+	pos := 0
 	for range iter.N(h) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -297,18 +330,29 @@ func (hm *HwModel) Predict(ctx context.Context, h int) (interface{}, error) {
 		// fcast = append(fcast, (st + float64(m)*trnd) * seasonals[(m-1) % period])
 
 		// additive method
-		forecast = append(forecast, (st+float64(m)*trnd)+seasonals[(m-1)%period])
+		forecast[pos] = (st + float64(m)*trnd) + seasonals[(m-1)%period]
 
 		m++
+		pos++
 	}
 
 	fdf := dataframe.NewSeriesFloat64("Prediction", nil)
 	fdf.Values = forecast
 
 	if hm.inputIsDf {
-		// TODO: generate SeriesTime to continue from where it stopped in data input
-		// this is why getting time interval is required
+		size := h
+
+		// generate SeriesTime to start and continue from where it stopped in data input
+		opts := utime.NewSeriesTimeOptions{
+			Size: &size,
+		}
+		ts, err := utime.NewSeriesTime(ctx, hm.tsName, hm.tsInterval, hm.lastTsVal, hm.tsIntReverse, opts)
+		if err != nil {
+			panic(fmt.Errorf("error encountered while generating time interval prediction: %v\n", err))
+		}
+
 		// combine fdf and generated time series into a dataframe and return
+		return dataframe.NewDataFrame(ts, fdf), nil
 	}
 
 	return fdf, nil
