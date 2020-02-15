@@ -52,7 +52,11 @@ func TestGuessTimeFreq(t *testing.T) {
 		t.Errorf("error encountered: %v", err)
 	} else {
 		if guess != timeFreq || reverse != gReverse {
-			t.Errorf("expected: %v actual %v", timeFreq, guess)
+			guessPD, err1 := time.ParseDuration(guess)
+			timeFreqPD, err2 := time.ParseDuration(timeFreq)
+			if err1 != nil || err2 != nil || (guessPD != timeFreqPD || reverse != gReverse) {
+				t.Errorf("expected: %v actual %v", timeFreq, guess)
+			}
 		}
 	}
 }

@@ -55,8 +55,8 @@ func ValidateSeriesTime(ctx context.Context, ts *dataframe.SeriesTime, timeFreq 
 
 	reverse := false
 
-	nrows := len(ts.Values)
-	if nrows == 0 {
+	nRows := len(ts.Values)
+	if nRows == 0 {
 		return nil
 	}
 
@@ -68,7 +68,7 @@ func ValidateSeriesTime(ctx context.Context, ts *dataframe.SeriesTime, timeFreq 
 		return ErrCantValidate
 	}
 
-	if nrows == 1 {
+	if nRows == 1 {
 		return nil
 	}
 
@@ -121,10 +121,6 @@ func ValidateSeriesTime(ctx context.Context, ts *dataframe.SeriesTime, timeFreq 
 	for row, actualTime := range ts.Values {
 		if err := ctx.Err(); err != nil {
 			return err
-		}
-
-		if row == 0 {
-			continue
 		}
 
 		expectedTime := ntg()
