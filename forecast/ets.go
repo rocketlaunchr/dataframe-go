@@ -15,7 +15,7 @@ import (
 // SesModel is a struct that holds necessary
 // computed values for a forecasting result
 type SesModel struct {
-	data           *dataframe.SeriesFloat64
+	data           []float64
 	trainData      *dataframe.SeriesFloat64
 	testData       *dataframe.SeriesFloat64
 	fcastData      *dataframe.SeriesFloat64
@@ -42,7 +42,7 @@ type SesFitOpts struct {
 // It returns a SesModel from which Fit and Predict method can be carried out.
 func SimpleExponentialSmoothing(ctx context.Context, s interface{}) *SesModel {
 	var (
-		data      *dataframe.SeriesFloat64
+		data      []float64
 		isDf      bool
 		tsInt     string
 		tReverse  bool
@@ -53,7 +53,7 @@ func SimpleExponentialSmoothing(ctx context.Context, s interface{}) *SesModel {
 
 	model := &SesModel{
 		alpha:          0.0,
-		data:           &dataframe.SeriesFloat64{},
+		data:           []float64{},
 		trainData:      &dataframe.SeriesFloat64{},
 		testData:       &dataframe.SeriesFloat64{},
 		fcastData:      &dataframe.SeriesFloat64{},
@@ -65,7 +65,7 @@ func SimpleExponentialSmoothing(ctx context.Context, s interface{}) *SesModel {
 
 	switch d := s.(type) {
 	case *dataframe.SeriesFloat64:
-		data = d
+		data = d.Values
 
 	case *dataframe.DataFrame:
 		isDf = true
@@ -108,7 +108,7 @@ func SimpleExponentialSmoothing(ctx context.Context, s interface{}) *SesModel {
 			} else {
 				val := d.Series[1].Copy()
 				if v, ok := val.(*dataframe.SeriesFloat64); ok {
-					data = v
+					data = v.Values
 				} else {
 					panic("column 1 not convertible to SeriesFloat64")
 				}
@@ -155,7 +155,7 @@ func (sm *SesModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface
 		r = tr
 	}
 
-	count := len(sm.data.Values)
+	count := len(sm.data)
 	if count == 0 {
 		return nil, ErrNoRows
 	}
@@ -176,12 +176,12 @@ func (sm *SesModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface
 
 	sm.alpha = α
 
-	trainData := sm.data.Values[start : end+1]
+	trainData := sm.data[start : end+1]
 	trainSeries := dataframe.NewSeriesFloat64("Train Data", nil, trainData)
 
 	sm.trainData = trainSeries
 
-	testData := sm.data.Values[end+1:]
+	testData := sm.data[end+1:]
 	if len(testData) < 3 {
 		return nil, errors.New("There should be a minimum of 3 data left as testing data")
 	}
@@ -197,14 +197,14 @@ func (sm *SesModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface
 			return nil, err
 		}
 
-		xt := sm.data.Values[i]
+		xt := sm.data[i]
 
 		if i == start {
 			st = xt
 			sm.initialLevel = xt
 
 		} else if i == end { // Setting the last value in traindata as Yorigin value for bootstrapping
-			Yorigin = sm.data.Values[i]
+			Yorigin = sm.data[i]
 			sm.originValue = Yorigin
 		} else {
 			st = α*xt + (1-α)*st
@@ -215,7 +215,7 @@ func (sm *SesModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface
 	// building test forecast
 
 	fcast := []float64{}
-	for k := end + 1; k < len(sm.data.Values); k++ {
+	for k := end + 1; k < len(sm.data); k++ {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -296,7 +296,7 @@ func (sm *SesModel) Predict(ctx context.Context, m int) (interface{}, error) {
 
 	if sm.inputIsDf {
 
-		size := m
+		size := m + 1
 
 		// generate SeriesTime to start and continue from where it stopped in data input
 		opts := utime.NewSeriesTimeOptions{
@@ -307,8 +307,11 @@ func (sm *SesModel) Predict(ctx context.Context, m int) (interface{}, error) {
 			panic(fmt.Errorf("error encountered while generating time interval prediction: %v\n", err))
 		}
 
+		// trying to exclude the first starting time
+		nTs := ts.Copy(dataframe.Range{Start: &[]int{1}[0]})
+
 		// combine fdf and generated time series into a dataframe and return
-		return dataframe.NewDataFrame(ts, fdf), nil
+		return dataframe.NewDataFrame(nTs, fdf), nil
 	}
 
 	return fdf, nil
@@ -317,7 +320,7 @@ func (sm *SesModel) Predict(ctx context.Context, m int) (interface{}, error) {
 // Summary function is used to Print out Data Summary
 // From the Trained Model
 func (sm *SesModel) Summary() {
-
+	// Display training info
 	alpha := dataframe.NewSeriesFloat64("Alpha", nil, sm.alpha)
 	initLevel := dataframe.NewSeriesFloat64("Initial Level", nil, sm.initialLevel)
 	st := dataframe.NewSeriesFloat64("Smooting Level", nil, sm.smoothingLevel)
@@ -325,17 +328,19 @@ func (sm *SesModel) Summary() {
 	info := dataframe.NewDataFrame(alpha, initLevel, st)
 	fmt.Println(info.Table())
 
+	// Display error Measurement info
 	errTyp := sm.errorM.Type()
 	errVal := sm.errorM.Value()
 	errorM := dataframe.NewSeriesFloat64(errTyp, nil, errVal)
 
 	fmt.Println(errorM.Table())
 
+	// Display Test Data and Forecast data info
 	fmt.Println(sm.testData.Table())
 	fmt.Println(sm.fcastData.Table())
 }
 
-// Describe outputs various statistical information of testData, trainData or mainData Series in SesModel
+// Describe outputs various statistical information of testData or trainData Series in SesModel
 func (sm *SesModel) Describe(ctx context.Context, typ DataType, opts ...pd.DescribeOptions) {
 	var o pd.DescribeOptions
 
@@ -349,8 +354,6 @@ func (sm *SesModel) Describe(ctx context.Context, typ DataType, opts ...pd.Descr
 		data = sm.trainData
 	} else if typ == TestData {
 		data = sm.testData
-	} else if typ == MainData {
-		data = sm.data
 	} else {
 		panic(errors.New("unrecognised data type selection specified"))
 	}

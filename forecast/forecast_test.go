@@ -41,7 +41,7 @@ func TestSesSeries(t *testing.T) {
 		t.Errorf("unexpected error: %s\n", err)
 	}
 
-	fModelFit.Describe(ctx, MainData)
+	fModelFit.Describe(ctx, TrainData)
 
 	fModelFit.Summary()
 
@@ -92,7 +92,7 @@ func TestSesDF(t *testing.T) {
 		t.Errorf("unexpected error: %s", err)
 	}
 
-	dfModelFit.Describe(ctx, MainData)
+	dfModelFit.Describe(ctx, TrainData)
 
 	dfModelFit.Summary()
 
@@ -138,7 +138,7 @@ func TestHwSeries(t *testing.T) {
 		t.Errorf("unexpected error: %s", err)
 	}
 
-	fModelFit.Describe(ctx, MainData)
+	fModelFit.Describe(ctx, TrainData)
 
 	fModelFit.Summary()
 
@@ -198,7 +198,7 @@ func TestHwDF(t *testing.T) {
 		t.Errorf("unexpected error: %s", err)
 	}
 
-	dfModelFit.Describe(ctx, MainData)
+	dfModelFit.Describe(ctx, TrainData)
 
 	dfModelFit.Summary()
 

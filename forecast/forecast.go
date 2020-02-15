@@ -12,12 +12,10 @@ import (
 type DataType int
 
 const (
-	// MainData type specifies selection of the original data from Model
-	MainData DataType = 0
 	// TrainData type specifies selection of trainData from Model
-	TrainData DataType = 1
+	TrainData DataType = 0
 	// TestData type specifies selection of testData from Model
-	TestData DataType = 2
+	TestData DataType = 1
 )
 
 // Model is an interface to group trained models of Different
@@ -35,6 +33,6 @@ type Model interface {
 	// From the Trained Model
 	Summary()
 
-	// Describe method
+	// Describe method outputs various statistical information of testData or trainData Series in Model
 	Describe(context.Context, DataType, ...pd.DescribeOptions)
 }

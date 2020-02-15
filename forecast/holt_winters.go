@@ -15,7 +15,7 @@ import (
 // HwModel is a Model Interface that holds necessary
 // computed values for a forecasting result
 type HwModel struct {
-	data                 *dataframe.SeriesFloat64
+	data                 []float64
 	trainData            *dataframe.SeriesFloat64
 	testData             *dataframe.SeriesFloat64
 	fcastData            *dataframe.SeriesFloat64
@@ -51,7 +51,7 @@ type HwFitOpts struct {
 // It returns a HwModel from which Fit and Predict method can be carried out.
 func HoltWinters(ctx context.Context, s interface{}) *HwModel {
 	var (
-		data      *dataframe.SeriesFloat64
+		data      []float64
 		isDf      bool
 		tsInt     string
 		tReverse  bool
@@ -61,7 +61,7 @@ func HoltWinters(ctx context.Context, s interface{}) *HwModel {
 	)
 
 	model := &HwModel{
-		data:                 &dataframe.SeriesFloat64{},
+		data:                 []float64{},
 		trainData:            &dataframe.SeriesFloat64{},
 		testData:             &dataframe.SeriesFloat64{},
 		fcastData:            &dataframe.SeriesFloat64{},
@@ -81,7 +81,7 @@ func HoltWinters(ctx context.Context, s interface{}) *HwModel {
 
 	switch d := s.(type) {
 	case *dataframe.SeriesFloat64:
-		data = d
+		data = d.Values
 
 	case *dataframe.DataFrame:
 		isDf = true
@@ -124,7 +124,7 @@ func HoltWinters(ctx context.Context, s interface{}) *HwModel {
 			} else {
 				val := d.Series[1].Copy()
 				if v, ok := val.(*dataframe.SeriesFloat64); ok {
-					data = v
+					data = v.Values
 				} else {
 					panic("column 1 not convertible to SeriesFloat64")
 				}
@@ -175,7 +175,7 @@ func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{
 		r = tr
 	}
 
-	start, end, err := r.Limits(len(hm.data.Values))
+	start, end, err := r.Limits(len(hm.data))
 	if err != nil {
 		return nil, err
 	}
@@ -197,12 +197,12 @@ func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{
 		return nil, errors.New("γ must be between [0,1]")
 	}
 
-	trainData := hm.data.Values[start : end+1]
+	trainData := hm.data[start : end+1]
 	trainSeries := dataframe.NewSeriesFloat64("Train Data", nil, trainData)
 
 	hm.trainData = trainSeries
 
-	testData := hm.data.Values[end+1:]
+	testData := hm.data[end+1:]
 	if len(testData) < 3 {
 		return nil, errors.New("There should be a minimum of 3 data left as testing data")
 	}
@@ -215,7 +215,7 @@ func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{
 	hm.beta = β
 	hm.gamma = γ
 
-	y := hm.data.Values[start : end+1]
+	y := hm.data[start : end+1]
 
 	seasonals := initialSeasonalComponents(y, period)
 
@@ -259,7 +259,7 @@ func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{
 	// This is for the test forecast
 	fcast := []float64{}
 	m := 1
-	for k := end + 1; k < len(hm.data.Values); k++ {
+	for k := end + 1; k < len(hm.data); k++ {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -355,7 +355,7 @@ func (hm *HwModel) Predict(ctx context.Context, h int) (interface{}, error) {
 	fdf.Values = forecast
 
 	if hm.inputIsDf {
-		size := h
+		size := h + 1
 
 		// generate SeriesTime to start and continue from where it stopped in data input
 		opts := utime.NewSeriesTimeOptions{
@@ -366,8 +366,11 @@ func (hm *HwModel) Predict(ctx context.Context, h int) (interface{}, error) {
 			panic(fmt.Errorf("error encountered while generating time interval prediction: %v\n", err))
 		}
 
+		// trying to exclude the first starting time
+		nTs := ts.Copy(dataframe.Range{Start: &[]int{1}[0]})
+
 		// combine fdf and generated time series into a dataframe and return
-		return dataframe.NewDataFrame(ts, fdf), nil
+		return dataframe.NewDataFrame(nTs, fdf), nil
 	}
 
 	return fdf, nil
@@ -376,7 +379,7 @@ func (hm *HwModel) Predict(ctx context.Context, h int) (interface{}, error) {
 // Summary function is used to Print out Data Summary
 // From the Trained Model
 func (hm *HwModel) Summary() {
-
+	// Display training info
 	alpha := dataframe.NewSeriesFloat64("Alpha", nil, hm.alpha)
 	beta := dataframe.NewSeriesFloat64("Beta", nil, hm.beta)
 	gamma := dataframe.NewSeriesFloat64("Gamma", nil, hm.gamma)
@@ -397,23 +400,25 @@ func (hm *HwModel) Summary() {
 	initSeasonalComps := dataframe.NewSeriesFloat64("Initial Seasonal Components", nil)
 	initSeasonalComps.Values = hm.initialSeasonalComps
 
-	seasonalComps := dataframe.NewSeriesFloat64("Seasonal Components", nil)
+	seasonalComps := dataframe.NewSeriesFloat64("Trained Seasonal Components", nil)
 	seasonalComps.Values = hm.seasonalComps
 
-	seasonalComponents := dataframe.NewDataFrame(initSeasonalComps, seasonalComps)
-	fmt.Println(seasonalComponents)
+	fmt.Println(initSeasonalComps.Table())
+	fmt.Println(seasonalComps.Table())
 
+	// Display error Measurement info
 	errTyp := hm.errorM.Type()
 	errVal := hm.errorM.Value()
 	errorM := dataframe.NewSeriesFloat64(errTyp, nil, errVal)
 
 	fmt.Println(errorM.Table())
 
+	// Display Test Data and Forecast data info
 	fmt.Println(hm.testData.Table())
 	fmt.Println(hm.fcastData.Table())
 }
 
-// Describe outputs various statistical information of testData, trainData or mainData Series in SesModel
+// Describe outputs various statistical information of testData or trainData Series in HwModel
 func (hm *HwModel) Describe(ctx context.Context, typ DataType, opts ...pd.DescribeOptions) {
 	var o pd.DescribeOptions
 
@@ -427,8 +432,6 @@ func (hm *HwModel) Describe(ctx context.Context, typ DataType, opts ...pd.Descri
 		data = hm.trainData
 	} else if typ == TestData {
 		data = hm.testData
-	} else if typ == MainData {
-		data = hm.data
 	} else {
 		panic(errors.New("unrecognised data type selection specified"))
 	}
