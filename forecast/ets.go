@@ -16,8 +16,8 @@ import (
 // computed values for a forecasting result
 type SesModel struct {
 	data           []float64
-	trainData      *dataframe.SeriesFloat64
-	testData       *dataframe.SeriesFloat64
+	trainData      []float64
+	testData       []float64
 	fcastData      *dataframe.SeriesFloat64
 	initialLevel   float64
 	originValue    float64
@@ -34,8 +34,7 @@ type SesModel struct {
 // SesFitOpts is used to set necessary parameters
 // needed to run Fit on a Simple Exponential Smoothing Algorithm
 type SesFitOpts struct {
-	Alpha    float64
-	ErrMtype ErrorType
+	Alpha float64
 }
 
 // SimpleExponentialSmoothing Function receives a series data of type dataframe.Seriesfloat64
@@ -54,8 +53,8 @@ func SimpleExponentialSmoothing(ctx context.Context, s interface{}) *SesModel {
 	model := &SesModel{
 		alpha:          0.0,
 		data:           []float64{},
-		trainData:      &dataframe.SeriesFloat64{},
-		testData:       &dataframe.SeriesFloat64{},
+		trainData:      []float64{},
+		testData:       []float64{},
 		fcastData:      &dataframe.SeriesFloat64{},
 		initialLevel:   0.0,
 		smoothingLevel: 0.0,
@@ -134,7 +133,7 @@ func SimpleExponentialSmoothing(ctx context.Context, s interface{}) *SesModel {
 // Fit Method performs the splitting and trainging of the SesModel based on the Exponential Smoothing algorithm.
 // It returns a trained SesModel ready to carry out future predictions.
 // The argument α must be between [0,1].
-func (sm *SesModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{}) (*SesModel, error) {
+func (sm *SesModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{}, et ...ErrorType) (*SesModel, error) {
 
 	var (
 		α      float64
@@ -145,7 +144,6 @@ func (sm *SesModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface
 	if o, ok := opts.(SesFitOpts); ok {
 
 		α = o.Alpha
-		errTyp = o.ErrMtype
 
 	} else {
 		return nil, errors.New("fit options passed is not compartible with ses model")
@@ -153,6 +151,10 @@ func (sm *SesModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface
 
 	if tr != nil {
 		r = tr
+	}
+
+	if len(et) > 0 {
+		errTyp = et[0]
 	}
 
 	count := len(sm.data)
@@ -177,18 +179,15 @@ func (sm *SesModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface
 	sm.alpha = α
 
 	trainData := sm.data[start : end+1]
-	trainSeries := dataframe.NewSeriesFloat64("Train Data", nil, trainData)
-
-	sm.trainData = trainSeries
+	sm.trainData = trainData
 
 	testData := sm.data[end+1:]
 	if len(testData) < 3 {
 		return nil, errors.New("There should be a minimum of 3 data left as testing data")
 	}
+	sm.testData = testData
 
 	testSeries := dataframe.NewSeriesFloat64("Test Data", nil, testData)
-
-	sm.testData = testSeries
 
 	var st, Yorigin float64
 	// Training smoothing Level
@@ -336,7 +335,9 @@ func (sm *SesModel) Summary() {
 	fmt.Println(errorM.Table())
 
 	// Display Test Data and Forecast data info
-	fmt.Println(sm.testData.Table())
+	testSeries := dataframe.NewSeriesFloat64("Test Data", nil, sm.testData)
+	fmt.Println(testSeries.Table())
+
 	fmt.Println(sm.fcastData.Table())
 }
 
@@ -351,9 +352,14 @@ func (sm *SesModel) Describe(ctx context.Context, typ DataType, opts ...pd.Descr
 	data := &dataframe.SeriesFloat64{}
 
 	if typ == TrainData {
-		data = sm.trainData
+		trainSeries := dataframe.NewSeriesFloat64("Test Data", nil, sm.trainData)
+		data = trainSeries
 	} else if typ == TestData {
-		data = sm.testData
+		testSeries := dataframe.NewSeriesFloat64("Test Data", nil, sm.testData)
+		data = testSeries
+	} else if typ == MainData {
+		dataSeries := dataframe.NewSeriesFloat64("Complete Data", nil, sm.data)
+		data = dataSeries
 	} else {
 		panic(errors.New("unrecognised data type selection specified"))
 	}

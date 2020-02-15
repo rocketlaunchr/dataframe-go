@@ -16,8 +16,8 @@ import (
 // computed values for a forecasting result
 type HwModel struct {
 	data                 []float64
-	trainData            *dataframe.SeriesFloat64
-	testData             *dataframe.SeriesFloat64
+	trainData            []float64
+	testData             []float64
 	fcastData            *dataframe.SeriesFloat64
 	initialSmooth        float64
 	initialTrend         float64
@@ -40,11 +40,10 @@ type HwModel struct {
 // HwFitOpts is used to set necessary parameters
 // needed to run Fit on Holt Winters Algorithm
 type HwFitOpts struct {
-	Alpha    float64
-	Beta     float64
-	Gamma    float64
-	Period   int
-	ErrMtype ErrorType
+	Alpha  float64
+	Beta   float64
+	Gamma  float64
+	Period int
 }
 
 // HoltWinters Function receives a series data of type dataframe.Seriesfloat64
@@ -62,8 +61,8 @@ func HoltWinters(ctx context.Context, s interface{}) *HwModel {
 
 	model := &HwModel{
 		data:                 []float64{},
-		trainData:            &dataframe.SeriesFloat64{},
-		testData:             &dataframe.SeriesFloat64{},
+		trainData:            []float64{},
+		testData:             []float64{},
 		fcastData:            &dataframe.SeriesFloat64{},
 		initialSmooth:        0.0,
 		initialTrend:         0.0,
@@ -150,7 +149,7 @@ func HoltWinters(ctx context.Context, s interface{}) *HwModel {
 // Fit Method performs the splitting and trainging of the HwModel based on the Tripple Exponential Smoothing algorithm.
 // It returns a trained HwModel ready to carry out future predictions.
 // The arguments α, beta nd gamma must be between [0,1]. Recent values receive more weight when α is closer to 1.
-func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{}) (*HwModel, error) {
+func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{}, et ...ErrorType) (*HwModel, error) {
 
 	var (
 		α, β, γ float64
@@ -166,13 +165,16 @@ func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{
 		γ = o.Gamma
 		period = o.Period
 
-		errTyp = o.ErrMtype
 	} else {
 		return nil, errors.New("fit options passed is not compartible with holtwinters model")
 	}
 
 	if tr != nil {
 		r = tr
+	}
+
+	if len(et) > 0 {
+		errTyp = et[0]
 	}
 
 	start, end, err := r.Limits(len(hm.data))
@@ -198,18 +200,15 @@ func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{
 	}
 
 	trainData := hm.data[start : end+1]
-	trainSeries := dataframe.NewSeriesFloat64("Train Data", nil, trainData)
-
-	hm.trainData = trainSeries
+	hm.trainData = trainData
 
 	testData := hm.data[end+1:]
 	if len(testData) < 3 {
 		return nil, errors.New("There should be a minimum of 3 data left as testing data")
 	}
+	hm.testData = testData
 
-	testSeries := dataframe.NewSeriesFloat64("Test Data", nil)
-	testSeries.Values = testData
-	hm.testData = testSeries
+	testSeries := dataframe.NewSeriesFloat64("Test Data", nil, testData)
 
 	hm.alpha = α
 	hm.beta = β
@@ -414,7 +413,9 @@ func (hm *HwModel) Summary() {
 	fmt.Println(errorM.Table())
 
 	// Display Test Data and Forecast data info
-	fmt.Println(hm.testData.Table())
+	testSeries := dataframe.NewSeriesFloat64("Test Data", nil, hm.testData)
+	fmt.Println(testSeries.Table())
+
 	fmt.Println(hm.fcastData.Table())
 }
 
@@ -429,9 +430,14 @@ func (hm *HwModel) Describe(ctx context.Context, typ DataType, opts ...pd.Descri
 	data := &dataframe.SeriesFloat64{}
 
 	if typ == TrainData {
-		data = hm.trainData
+		trainSeries := dataframe.NewSeriesFloat64("Train Data", nil, hm.trainData)
+		data = trainSeries
 	} else if typ == TestData {
-		data = hm.testData
+		testSeries := dataframe.NewSeriesFloat64("Test Data", nil, hm.testData)
+		data = testSeries
+	} else if typ == MainData {
+		dataSeries := dataframe.NewSeriesFloat64("Complete Data", nil, hm.data)
+		data = dataSeries
 	} else {
 		panic(errors.New("unrecognised data type selection specified"))
 	}

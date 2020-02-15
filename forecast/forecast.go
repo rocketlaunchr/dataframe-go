@@ -16,6 +16,8 @@ const (
 	TrainData DataType = 0
 	// TestData type specifies selection of testData from Model
 	TestData DataType = 1
+	// MainData type specifies selection of complete data from Model
+	MainData DataType = 2
 )
 
 // Model is an interface to group trained models of Different
@@ -23,7 +25,7 @@ const (
 type Model interface {
 	// Fit Method performs the splitting and training of the Model Interface based on the Forecast algorithm Implemented.
 	// It returns a trained Model ready to carry out future forecasts.
-	Fit(context.Context, *dataframe.Range, interface{}) (Model, error)
+	Fit(context.Context, *dataframe.Range, interface{}, ...ErrorType) (Model, error)
 
 	// Predict method is used to run future predictions for the Model algorithm
 	// It returns an interface{} result that is either dataframe.SeriesFloat64 or dataframe.Dataframe format
