@@ -81,7 +81,6 @@ func GuessTimeFreq(ctx context.Context, ts *dataframe.SeriesTime, opts ...GuessT
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(2)
 
 	var (
 		// Could be an error or string
@@ -90,6 +89,7 @@ func GuessTimeFreq(ctx context.Context, ts *dataframe.SeriesTime, opts ...GuessT
 	)
 
 	// Use time.Duration
+	wg.Add(1)
 	go func() {
 		defer wg.Done()
 
@@ -110,33 +110,78 @@ func GuessTimeFreq(ctx context.Context, ts *dataframe.SeriesTime, opts ...GuessT
 		}
 	}()
 
-	// Use github.com/icza/gox/timex
-	go func() {
-		defer wg.Done()
+	if !((reverse && val1.Sub(val2) < 23*time.Hour) || (val2.Sub(val1) < 23*time.Hour)) {
+		// Use github.com/icza/gox/timex
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 
-		var years, months, days, hours, mins, secs int
+			// Find all possible timeFreq
+			candidates := map[parsed]struct{}{}
+			for i := start; i < end; i++ {
 
-		if reverse {
-			years, months, days, hours, mins, secs = timex.Diff(val1, val2)
-		} else {
-			years, months, days, hours, mins, secs = timex.Diff(val2, val1)
-		}
+				val1 := *ts.Values[i]
+				val2 := *ts.Values[i+1]
 
-		if hours != 0 || mins != 0 || secs != 0 {
-			ret2 = ErrNoPattern
-			return
-		}
+				var years, months, days, hours, mins, secs int
 
-		p := parsed{years, months, 0, days}
-		timeFreq := p.String()
+				if reverse {
+					years, months, days, hours, mins, secs = timex.Diff(val1, val2)
+				} else {
+					years, months, days, hours, mins, secs = timex.Diff(val2, val1)
+				}
 
-		err := ValidateSeriesTime(ctx, ts, timeFreq, ValidateSeriesTimeOptions{DontLock: true})
-		if err != nil {
-			ret2 = err
-		} else {
-			ret2 = timeFreq
-		}
-	}()
+				if hours != 0 || mins != 0 || secs != 0 { // Not compatible with TimeIntervalGenerator
+					ret2 = ErrNoPattern
+					return
+				}
+
+				candidates[parsed{years, months, 0, days}] = struct{}{}
+			}
+
+			// Evaluate each candidate timeFreq
+			newCtx, cancel := context.WithCancel(ctx)
+			defer cancel()
+
+			var wg sync.WaitGroup
+			var lock sync.Mutex
+			var foundTimeFreq string
+
+			for k := range candidates {
+				timeFreq := k.String()
+
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+
+					err := ValidateSeriesTime(newCtx, ts, timeFreq, ValidateSeriesTimeOptions{DontLock: true})
+					if err == nil {
+						// We found a timeFreq
+						cancel()
+						lock.Lock()
+						foundTimeFreq = timeFreq
+						lock.Unlock()
+					}
+				}()
+			}
+
+			wg.Wait()
+
+			if foundTimeFreq != "" {
+				ret2 = foundTimeFreq
+			} else {
+				if err := ctx.Err(); err != nil {
+					ret2 = err
+				} else {
+					ret2 = ErrNoPattern
+				}
+			}
+		}()
+	} else {
+		// DST has the potential to make a day 23 hours.
+		// This scenario is less than 23 hours.
+		ret2 = ErrNoPattern
+	}
 
 	wg.Wait()
 
@@ -164,6 +209,5 @@ func GuessTimeFreq(ctx context.Context, ts *dataframe.SeriesTime, opts ...GuessT
 		return ret1.(string), reverse, nil
 	}
 	// Both are strings
-	// TODO: return ret1 only if duration is less than 23 hours for DST purposes?
-	return ret1.(string), reverse, nil
+	return ret2.(string), reverse, nil
 }
