@@ -48,7 +48,59 @@ type HwFitOpts struct {
 
 // HoltWinters Function receives a series data of type dataframe.Seriesfloat64
 // It returns a HwModel from which Fit and Predict method can be carried out.
-func HoltWinters(ctx context.Context, s interface{}) *HwModel {
+func HoltWinters(ctx context.Context, v interface{}) *HwModel {
+	var (
+		model *HwModel
+		err   error
+	)
+
+	switch d := v.(type) {
+	case *dataframe.SeriesFloat64:
+		model, err = hwSeries(ctx, d)
+		if err != nil {
+			panic(err)
+		}
+
+	case *dataframe.DataFrame:
+		model, err = hwDataFrame(ctx, d)
+		if err != nil {
+			panic(err)
+		}
+
+	default:
+		panic("unknown data format passed in. make sure you pass in a SeriesFloat64 or standard two(2) column dataframe")
+	}
+
+	return model
+}
+
+func hwSeries(ctx context.Context, s *dataframe.SeriesFloat64) (*HwModel, error) {
+
+	model := &HwModel{
+		data:                 []float64{},
+		trainData:            []float64{},
+		testData:             []float64{},
+		fcastData:            &dataframe.SeriesFloat64{},
+		initialSmooth:        0.0,
+		initialTrend:         0.0,
+		initialSeasonalComps: []float64{},
+		smoothingLevel:       0.0,
+		trendLevel:           0.0,
+		seasonalComps:        []float64{},
+		period:               0,
+		alpha:                0.0,
+		beta:                 0.0,
+		gamma:                0.0,
+		errorM:               &ErrorMeasurement{},
+		inputIsDf:            false,
+	}
+
+	model.data = s.Values
+
+	return model, nil
+}
+
+func hwDataFrame(ctx context.Context, d *dataframe.DataFrame) (*HwModel, error) {
 	var (
 		data      []float64
 		isDf      bool
@@ -75,75 +127,65 @@ func HoltWinters(ctx context.Context, s interface{}) *HwModel {
 		beta:                 0.0,
 		gamma:                0.0,
 		errorM:               &ErrorMeasurement{},
-		inputIsDf:            isDf,
+		inputIsDf:            false,
 	}
 
-	switch d := s.(type) {
-	case *dataframe.SeriesFloat64:
-		data = d.Values
+	isDf = true
+	// validate that
+	// - DataFrame has exactly two columns
+	// - first column is SeriesTime
+	// - second column is SeriesFloat64
+	if len(d.Series) != 2 {
 
-	case *dataframe.DataFrame:
-		isDf = true
-		// validate that
-		// - DataFrame has exactly two columns
-		// - first column is SeriesTime
-		// - second column is SeriesFloat64
-		if len(d.Series) != 2 {
+		return nil, errors.New("dataframe passed in must have exactly two series/columns.")
+	} else {
+		if d.Series[0].Type() != "time" {
+			return nil, errors.New("first column/series must be a SeriesTime")
+		} else { // get the current time interval/freq from the seriesTime
+			if ts, ok := d.Series[0].(*dataframe.SeriesTime); ok {
+				tsName = ts.Name(dataframe.DontLock)
 
-			panic("dataframe passed in must have exactly two series/columns.")
-		} else {
-			if d.Series[0].Type() != "time" {
-				panic("first column/series must be a SeriesTime")
-			} else { // get the current time interval/freq from the seriesTime
-				if ts, ok := d.Series[0].(*dataframe.SeriesTime); ok {
-					tsName = ts.Name(dataframe.DontLock)
+				rowLen := ts.NRows(dataframe.DontLock)
+				// store the last value in timeSeries column
+				lastTsVal = ts.Value(rowLen-1, dataframe.DontLock).(time.Time)
 
-					rowLen := ts.NRows(dataframe.DontLock)
-					// store the last value in timeSeries column
-					lastTsVal = ts.Value(rowLen-1, dataframe.DontLock).(time.Time)
-
-					// guessing with only half the original time series row length
-					half := rowLen / 2
-					utimeOpts := utime.GuessTimeFreqOptions{
-						R:        &dataframe.Range{End: &half},
-						DontLock: true,
-					}
-
-					tsInt, tReverse, err = utime.GuessTimeFreq(ctx, ts, utimeOpts)
-					if err != nil {
-						panic(fmt.Errorf("error while trying to figure out interval for time series column: %v\n", err))
-					}
-				} else {
-					panic("column 0 not convertible to SeriesTime")
+				// guessing with only half the original time series row length
+				half := rowLen / 2
+				utimeOpts := utime.GuessTimeFreqOptions{
+					R:        &dataframe.Range{End: &half},
+					DontLock: true,
 				}
-			}
 
-			if d.Series[1].Type() != "float64" {
-				panic("second column/series must be a SeriesFloat64")
+				tsInt, tReverse, err = utime.GuessTimeFreq(ctx, ts, utimeOpts)
+				if err != nil {
+					return nil, err
+				}
 			} else {
-				val := d.Series[1].Copy()
-				if v, ok := val.(*dataframe.SeriesFloat64); ok {
-					data = v.Values
-				} else {
-					panic("column 1 not convertible to SeriesFloat64")
-				}
+				return nil, errors.New("column 0 not convertible to SeriesTime")
 			}
 		}
 
-	default:
-		panic("unknown data format passed in. make sure you pass in a SeriesFloat64 or standard two(2) column dataframe")
+		if d.Series[1].Type() != "float64" {
+			return nil, errors.New("second column/series must be a SeriesFloat64")
+		} else {
+			val := d.Series[1].Copy()
+			if v, ok := val.(*dataframe.SeriesFloat64); ok {
+				data = v.Values
+			} else {
+				return nil, errors.New("column 1 not convertible to SeriesFloat64")
+			}
+		}
 	}
 
 	model.data = data
-	if isDf {
-		model.inputIsDf = isDf
-		model.tsInterval = tsInt
-		model.tsIntReverse = tReverse
-		model.tsName = tsName
-		model.lastTsVal = lastTsVal
-	}
 
-	return model
+	model.inputIsDf = isDf
+	model.tsInterval = tsInt
+	model.tsIntReverse = tReverse
+	model.tsName = tsName
+	model.lastTsVal = lastTsVal
+
+	return model, nil
 }
 
 // Fit Method performs the splitting and trainging of the HwModel based on the Tripple Exponential Smoothing algorithm.
