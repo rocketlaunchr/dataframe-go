@@ -67,15 +67,7 @@ func TimeIntervalGenerator(timeFreq string) (TimeGenerator, error) {
 			var nt time.Time
 
 			if prevTime == nil {
-				if d == nil {
-					nt = startTime.AddDate((*p).addDate(reverse))
-				} else {
-					if reverse {
-						nt = startTime.Add(-*d)
-					} else {
-						nt = startTime.Add(*d)
-					}
-				}
+				nt = startTime
 			} else {
 				if d == nil {
 					nt = (*prevTime).AddDate((*p).addDate(reverse))
@@ -87,7 +79,7 @@ func TimeIntervalGenerator(timeFreq string) (TimeGenerator, error) {
 					}
 				}
 			}
-			prevTime = &[]time.Time{nt}[0]
+			prevTime = &nt
 			return nt
 		}
 	}, nil
