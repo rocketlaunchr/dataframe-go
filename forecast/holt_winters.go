@@ -37,6 +37,16 @@ type HwModel struct {
 	lastTsVal            time.Time
 }
 
+// HwFitOpts is used to set necessary parameters
+// needed to run Fit on Holt Winters Algorithm
+type HwFitOpts struct {
+	Alpha    float64
+	Beta     float64
+	Gamma    float64
+	Period   int
+	ErrMtype ErrorType
+}
+
 // HoltWinters Function receives a series data of type dataframe.Seriesfloat64
 // It returns a HwModel from which Fit and Predict method can be carried out.
 func HoltWinters(ctx context.Context, s interface{}) *HwModel {
@@ -140,7 +150,7 @@ func HoltWinters(ctx context.Context, s interface{}) *HwModel {
 // Fit Method performs the splitting and trainging of the HwModel based on the Tripple Exponential Smoothing algorithm.
 // It returns a trained HwModel ready to carry out future predictions.
 // The arguments α, beta nd gamma must be between [0,1]. Recent values receive more weight when α is closer to 1.
-func (hm *HwModel) Fit(ctx context.Context, o FitOptions) (*HwModel, error) {
+func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{}) (*HwModel, error) {
 
 	var (
 		α, β, γ float64
@@ -149,16 +159,21 @@ func (hm *HwModel) Fit(ctx context.Context, o FitOptions) (*HwModel, error) {
 		errTyp  ErrorType
 	)
 
-	α = o.Alpha
-	β = o.Beta
-	γ = o.Gamma
-	period = o.Period
+	if o, ok := opts.(HwFitOpts); ok {
 
-	if o.TrainDataRange != nil {
-		r = o.TrainDataRange
+		α = o.Alpha
+		β = o.Beta
+		γ = o.Gamma
+		period = o.Period
+
+		errTyp = o.ErrMtype
+	} else {
+		return nil, errors.New("fit options passed is not compartible with holtwinters model")
 	}
 
-	errTyp = o.ErrMtype
+	if tr != nil {
+		r = tr
+	}
 
 	start, end, err := r.Limits(len(hm.data.Values))
 	if err != nil {
@@ -267,27 +282,27 @@ func (hm *HwModel) Fit(ctx context.Context, o FitOptions) (*HwModel, error) {
 	hm.seasonalComps = seasonals
 
 	// NOw to calculate the Errors
-	opts := &ErrorOptions{}
+	errOpts := &ErrorOptions{}
 
 	var val float64
 
 	if errTyp == MAE {
-		val, _, err = MeanAbsoluteError(ctx, testSeries, fcastSeries, opts)
+		val, _, err = MeanAbsoluteError(ctx, testSeries, fcastSeries, errOpts)
 		if err != nil {
 			return nil, err
 		}
 	} else if errTyp == SSE {
-		val, _, err = SumOfSquaredErrors(ctx, testSeries, fcastSeries, opts)
+		val, _, err = SumOfSquaredErrors(ctx, testSeries, fcastSeries, errOpts)
 		if err != nil {
 			return nil, err
 		}
 	} else if errTyp == RMSE {
-		val, _, err = RootMeanSquaredError(ctx, testSeries, fcastSeries, opts)
+		val, _, err = RootMeanSquaredError(ctx, testSeries, fcastSeries, errOpts)
 		if err != nil {
 			return nil, err
 		}
 	} else if errTyp == MAPE {
-		val, _, err = MeanAbsolutePercentageError(ctx, testSeries, fcastSeries, opts)
+		val, _, err = MeanAbsolutePercentageError(ctx, testSeries, fcastSeries, errOpts)
 		if err != nil {
 			return nil, err
 		}

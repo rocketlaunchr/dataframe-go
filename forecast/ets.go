@@ -31,6 +31,13 @@ type SesModel struct {
 	lastTsVal      time.Time
 }
 
+// SesFitOpts is used to set necessary parameters
+// needed to run Fit on a Simple Exponential Smoothing Algorithm
+type SesFitOpts struct {
+	Alpha    float64
+	ErrMtype ErrorType
+}
+
 // SimpleExponentialSmoothing Function receives a series data of type dataframe.Seriesfloat64
 // It returns a SesModel from which Fit and Predict method can be carried out.
 func SimpleExponentialSmoothing(ctx context.Context, s interface{}) *SesModel {
@@ -127,7 +134,7 @@ func SimpleExponentialSmoothing(ctx context.Context, s interface{}) *SesModel {
 // Fit Method performs the splitting and trainging of the SesModel based on the Exponential Smoothing algorithm.
 // It returns a trained SesModel ready to carry out future predictions.
 // The argument α must be between [0,1].
-func (sm *SesModel) Fit(ctx context.Context, o FitOptions) (*SesModel, error) {
+func (sm *SesModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{}) (*SesModel, error) {
 
 	var (
 		α      float64
@@ -135,13 +142,18 @@ func (sm *SesModel) Fit(ctx context.Context, o FitOptions) (*SesModel, error) {
 		errTyp ErrorType
 	)
 
-	α = o.Alpha
+	if o, ok := opts.(SesFitOpts); ok {
 
-	if o.TrainDataRange != nil {
-		r = o.TrainDataRange
+		α = o.Alpha
+		errTyp = o.ErrMtype
+
+	} else {
+		return nil, errors.New("fit options passed is not compartible with ses model")
 	}
 
-	errTyp = o.ErrMtype
+	if tr != nil {
+		r = tr
+	}
 
 	count := len(sm.data.Values)
 	if count == 0 {
@@ -217,27 +229,27 @@ func (sm *SesModel) Fit(ctx context.Context, o FitOptions) (*SesModel, error) {
 	fcastSeries.Values = fcast
 	sm.fcastData = fcastSeries
 
-	opts := &ErrorOptions{}
+	errOpts := &ErrorOptions{}
 
 	var val float64
 
 	if errTyp == MAE {
-		val, _, err = MeanAbsoluteError(ctx, testSeries, fcastSeries, opts)
+		val, _, err = MeanAbsoluteError(ctx, testSeries, fcastSeries, errOpts)
 		if err != nil {
 			return nil, err
 		}
 	} else if errTyp == SSE {
-		val, _, err = SumOfSquaredErrors(ctx, testSeries, fcastSeries, opts)
+		val, _, err = SumOfSquaredErrors(ctx, testSeries, fcastSeries, errOpts)
 		if err != nil {
 			return nil, err
 		}
 	} else if errTyp == RMSE {
-		val, _, err = RootMeanSquaredError(ctx, testSeries, fcastSeries, opts)
+		val, _, err = RootMeanSquaredError(ctx, testSeries, fcastSeries, errOpts)
 		if err != nil {
 			return nil, err
 		}
 	} else if errTyp == MAPE {
-		val, _, err = MeanAbsolutePercentageError(ctx, testSeries, fcastSeries, opts)
+		val, _, err = MeanAbsolutePercentageError(ctx, testSeries, fcastSeries, errOpts)
 		if err != nil {
 			return nil, err
 		}

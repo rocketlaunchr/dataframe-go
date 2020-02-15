@@ -26,12 +26,11 @@ func TestSesSeries(t *testing.T) {
 
 	fModel := SimpleExponentialSmoothing(ctx, data)
 
-	opt := FitOptions{
-		Alpha:          alpha,
-		TrainDataRange: &dataframe.Range{End: &[]int{5}[0]},
+	opt := SesFitOpts{
+		Alpha: alpha,
 	}
 
-	fModelFit, err := fModel.Fit(ctx, opt)
+	fModelFit, err := fModel.Fit(ctx, &dataframe.Range{End: &[]int{5}[0]}, opt)
 	if err != nil {
 		t.Errorf("unexpected error: %s\n", err)
 	}
@@ -78,12 +77,11 @@ func TestSesDF(t *testing.T) {
 
 	alpha := 0.4
 
-	fitOpts := FitOptions{
-		Alpha:          alpha,
-		TrainDataRange: &dataframe.Range{End: &[]int{5}[0]},
+	fitOpts := SesFitOpts{
+		Alpha: alpha,
 	}
 
-	dfModelFit, err := dfSesModel.Fit(ctx, fitOpts)
+	dfModelFit, err := dfSesModel.Fit(ctx, &dataframe.Range{End: &[]int{5}[0]}, fitOpts)
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
@@ -122,15 +120,14 @@ func TestHwSeries(t *testing.T) {
 	beta := 0.03
 	gamma := 0.73
 
-	fitOpts := FitOptions{
-		Alpha:          alpha,
-		Beta:           beta,
-		Gamma:          gamma,
-		Period:         period,
-		TrainDataRange: &dataframe.Range{End: &[]int{71}[0]},
+	fitOpts := HwFitOpts{
+		Alpha:  alpha,
+		Beta:   beta,
+		Gamma:  gamma,
+		Period: period,
 	}
 
-	fModelFit, err := fModel.Fit(ctx, fitOpts)
+	fModelFit, err := fModel.Fit(ctx, &dataframe.Range{End: &[]int{71}[0]}, fitOpts)
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -183,15 +180,14 @@ func TestHwDF(t *testing.T) {
 	beta := 0.03
 	gamma := 0.73
 
-	fitOpts := FitOptions{
-		Alpha:          alpha,
-		Beta:           beta,
-		Gamma:          gamma,
-		Period:         period,
-		TrainDataRange: &dataframe.Range{End: &[]int{71}[0]},
+	fitOpts := HwFitOpts{
+		Alpha:  alpha,
+		Beta:   beta,
+		Gamma:  gamma,
+		Period: period,
 	}
 
-	dfModelFit, err := dfHwModel.Fit(ctx, fitOpts)
+	dfModelFit, err := dfHwModel.Fit(ctx, &dataframe.Range{End: &[]int{71}[0]}, fitOpts)
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
