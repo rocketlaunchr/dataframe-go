@@ -73,6 +73,9 @@ type InterpolateOptions struct {
 
 	// DontLock can be set to true if the Series or DataFrame should not be locked.
 	DontLock bool
+
+	// R is used to limit the range of the Series for interpolation purposes.
+	R *dataframe.Range
 }
 
 // sdf can be a SeriesFloat64 or DataFrame.
