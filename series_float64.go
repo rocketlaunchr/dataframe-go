@@ -743,7 +743,7 @@ func (s *SeriesFloat64) ToSeriesMixed(ctx context.Context, removeNil bool, conv 
 			return nil, err
 		}
 
-		if rowVal == nan() {
+		if isNaN(rowVal) {
 			if removeNil {
 				continue
 			}
