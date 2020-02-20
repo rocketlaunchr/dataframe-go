@@ -78,7 +78,7 @@ type SortOptions struct {
 	// Only use it with a Series.
 	Desc bool
 
-	// DontLock can be set to true if the series should not be locked.
+	// DontLock can be set to true if the Series should not be locked.
 	DontLock bool
 }
 

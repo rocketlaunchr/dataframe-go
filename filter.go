@@ -28,7 +28,7 @@ type FilterOptions struct {
 	// on the filter operation. The original Series or DataFrame will be unmodified.
 	InPlace bool
 
-	// DontLock can be set to true if the series should not be locked.
+	// DontLock can be set to true if the Series should not be locked.
 	DontLock bool
 }
 
