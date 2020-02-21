@@ -212,3 +212,64 @@ func backwardFill(ctx context.Context, s *dataframe.SeriesFloat64, ld Interpolat
 	fmt.Println(s.Values)
 	return s, nil
 }
+
+func linear(ctx context.Context, s *dataframe.SeriesFloat64, ld InterpolationLimitDirection, la InterpolationLimitArea, l int, r *dataframe.Range) (*dataframe.SeriesFloat64, error) {
+	if r == nil {
+		r = &dataframe.Range{}
+	}
+
+	start, end, err := r.Limits(len(s.Values))
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("before:")
+	fmt.Println(s.Values)
+
+	if la == Inner { // interpolate
+
+		if ld == Forward {
+
+			fillVal := math.NaN()
+			for i := start; i <= end; i++ {
+
+				if l <= 0 { // once limit gets to 0 return result
+					return s, nil
+				}
+				val := s.Values[i]
+				if math.IsNaN(val) {
+					// linear interpolation Code goes here
+
+				}
+
+				fillVal = math.NaN() // reset fillVal for every iteration
+			}
+
+		} else if ld == Backward {
+
+			fillVal := math.NaN()
+			for i := end; i >= start; i-- {
+
+				if l <= 0 {
+					return s, nil
+				}
+				val := s.Values[i]
+				if math.IsNaN(val) {
+					// linear interpolation Code goes here
+
+				}
+				fillVal = math.NaN() // reset fillVal for every iteration
+			}
+		} else {
+			return nil, errors.New("unknown interpolation limit direction specified")
+		}
+
+	} else if la == Outer {
+		// TODO: extrapolate
+	} else {
+		return nil, errors.New("unknown interpolation limit area specified")
+	}
+
+	fmt.Println("after:")
+	fmt.Println(s.Values)
+	return s, nil
+}
