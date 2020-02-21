@@ -107,6 +107,41 @@ func backwardFill(ctx context.Context, s *dataframe.SeriesFloat64, ld Interpolat
 	fmt.Println("before:")
 	fmt.Println(s.Values)
 
+	startOfSeg = start
+	for {
+
+		// Step 1: Find segments that are inbetween non-nil values
+
+		var (
+			left  *int
+			right *int
+		)
+
+		for i := startOfSeg; i <= end; i++ {
+			currentVal := s.Values[i]
+			if !math.IsNaN(currentVal) {
+				// non-nil found
+				if left != nil {
+					left = &[]int{i}[0]
+				} else {
+					right = &[]int{i}[0]
+					startOfSeg = right
+					break
+				}
+			}
+		}
+
+		// Step 2: Fill in Inner region between left and right
+		if ld.has(Forward) {
+
+		}
+
+		if ld.has(Backward) {
+
+		}
+
+	}
+
 	if la == Inner { // interpolate
 
 		if ld == Backward {
