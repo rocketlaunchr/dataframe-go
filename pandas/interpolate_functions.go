@@ -132,11 +132,13 @@ func backwardFill(ctx context.Context, s *dataframe.SeriesFloat64, ld Interpolat
 		}
 
 		// Step 2: Fill in Inner region between left and right
-		if ld.has(Forward) {
+		if ld.has(Forward) && ld.has(Backward) {
 
-		}
+			// Loop through pos from middle of slice, outwards
+			// https://play.golang.org/p/BjqS5UpRgTX
+		} else if ld.has(Backward) {
 
-		if ld.has(Backward) {
+		} else if ld.has(Forward) {
 
 		}
 
