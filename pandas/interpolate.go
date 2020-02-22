@@ -64,8 +64,8 @@ type InterpolateOptions struct {
 	// https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.interpolate.html
 	LimitDirection InterpolationLimitDirection
 
-	//
-	LimitArea InterpolationLimitArea
+	// Default is Inner and Outer.
+	LimitArea *InterpolationLimitArea
 
 	// InPlace will perform the interpolation operation on the current SeriesFloat64 or DataFrame.
 	// If InPlace is not set, an OrderedMapIntFloat64 will be returned. The original Series or DataFrame will be unmodified.
