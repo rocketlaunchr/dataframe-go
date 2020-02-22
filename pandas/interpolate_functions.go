@@ -53,21 +53,9 @@ func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end in
 
 		// Step 1: Find segments that are inbetween non-nil values
 
-		for i := startOfSeg; i <= end; i++ {
-			currentVal := fs.Values[i]
-			if !math.IsNaN(currentVal) {
-				// non-nil found
-				if left == nil {
-					left = &[]int{i}[0]
+		left, right = findSubSegment(fs, startOfSeg, end, ForwardFill)
+		startOfSeg = *right
 
-				} else {
-					right = &[]int{i}[0]
-					startOfSeg = *right
-
-					break
-				}
-			}
-		}
 		fillVal = getFillVal(fs, *left, *right, ForwardFill)
 
 		// Detect if there are nil values in between left and right segment
@@ -195,21 +183,9 @@ func backwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end i
 
 		// Step 1: Find segments that are inbetween non-nil values
 
-		for i := startOfSeg; i >= start; i-- {
-			currentVal := fs.Values[i]
-			if !math.IsNaN(currentVal) {
-				// non-nil found
-				if right == nil {
-					right = &[]int{i}[0]
+		left, right = findSubSegment(fs, startOfSeg, start, BackwardFill)
+		startOfSeg = *left // new startOfSeg for next itern
 
-				} else {
-					left = &[]int{i}[0]
-					startOfSeg = *left
-
-					break
-				}
-			}
-		}
 		fillVal = getFillVal(fs, *left, *right, BackwardFill)
 
 		// Detect if there are nil values in between left and right segment
@@ -321,21 +297,8 @@ func linearFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int
 
 		// Step 1: Find segments that are inbetween non-nil values
 
-		for i := startOfSeg; i <= end; i++ {
-			currentVal := fs.Values[i]
-			if !math.IsNaN(currentVal) {
-				// non-nil found
-				if left == nil {
-					left = &[]int{i}[0]
-
-				} else {
-					right = &[]int{i}[0]
-					startOfSeg = *right
-
-					break
-				}
-			}
-		}
+		left, right = findSubSegment(fs, startOfSeg, end, Linear)
+		startOfSeg = *right
 
 		// Detect if there are nil values in between left and right segment
 		if (*right - *left) > 1 { // possible nil values inbetween
@@ -425,6 +388,65 @@ func linearFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int
 	return nil
 }
 
+func findSubSegment(s *dataframe.SeriesFloat64, start, end int, mthd InterpolateMethod) (*int, *int) {
+	var (
+		left, right *int
+	)
+
+	if mthd == ForwardFill {
+		// loop moving forward
+		for i := start; i <= end; i++ {
+			currentVal := s.Values[i]
+			if !math.IsNaN(currentVal) {
+				// non-nil found
+				if left == nil {
+					left = &[]int{i}[0]
+
+				} else {
+					right = &[]int{i}[0]
+
+					break
+				}
+			}
+		}
+	} else if mthd == BackwardFill {
+		// loop going backward
+		for i := start; i >= end; i-- {
+			currentVal := s.Values[i]
+			if !math.IsNaN(currentVal) {
+				// non-nil found
+				if right == nil {
+					right = &[]int{i}[0]
+
+				} else {
+					left = &[]int{i}[0]
+
+					break
+				}
+			}
+		}
+	} else if mthd == Linear {
+		for i := start; i <= end; i++ {
+			currentVal := s.Values[i]
+			if !math.IsNaN(currentVal) {
+				// non-nil found
+				if left == nil {
+					left = &[]int{i}[0]
+
+				} else {
+					right = &[]int{i}[0]
+
+					break
+				}
+			}
+		}
+	} else {
+		panic("unknown interpolate method passed into findSubSegment function.")
+	}
+
+	return left, right
+}
+
 func getFillVal(s *dataframe.SeriesFloat64, l, r int, mthd InterpolateMethod) float64 {
 	var val float64
 
@@ -438,7 +460,7 @@ func getFillVal(s *dataframe.SeriesFloat64, l, r int, mthd InterpolateMethod) fl
 
 		val = (v1 + v2) / 2
 	} else {
-		panic("unknown interpolate method passed in to getfillVal function.")
+		panic("unknown interpolate method passed into getfillVal function.")
 	}
 
 	return val
