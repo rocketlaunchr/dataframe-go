@@ -40,10 +40,8 @@ func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end in
 				fs.Update(end, fillVal, dataframe.DontLock)
 
 				if limit != nil {
-					if limit != nil {
-						l--
-					} // decrease limit count
-				}
+					l--
+				} // decrease limit count
 
 			}
 			break
@@ -98,10 +96,8 @@ func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end in
 						fs.Update(i, fillVal, dataframe.DontLock)
 
 						if limit != nil {
-							if limit != nil {
-								l--
-							} // decrease limit count
-						}
+							l--
+						} // decrease limit count
 					}
 
 				}
@@ -120,10 +116,8 @@ func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end in
 						fs.Update(i, fillVal, dataframe.DontLock)
 
 						if limit != nil {
-							if limit != nil {
-								l--
-							} // decrease limit count
-						}
+							l--
+						} // decrease limit count
 					}
 				}
 			} else if ld.has(Forward) {
@@ -140,10 +134,9 @@ func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end in
 						fs.Update(i, fillVal, dataframe.DontLock)
 
 						if limit != nil {
-							if limit != nil {
-								l--
-							} // decrease limit count
-						}
+							l--
+						} // decrease limit count
+
 					}
 				}
 			} else {
