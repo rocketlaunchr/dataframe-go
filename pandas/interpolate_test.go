@@ -45,6 +45,25 @@ func TestInterpolateSeriesForwardFillBkwd(t *testing.T) {
 	}
 }
 
+func TestInterpolateSeriesForwardFillBoth(t *testing.T) {
+	ctx := context.Background()
+
+	data := dataframe.NewSeriesFloat64("values", nil, nil, 50.3, nil, nil, 56.2, 45.34, nil, 39.26, nil)
+
+	opts := InterpolateOptions{
+		Method:         ForwardFill,
+		LimitDirection: (Forward | Backward),
+		LimitArea:      Inner,
+	}
+
+	fmt.Printf("\nInterpolate Series ForwardFill Both (Fwd and Bkwd) ...\n\n")
+
+	_, err := Interpolate(ctx, data, opts)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+}
+
 func TestInterpolateSeriesBackwardFillBkwd(t *testing.T) {
 	ctx := context.Background()
 
@@ -75,6 +94,25 @@ func TestInterpolateSeriesBackwardFillFwd(t *testing.T) {
 	}
 
 	fmt.Printf("\nInterpolate Series BackwardFill Fwd...\n\n")
+
+	_, err := Interpolate(ctx, data, opts)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+}
+
+func TestInterpolateSeriesBackwardFillBoth(t *testing.T) {
+	ctx := context.Background()
+
+	data := dataframe.NewSeriesFloat64("values", nil, nil, 50.3, nil, nil, 56.2, 45.34, nil, 39.26, nil)
+
+	opts := InterpolateOptions{
+		Method:         BackwardFill,
+		LimitDirection: (Forward | Backward),
+		LimitArea:      Inner,
+	}
+
+	fmt.Printf("\nInterpolate Series BackwardFill Both (Fwd and Bkwd) ...\n\n")
 
 	_, err := Interpolate(ctx, data, opts)
 	if err != nil {
