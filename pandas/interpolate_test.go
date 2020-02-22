@@ -119,3 +119,59 @@ func TestInterpolateSeriesBackwardFillBoth(t *testing.T) {
 		t.Errorf("error encountered: %s\n", err)
 	}
 }
+
+func TestInterpolateSeriesLinearFwd(t *testing.T) {
+	ctx := context.Background()
+
+	data := dataframe.NewSeriesFloat64("values", nil, nil, 29.33, nil, nil, nil, 21.7, 35.14, nil, nil, 50.66, nil)
+
+	opts := InterpolateOptions{
+		Method:         Linear,
+		LimitDirection: Forward,
+		LimitArea:      Inner,
+	}
+
+	fmt.Printf("\nInterpolate Series Linear Fwd...\n\n")
+
+	_, err := Interpolate(ctx, data, opts)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+}
+
+func TestInterpolateSeriesLinearBkwd(t *testing.T) {
+	ctx := context.Background()
+
+	data := dataframe.NewSeriesFloat64("values", nil, nil, 29.33, nil, nil, nil, 21.7, 35.14, nil, nil, 50.66, nil)
+
+	opts := InterpolateOptions{
+		Method:         Linear,
+		LimitDirection: Backward,
+		LimitArea:      Inner,
+	}
+
+	fmt.Printf("\nInterpolate Series Linear Bkwd...\n\n")
+	_, err := Interpolate(ctx, data, opts)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+}
+
+func TestInterpolateSeriesLinearBoth(t *testing.T) {
+	ctx := context.Background()
+
+	data := dataframe.NewSeriesFloat64("values", nil, nil, 29.33, nil, nil, nil, 21.7, 35.14, nil, nil, 50.66, nil)
+
+	opts := InterpolateOptions{
+		Method:         Linear,
+		LimitDirection: (Forward | Backward),
+		LimitArea:      Inner,
+	}
+
+	fmt.Printf("\nInterpolate Series Linear Both (Fwd and Bkwd) ...\n\n")
+
+	_, err := Interpolate(ctx, data, opts)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+}

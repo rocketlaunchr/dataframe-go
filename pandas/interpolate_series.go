@@ -46,7 +46,6 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 
 	} else if mthd == BackwardFill {
 		// call backward fill function
-		// call forward fill function
 		res, err := backwardFill(ctx, fs, limDir, limArea, lim, opts.R)
 		if err != nil {
 			return nil, err
@@ -55,6 +54,12 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 
 	} else if mthd == Linear {
 		// call linear function
+
+		res, err := backwardFill(ctx, fs, limDir, limArea, lim, opts.R)
+		if err != nil {
+			return nil, err
+		}
+		_ = res
 	} else {
 		return nil, errors.New("the specified interpolation method is not available")
 	}
