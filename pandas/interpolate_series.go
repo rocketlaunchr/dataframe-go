@@ -20,7 +20,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		mthd    InterpolateMethod
 		lim     int
 		limDir  InterpolationLimitDirection
-		limArea InterpolationLimitArea
+		limArea *InterpolationLimitArea
 		// fsc     *dataframe.SeriesFloat64
 	)
 
@@ -32,7 +32,9 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 	}
 
 	limDir = opts.LimitDirection
-	limArea = opts.LimitArea
+	if limArea != nil {
+		limArea = opts.LimitArea
+	}
 
 	// fsc = fs.Copy().(*dataframe.SeriesFloat64) // make a copy of series and work with copy
 

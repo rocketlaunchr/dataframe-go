@@ -16,7 +16,7 @@ func TestInterpolateSeriesForwardFillFwd(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:         ForwardFill,
 		LimitDirection: Forward,
-		LimitArea:      Inner,
+		LimitArea:      nil,
 	}
 
 	fmt.Printf("\nInterpolate Series ForwardFill Fwd...\n\n")
@@ -35,7 +35,7 @@ func TestInterpolateSeriesForwardFillBkwd(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:         ForwardFill,
 		LimitDirection: Backward,
-		LimitArea:      Inner,
+		LimitArea:      nil,
 	}
 
 	fmt.Printf("\nInterpolate Series ForwardFill Bkwd...\n\n")
@@ -53,7 +53,7 @@ func TestInterpolateSeriesForwardFillBoth(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:         ForwardFill,
 		LimitDirection: (Forward | Backward),
-		LimitArea:      Inner,
+		LimitArea:      nil,
 	}
 
 	fmt.Printf("\nInterpolate Series ForwardFill Both (Fwd and Bkwd) ...\n\n")
@@ -72,7 +72,7 @@ func TestInterpolateSeriesBackwardFillBkwd(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:         BackwardFill,
 		LimitDirection: Backward,
-		LimitArea:      Inner,
+		LimitArea:      nil,
 	}
 
 	fmt.Printf("\nInterpolate Series BackwardFill Bkwd...\n\n")
@@ -90,7 +90,7 @@ func TestInterpolateSeriesBackwardFillFwd(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:         BackwardFill,
 		LimitDirection: Forward,
-		LimitArea:      Inner,
+		LimitArea:      nil,
 	}
 
 	fmt.Printf("\nInterpolate Series BackwardFill Fwd...\n\n")
@@ -109,7 +109,7 @@ func TestInterpolateSeriesBackwardFillBoth(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:         BackwardFill,
 		LimitDirection: (Forward | Backward),
-		LimitArea:      Inner,
+		LimitArea:      nil,
 	}
 
 	fmt.Printf("\nInterpolate Series BackwardFill Both (Fwd and Bkwd) ...\n\n")
@@ -128,7 +128,7 @@ func TestInterpolateSeriesLinearFwd(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:         Linear,
 		LimitDirection: Forward,
-		LimitArea:      Inner,
+		LimitArea:      nil,
 	}
 
 	fmt.Printf("\nInterpolate Series Linear Fwd...\n\n")
@@ -147,7 +147,7 @@ func TestInterpolateSeriesLinearBkwd(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:         Linear,
 		LimitDirection: Backward,
-		LimitArea:      Inner,
+		LimitArea:      nil,
 	}
 
 	fmt.Printf("\nInterpolate Series Linear Bkwd...\n\n")
@@ -165,7 +165,7 @@ func TestInterpolateSeriesLinearBoth(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:         Linear,
 		LimitDirection: (Forward | Backward),
-		LimitArea:      Inner,
+		LimitArea:      nil,
 	}
 
 	fmt.Printf("\nInterpolate Series Linear Both (Fwd and Bkwd) ...\n\n")

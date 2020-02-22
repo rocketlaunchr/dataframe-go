@@ -9,7 +9,7 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
-func forwardFill(ctx context.Context, s *dataframe.SeriesFloat64, ld InterpolationLimitDirection, la InterpolationLimitArea, lim int, r *dataframe.Range) (*dataframe.SeriesFloat64, error) {
+func forwardFill(ctx context.Context, s *dataframe.SeriesFloat64, ld InterpolationLimitDirection, la *InterpolationLimitArea, lim int, r *dataframe.Range) (*dataframe.SeriesFloat64, error) {
 
 	var (
 		l, startOfSeg int
@@ -145,7 +145,7 @@ func forwardFill(ctx context.Context, s *dataframe.SeriesFloat64, ld Interpolati
 	return s, nil
 }
 
-func backwardFill(ctx context.Context, s *dataframe.SeriesFloat64, ld InterpolationLimitDirection, la InterpolationLimitArea, lim int, r *dataframe.Range) (*dataframe.SeriesFloat64, error) {
+func backwardFill(ctx context.Context, s *dataframe.SeriesFloat64, ld InterpolationLimitDirection, la *InterpolationLimitArea, lim int, r *dataframe.Range) (*dataframe.SeriesFloat64, error) {
 	var (
 		l, startOfSeg int
 	)
@@ -276,7 +276,7 @@ func backwardFill(ctx context.Context, s *dataframe.SeriesFloat64, ld Interpolat
 	return s, nil
 }
 
-func linear(ctx context.Context, s *dataframe.SeriesFloat64, ld InterpolationLimitDirection, la InterpolationLimitArea, lim int, r *dataframe.Range) (*dataframe.SeriesFloat64, error) {
+func linear(ctx context.Context, s *dataframe.SeriesFloat64, ld InterpolationLimitDirection, la *InterpolationLimitArea, lim int, r *dataframe.Range) (*dataframe.SeriesFloat64, error) {
 
 	var (
 		l, startOfSeg int
