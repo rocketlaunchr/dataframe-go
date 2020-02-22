@@ -69,9 +69,8 @@ func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end in
 					break
 				}
 			}
-		} // For ForwardFill
-		// fill nan values with the value at the left
-		fillVal = fs.Values[*left]
+		}
+		fillVal = getFillVal(fs, *left, *right, ForwardFill)
 
 		// Detect if there are nil values in between left and right segment
 		if (*right - *left) > 1 { // possible nil values inbetween
@@ -217,9 +216,8 @@ func backwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end i
 					break
 				}
 			}
-		} // For BackwardFill
-		// fill nan values with the value at the right
-		fillVal = fs.Values[*right]
+		}
+		fillVal = getFillVal(fs, *left, *right, BackwardFill)
 
 		// Detect if there are nil values in between left and right segment
 		if (*right - *left) > 1 { // possible nil values inbetween
@@ -356,9 +354,7 @@ func linearFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int
 
 				for i := *left + 1; i < *right; i++ {
 
-					// For LinearFill
-					// fill nan values with the mean of the values at previous and next index
-					fillVal = (fs.Values[*left+inc] + fs.Values[*right]) / 2
+					fillVal = getFillVal(fs, *left+inc, *right, Linear)
 					inc++
 
 					if limit != nil && l <= 0 {
@@ -388,9 +384,7 @@ func linearFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int
 
 				for i := *right - 1; i > *left; i-- {
 
-					// For LinearFill
-					// fill nan values with the mean of the values at previous and next index
-					fillVal = (fs.Values[*left] + fs.Values[*right-inc]) / 2
+					fillVal = getFillVal(fs, *left, *right-inc, Linear)
 					inc++
 
 					if limit != nil && l <= 0 {
@@ -410,9 +404,7 @@ func linearFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int
 
 				for i := *left + 1; i < *right; i++ {
 
-					// For LinearFill
-					// fill nan values with the mean of the values at previous and next index
-					fillVal = (fs.Values[*left+inc] + fs.Values[*right]) / 2
+					fillVal = getFillVal(fs, *left+inc, *right, Linear)
 					inc++
 
 					if limit != nil && l <= 0 {
@@ -438,4 +430,21 @@ func linearFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int
 	fmt.Println("after:")
 	fmt.Println(fs.Values)
 	return nil
+}
+
+func getFillVal(s *dataframe.SeriesFloat64, l, r int, mthd InterpolateMethod) float64 {
+	var val float64
+
+	if mthd == ForwardFill {
+		val = s.Values[l]
+	} else if mthd == BackwardFill {
+		val = s.Values[r]
+	} else if mthd == Linear {
+		v1 := s.Values[l]
+		v2 := s.Values[r]
+
+		val = (v1 + v2) / 2
+	}
+
+	return val
 }
