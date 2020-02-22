@@ -9,6 +9,21 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
+// Given a start and end that are non-nil, this function forward fills.
+func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int, limit *Limit) error {
+
+}
+
+// Given a start and end that are non-nil, this function backward fills.
+func backwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int, limit *Limit) error {
+
+}
+
+// Given a start and end that are non-nil, this function applies linear interpolation.
+func linearFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int, limit *Limit) error {
+
+}
+
 func forwardFill(ctx context.Context, s *dataframe.SeriesFloat64, ld InterpolationLimitDirection, la InterpolationLimitArea, lim int, r *dataframe.Range) (*dataframe.SeriesFloat64, error) {
 
 	var (
