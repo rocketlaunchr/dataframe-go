@@ -444,6 +444,8 @@ func getFillVal(s *dataframe.SeriesFloat64, l, r int, mthd InterpolateMethod) fl
 		v2 := s.Values[r]
 
 		val = (v1 + v2) / 2
+	} else {
+		panic("unknown interpolate method passed in to getfillVal function.")
 	}
 
 	return val
