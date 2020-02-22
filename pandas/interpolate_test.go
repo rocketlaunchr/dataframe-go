@@ -120,7 +120,7 @@ func TestInterpolateSeriesBackwardFillBoth(t *testing.T) {
 	}
 }
 
-func TestInterpolateSeriesLinearFwd(t *testing.T) {
+func TestInterpolateSeriesLinearFillFwd(t *testing.T) {
 	ctx := context.Background()
 
 	data := dataframe.NewSeriesFloat64("values", nil, nil, 29.33, nil, nil, nil, 21.7, 35.14, nil, nil, 50.66, nil)
@@ -139,7 +139,7 @@ func TestInterpolateSeriesLinearFwd(t *testing.T) {
 	}
 }
 
-func TestInterpolateSeriesLinearBkwd(t *testing.T) {
+func TestInterpolateSeriesLinearFillBkwd(t *testing.T) {
 	ctx := context.Background()
 
 	data := dataframe.NewSeriesFloat64("values", nil, nil, 29.33, nil, nil, nil, 21.7, 35.14, nil, nil, 50.66, nil)
@@ -157,7 +157,7 @@ func TestInterpolateSeriesLinearBkwd(t *testing.T) {
 	}
 }
 
-func TestInterpolateSeriesLinearBoth(t *testing.T) {
+func TestInterpolateSeriesLinearFillBoth(t *testing.T) {
 	ctx := context.Background()
 
 	data := dataframe.NewSeriesFloat64("values", nil, nil, 29.33, nil, nil, nil, 21.7, 35.14, nil, nil, 50.66, nil)

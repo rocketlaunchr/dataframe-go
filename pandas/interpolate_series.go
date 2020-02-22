@@ -18,17 +18,15 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 
 	var (
 		mthd    InterpolateMethod
-		lim     int
+		lim     *int
 		limDir  InterpolationLimitDirection
 		limArea *InterpolationLimitArea
-		// fsc     *dataframe.SeriesFloat64
+		r       *dataframe.Range
 	)
 
 	mthd = opts.Method
 	if opts.Limit != nil && *opts.Limit > 0 {
-		lim = *opts.Limit
-	} else {
-		lim = fs.NilCount(dataframe.DontLock) // set to max number of nilCount
+		lim = opts.Limit
 	}
 
 	limDir = opts.LimitDirection
@@ -36,32 +34,38 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		limArea = opts.LimitArea
 	}
 
-	// fsc = fs.Copy().(*dataframe.SeriesFloat64) // make a copy of series and work with copy
+	r = &dataframe.Range{}
+	if opts.R != nil {
+		r = opts.R
+	}
+
+	start, end, err := r.Limits(len(fs.Values))
+	if err != nil {
+		return nil, err
+	}
 
 	if mthd == ForwardFill {
 		// call forward fill function
-		res, err := forwardFill(ctx, fs, limDir, limArea, lim, opts.R)
+		err := forwardFill(ctx, fs, start, end, lim, limDir, limArea)
 		if err != nil {
 			return nil, err
 		}
-		_ = res
 
 	} else if mthd == BackwardFill {
 		// call backward fill function
-		res, err := backwardFill(ctx, fs, limDir, limArea, lim, opts.R)
+		err := backwardFill(ctx, fs, start, end, lim, limDir, limArea)
 		if err != nil {
 			return nil, err
 		}
-		_ = res
 
 	} else if mthd == Linear {
 		// call linear function
 
-		res, err := backwardFill(ctx, fs, limDir, limArea, lim, opts.R)
+		err := linearFill(ctx, fs, start, end, lim, limDir, limArea)
 		if err != nil {
 			return nil, err
 		}
-		_ = res
+
 	} else {
 		return nil, errors.New("the specified interpolation method is not available")
 	}
