@@ -11,10 +11,15 @@ import (
 
 func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, opts InterpolateOptions) (*dataframe.OrderedMapIntFloat64, error) {
 
-	// if !opts.DontLock {
-	// 	fs.Lock()
-	// 	defer fs.Unlock()
-	// }
+	if !opts.DontLock {
+		fs.Lock()
+		defer fs.Unlock()
+	}
+
+	var omap *dataframe.OrderedMapIntFloat64
+	if !opts.InPlace {
+		omap = dataframe.NewOrderedMapIntFloat64()
+	}
 
 	var (
 		mthd    InterpolateMethod
@@ -44,37 +49,100 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		return nil, err
 	}
 
-	if mthd == ForwardFill {
-		// call forward fill function
-		err := forwardFill(ctx, fs, start, end, lim, limDir, limArea)
-		if err != nil {
+	// Step 1: Find ranges that are nil values in between
+
+	for {
+
+		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 
-	} else if mthd == BackwardFill {
-		// call backward fill function
-		err := backwardFill(ctx, fs, start, end, lim, limDir, limArea)
-		if err != nil {
-			return nil, err
+		var (
+			left  *int
+			right *int
+		)
+
+		for i := start; i <= end; i++ {
+			currentVal := s.Values[i]
+			if !math.IsNaN(currentVal) {
+				if left == nil {
+					left = &[]int{i}[0]
+				} else {
+					right = &[]int{i}[0]
+					break
+				}
+			}
 		}
 
-	} else if mthd == Linear {
-		// call linear function
+		if left != nil && right != nil {
+			if opts.LimitArea == nil || opts.LimitArea.has(Inner) {
+				// Fill Inner range
 
-		err := linearFill(ctx, fs, start, end, lim, limDir, limArea)
-		if err != nil {
-			return nil, err
+				switch opts.Method {
+				case ForwardFill:
+					fillFn := func(row int) float64 {
+						return fs.Values[*left]
+					}
+					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.LimitDirection, opts.Limit)
+					if err != nil {
+						return nil, err
+					}
+				case BackwardFill:
+					fillFn := func(row int) float64 {
+						return fs.Values[*right]
+					}
+					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.LimitDirection, opts.Limit)
+					if err != nil {
+						return nil, err
+					}
+				case Linear:
+					grad := (fs.Values[*right] - fs.Values[*left]) / (*right - *left)
+					c := fs.Values[*left] + grad
+					fillFn := func(row int) float64 {
+						return grad*row + (fs.Values[*left] + grad)
+					}
+					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.LimitDirection, opts.Limit)
+					if err != nil {
+						return nil, err
+					}
+				}
+
+			}
+		} else {
+			break
 		}
 
-	} else {
-		return nil, errors.New("the specified interpolation method is not available")
 	}
+
+	// if mthd == ForwardFill {
+	// 	// call forward fill function
+	// 	err := forwardFill(ctx, fs, start, end, lim, limDir, limArea)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+
+	// } else if mthd == BackwardFill {
+	// 	// call backward fill function
+	// 	err := backwardFill(ctx, fs, start, end, lim, limDir, limArea)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+
+	// } else if mthd == Linear {
+	// 	// call linear function
+
+	// 	err := linearFill(ctx, fs, start, end, lim, limDir, limArea)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+
+	// } else {
+	// 	return nil, errors.New("the specified interpolation method is not available")
+	// }
 
 	if opts.InPlace {
-		// return res, nil
+		return nil, nil
 	} else {
-		//  return OrderedMapIntFloat64
+		return omap, nil
 	}
-
-	return nil, nil
 }
