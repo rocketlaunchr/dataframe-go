@@ -9,7 +9,7 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
-func fill(ctx context.Context, fillFn func(float64) float64, fs *dataframe.SeriesFloat64, omap *dataframe.OrderedMapIntFloat64, start, end int, dir InterpolationLimitDirection, limit *int) {
+func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFloat64, omap *dataframe.OrderedMapIntFloat64, start, end int, dir InterpolationLimitDirection, limit *int) {
 
 	var added int
 
