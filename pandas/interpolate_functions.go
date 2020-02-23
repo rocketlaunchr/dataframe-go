@@ -9,6 +9,85 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
+func fill(ctx context.Context, fillFn func(float64) float64, fs *dataframe.SeriesFloat64, omap *dataframe.OrderedMapIntFloat64, start, end int, dir InterpolationLimitDirection, limit *int) {
+
+	var added int
+
+	Len := end - start - 1
+
+	if dir.has(Forward) && dir.has(Backward) {
+
+		for j := 0; j < Len; j++ {
+
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+
+			var idx int
+			if j%2 == 0 {
+				idx = j / 2
+			} else {
+				idx = Len - (1+j)/2
+			}
+
+			if omap != nil {
+				omap.Set(start+1+j, fillFn(j))
+			} else {
+				fs.Update(start+1+j, fillFn(j), dataframe.DontLock)
+			}
+			added++
+
+			if limit != nil && added > *limit {
+				return nil
+			}
+
+		}
+
+	} else if dir.has(Forward) {
+
+		for j := 0; j < Len; j++ {
+
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+
+			if omap != nil {
+				omap.Set(start+1+j, fillFn(j))
+			} else {
+				fs.Update(start+1+j, fillFn(j), dataframe.DontLock)
+			}
+			added++
+
+			if limit != nil && added > *limit {
+				return nil
+			}
+		}
+
+	} else if dir.has(Backward) {
+
+		for j := Len - 1; j >= 0; j-- {
+
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+
+			if omap != nil {
+				omap.Set(start+1+j, fillFn(j))
+			} else {
+				fs.Update(start+1+j, fillFn(j), dataframe.DontLock)
+			}
+			added++
+
+			if limit != nil && added > *limit {
+				return nil
+			}
+		}
+
+	}
+
+	return nil
+}
+
 // Given a start and end that are non-nil, this function forward fills.
 func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int, limit *int, ld InterpolationLimitDirection, la *InterpolationLimitArea) error {
 	var (
