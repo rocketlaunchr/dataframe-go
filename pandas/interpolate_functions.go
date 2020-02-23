@@ -37,7 +37,7 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 			}
 			added++
 
-			if limit != nil && added > *limit {
+			if limit != nil && added >= *limit {
 				return nil
 			}
 
@@ -58,7 +58,7 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 			}
 			added++
 
-			if limit != nil && added > *limit {
+			if limit != nil && added >= *limit {
 				return nil
 			}
 		}
@@ -78,7 +78,7 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 			}
 			added++
 
-			if limit != nil && added > *limit {
+			if limit != nil && added >= *limit {
 				return nil
 			}
 		}
