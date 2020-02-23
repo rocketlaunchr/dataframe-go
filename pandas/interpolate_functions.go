@@ -9,7 +9,7 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
-func fill(ctx context.Context, fillFn func(*dataframe.SeriesFloat64, int, int, InterpolateMethod, InterpolationLimitDirection, *int) float64, fs *dataframe.SeriesFloat64, omap *dataframe.OrderedMapIntFloat64, start, end int, dir InterpolationLimitDirection, mthd InterpolateMethod, limit, inc *int) error {
+func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFloat64, omap *dataframe.OrderedMapIntFloat64, start, end int, dir InterpolationLimitDirection, mthd InterpolateMethod, limit *int) error {
 
 	if end-start <= 1 {
 		return nil
@@ -35,9 +35,9 @@ func fill(ctx context.Context, fillFn func(*dataframe.SeriesFloat64, int, int, I
 			}
 
 			if omap != nil {
-				omap.Set(start+1+idx, fillFn(fs, start, end, mthd, dir, inc))
+				omap.Set(start+1+idx, fillFn(j))
 			} else {
-				fs.Update(start+1+idx, fillFn(fs, start, end, mthd, dir, inc), dataframe.DontLock)
+				fs.Update(start+1+idx, fillFn(j), dataframe.DontLock)
 			}
 			added++
 
@@ -56,9 +56,9 @@ func fill(ctx context.Context, fillFn func(*dataframe.SeriesFloat64, int, int, I
 			}
 
 			if omap != nil {
-				omap.Set(start+1+j, fillFn(fs, start, end, mthd, dir, inc))
+				omap.Set(start+1+j, fillFn(j))
 			} else {
-				fs.Update(start+1+j, fillFn(fs, start, end, mthd, dir, inc), dataframe.DontLock)
+				fs.Update(start+1+j, fillFn(j), dataframe.DontLock)
 			}
 			added++
 
@@ -76,9 +76,9 @@ func fill(ctx context.Context, fillFn func(*dataframe.SeriesFloat64, int, int, I
 			}
 
 			if omap != nil {
-				omap.Set(start+1+j, fillFn(fs, start, end, mthd, dir, inc))
+				omap.Set(start+1+j, fillFn(j))
 			} else {
-				fs.Update(start+1+j, fillFn(fs, start, end, mthd, dir, inc), dataframe.DontLock)
+				fs.Update(start+1+j, fillFn(j), dataframe.DontLock)
 			}
 			added++
 
@@ -132,7 +132,7 @@ func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end in
 		left, right = findSubSegment(fs, startOfSeg, end, ForwardFill)
 		startOfSeg = *right
 
-		if err := fill(ctx, getFillVal, fs, nil, *left, *right, ld, ForwardFill, limit, nil); err != nil {
+		if err := fill(ctx, func(idx int) float64 { return fs.Values[*left] }, fs, nil, *left, *right, ld, ForwardFill, limit); err != nil {
 			return err
 		}
 	}
@@ -180,7 +180,7 @@ func backwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end i
 		left, right = findSubSegment(fs, startOfSeg, start, BackwardFill)
 		startOfSeg = *left // new startOfSeg for next itern
 
-		if err := fill(ctx, getFillVal, fs, nil, *left, *right, ld, BackwardFill, limit, nil); err != nil {
+		if err := fill(ctx, func(idx int) float64 { return fs.Values[*right] }, fs, nil, *left, *right, ld, BackwardFill, limit); err != nil {
 			return err
 		}
 	}
@@ -221,8 +221,8 @@ func linearFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int
 		left, right = findSubSegment(fs, startOfSeg, end, Linear)
 		startOfSeg = *right
 
-		inc := &[]int{0}[0]
-		if err := fill(ctx, getFillVal, fs, nil, *left, *right, ld, Linear, limit, inc); err != nil {
+		// inc := &[]int{0}[0]
+		if err := fill(ctx, func(idx int) float64 { return (fs.Values[*left] + fs.Values[*right]) / 2 }, fs, nil, *left, *right, ld, Linear, limit); err != nil {
 			return err
 		}
 	}
@@ -289,41 +289,4 @@ func findSubSegment(s *dataframe.SeriesFloat64, start, end int, mthd Interpolate
 	}
 
 	return left, right
-}
-
-func getFillVal(s *dataframe.SeriesFloat64, l, r int, mthd InterpolateMethod, dir InterpolationLimitDirection, incrmnt *int) float64 {
-
-	var val float64
-
-	inc := 0
-	if incrmnt != nil {
-		inc = *incrmnt
-		// Trying to increment for next call if it was set
-		*incrmnt++
-	}
-
-	if mthd == ForwardFill {
-		val = s.Values[l]
-	} else if mthd == BackwardFill {
-		val = s.Values[r]
-	} else if mthd == Linear {
-
-		if dir.has(Forward) && dir.has(Backward) {
-			// TODO: not sue what do to here now..just using forward mthd
-			l = l + inc
-		} else if dir.has(Forward) {
-			l = l + inc
-		} else if dir.has(Backward) {
-			r = r - inc
-		}
-
-		v1 := s.Values[l]
-		v2 := s.Values[r]
-
-		val = (v1 + v2) / 2
-	} else {
-		panic("unknown interpolate method passed into getfillVal function.")
-	}
-
-	return val
 }
