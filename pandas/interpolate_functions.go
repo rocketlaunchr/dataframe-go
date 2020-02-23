@@ -132,7 +132,7 @@ func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end in
 		left, right = findSubSegment(fs, startOfSeg, end, ForwardFill)
 		startOfSeg = *right
 
-		if err := fill(ctx, func(idx int) float64 { return fs.Values[*left] }, fs, nil, *left, *right, ld, ForwardFill, limit); err != nil {
+		if err := fill(ctx, func(idx int) float64 { return fs.Values[*left] }, fs, nil, *left, *right, ld, limit); err != nil {
 			return err
 		}
 	}
@@ -180,7 +180,7 @@ func backwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end i
 		left, right = findSubSegment(fs, startOfSeg, start, BackwardFill)
 		startOfSeg = *left // new startOfSeg for next itern
 
-		if err := fill(ctx, func(idx int) float64 { return fs.Values[*right] }, fs, nil, *left, *right, ld, BackwardFill, limit); err != nil {
+		if err := fill(ctx, func(idx int) float64 { return fs.Values[*right] }, fs, nil, *left, *right, ld, limit); err != nil {
 			return err
 		}
 	}
@@ -222,7 +222,7 @@ func linearFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int
 		startOfSeg = *right
 
 		// inc := &[]int{0}[0]
-		if err := fill(ctx, func(idx int) float64 { return (fs.Values[*left] + fs.Values[*right]) / 2 }, fs, nil, *left, *right, ld, Linear, limit); err != nil {
+		if err := fill(ctx, func(idx int) float64 { return (fs.Values[*left] + fs.Values[*right]) / 2 }, fs, nil, *left, *right, ld, limit); err != nil {
 			return err
 		}
 	}

@@ -4,7 +4,7 @@ package pandas
 
 import (
 	"context"
-	"errors"
+	"math"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
@@ -22,19 +22,10 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 	}
 
 	var (
-		mthd    InterpolateMethod
-		lim     *int
-		limDir  InterpolationLimitDirection
 		limArea *InterpolationLimitArea
 		r       *dataframe.Range
 	)
 
-	mthd = opts.Method
-	if opts.Limit != nil && *opts.Limit > 0 {
-		lim = opts.Limit
-	}
-
-	limDir = opts.LimitDirection
 	if limArea != nil {
 		limArea = opts.LimitArea
 	}
@@ -63,7 +54,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		)
 
 		for i := start; i <= end; i++ {
-			currentVal := s.Values[i]
+			currentVal := fs.Values[i]
 			if !math.IsNaN(currentVal) {
 				if left == nil {
 					left = &[]int{i}[0]
@@ -96,10 +87,10 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 						return nil, err
 					}
 				case Linear:
-					grad := (fs.Values[*right] - fs.Values[*left]) / (*right - *left)
+					grad := (fs.Values[*right] - fs.Values[*left]) / float64(*right-*left)
 					c := fs.Values[*left] + grad
 					fillFn := func(row int) float64 {
-						return grad*row + c
+						return grad*float64(row) + c
 					}
 					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.LimitDirection, opts.Limit)
 					if err != nil {
