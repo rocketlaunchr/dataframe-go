@@ -9,7 +9,11 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
-func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFloat64, omap *dataframe.OrderedMapIntFloat64, start, end int, dir InterpolationLimitDirection, limit *int) {
+func fill(ctx context.Context, fillFn func(*dataframe.SeriesFloat64, int, int, InterpolateMethod, InterpolationLimitDirection, *int) float64, fs *dataframe.SeriesFloat64, omap *dataframe.OrderedMapIntFloat64, start, end int, dir InterpolationLimitDirection, mthd InterpolateMethod, limit, inc *int) error {
+
+	if end-start <= 1 {
+		return nil
+	}
 
 	var added int
 
@@ -31,9 +35,9 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 			}
 
 			if omap != nil {
-				omap.Set(start+1+j, fillFn(j))
+				omap.Set(start+1+idx, fillFn(fs, start, end, mthd, dir, inc))
 			} else {
-				fs.Update(start+1+j, fillFn(j), dataframe.DontLock)
+				fs.Update(start+1+idx, fillFn(fs, start, end, mthd, dir, inc), dataframe.DontLock)
 			}
 			added++
 
@@ -52,9 +56,9 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 			}
 
 			if omap != nil {
-				omap.Set(start+1+j, fillFn(j))
+				omap.Set(start+1+j, fillFn(fs, start, end, mthd, dir, inc))
 			} else {
-				fs.Update(start+1+j, fillFn(j), dataframe.DontLock)
+				fs.Update(start+1+j, fillFn(fs, start, end, mthd, dir, inc), dataframe.DontLock)
 			}
 			added++
 
@@ -72,9 +76,9 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 			}
 
 			if omap != nil {
-				omap.Set(start+1+j, fillFn(j))
+				omap.Set(start+1+j, fillFn(fs, start, end, mthd, dir, inc))
 			} else {
-				fs.Update(start+1+j, fillFn(j), dataframe.DontLock)
+				fs.Update(start+1+j, fillFn(fs, start, end, mthd, dir, inc), dataframe.DontLock)
 			}
 			added++
 
@@ -83,6 +87,8 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 			}
 		}
 
+	} else {
+		return errors.New("unknown interpolation limit direction(s) specified")
 	}
 
 	return nil
@@ -91,7 +97,7 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 // Given a start and end that are non-nil, this function forward fills.
 func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int, limit *int, ld InterpolationLimitDirection, la *InterpolationLimitArea) error {
 	var (
-		l, startOfSeg int
+		startOfSeg int
 	)
 
 	fmt.Println("before:")
@@ -106,10 +112,6 @@ func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end in
 			// fillVal float64
 		)
 
-		if limit != nil {
-			l = *limit
-		}
-
 		fillVal := math.NaN() // reset fillVal for every iteration
 
 		if startOfSeg >= end-1 {
@@ -117,11 +119,6 @@ func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end in
 			fillVal = fs.Values[end-1]
 			if startOfSeg+1 == end && math.IsNaN(fs.Values[end]) {
 				fs.Update(end, fillVal, dataframe.DontLock)
-
-				if limit != nil {
-					l--
-				} // decrease limit count
-
 			}
 			break
 		}
@@ -135,83 +132,9 @@ func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end in
 		left, right = findSubSegment(fs, startOfSeg, end, ForwardFill)
 		startOfSeg = *right
 
-		fillVal = getFillVal(fs, *left, *right, ForwardFill)
-
-		// Detect if there are nil values in between left and right segment
-		if (*right - *left) > 1 { // possible nil values inbetween
-
-			// Step 2: Fill in Inner region between left and right
-			if ld.has(Forward) && ld.has(Backward) {
-				// Loop through pos from middle of slice, outwards
-				// https://play.golang.org/p/wjCoOSV4yyh
-
-				for i := *left + 1; i < *right; i++ {
-
-					if limit != nil && l <= 0 {
-						break
-					}
-
-					var idx int
-
-					if i%2 == 0 {
-						idx = ((*left + 1) + (i / 2)) % len(fs.Values)
-					} else {
-						idx = ((*left + 1) + (len(fs.Values) - (1+i)/2)) % len(fs.Values)
-					}
-					val := fs.Values[idx]
-					if math.IsNaN(val) { // verifying that the value is actually nan
-						fs.Update(i, fillVal, dataframe.DontLock)
-
-						if limit != nil {
-							l--
-						} // decrease limit count
-					}
-
-				}
-
-			} else if ld.has(Backward) {
-				// loop from end of slice backwards
-
-				for i := *right - 1; i > *left; i-- {
-
-					if limit != nil && l <= 0 {
-						break
-					}
-
-					val := fs.Values[i]
-					if math.IsNaN(val) { // verifying that the value is actually nan
-						fs.Update(i, fillVal, dataframe.DontLock)
-
-						if limit != nil {
-							l--
-						} // decrease limit count
-					}
-				}
-			} else if ld.has(Forward) {
-				// loop from start of slice forward
-
-				for i := *left + 1; i < *right; i++ {
-
-					if limit != nil && l <= 0 {
-						break
-					}
-
-					val := fs.Values[i]
-					if math.IsNaN(val) { // verifying that the value is actually nan
-						fs.Update(i, fillVal, dataframe.DontLock)
-
-						if limit != nil {
-							l--
-						} // decrease limit count
-
-					}
-				}
-			} else {
-				return errors.New("unknown interpolation limit direction(s) specified")
-			}
-
+		if err := fill(ctx, getFillVal, fs, nil, *left, *right, ld, ForwardFill, limit, nil); err != nil {
+			return err
 		}
-
 	}
 
 	fmt.Println("after:")
@@ -222,7 +145,7 @@ func forwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end in
 // Given a start and end that are non-nil, this function backward fills.
 func backwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int, limit *int, ld InterpolationLimitDirection, la *InterpolationLimitArea) error {
 	var (
-		l, startOfSeg int
+		startOfSeg int
 	)
 
 	fmt.Println("before:")
@@ -237,10 +160,6 @@ func backwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end i
 			// fillVal float64
 		)
 
-		if limit != nil {
-			l = *limit
-		}
-
 		fillVal := math.NaN() // reset fillVal for every iteration
 
 		if startOfSeg <= start+1 {
@@ -248,10 +167,6 @@ func backwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end i
 			fillVal = fs.Values[start+1]
 			if startOfSeg-1 == start && math.IsNaN(fs.Values[start]) {
 				fs.Update(start, fillVal, dataframe.DontLock)
-				if limit != nil {
-					l--
-				} // decrease limit count
-
 			}
 			break
 		}
@@ -265,74 +180,8 @@ func backwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end i
 		left, right = findSubSegment(fs, startOfSeg, start, BackwardFill)
 		startOfSeg = *left // new startOfSeg for next itern
 
-		fillVal = getFillVal(fs, *left, *right, BackwardFill)
-
-		// Detect if there are nil values in between left and right segment
-		if (*right - *left) > 1 { // possible nil values inbetween
-
-			// Step 2: Fill in Inner region between left and right
-			if ld.has(Forward) && ld.has(Backward) {
-				// Loop through pos from middle of slice, outwards
-				// https://play.golang.org/p/wjCoOSV4yyh
-
-				for i := *left + 1; i < *right; i++ {
-
-					if limit != nil && l <= 0 {
-						break
-					}
-
-					var idx int
-
-					if i%2 == 0 {
-						idx = ((*left + 1) + (i / 2)) % len(fs.Values)
-					} else {
-						idx = ((*left + 1) + (len(fs.Values) - (1+i)/2)) % len(fs.Values)
-					}
-					val := fs.Values[idx]
-					if math.IsNaN(val) { // verifying that the value is actually nan
-						fs.Update(i, fillVal, dataframe.DontLock)
-						if limit != nil {
-							l--
-						} // decrease limit count
-					}
-				}
-			} else if ld.has(Backward) {
-				// loop from end of slice backwards
-
-				for i := *right - 1; i > *left; i-- {
-
-					if limit != nil && l <= 0 {
-						break
-					}
-
-					val := fs.Values[i]
-					if math.IsNaN(val) { // verifying that the value is actually nan
-						fs.Update(i, fillVal, dataframe.DontLock)
-						if limit != nil {
-							l--
-						} // decrease limit count
-					}
-				}
-			} else if ld.has(Forward) {
-				// loop from start of slice forward
-
-				for i := *left + 1; i < *right; i++ {
-
-					if limit != nil && l <= 0 {
-						break
-					}
-
-					val := fs.Values[i]
-					if math.IsNaN(val) { // verifying that the value is actually nan
-						fs.Update(i, fillVal, dataframe.DontLock)
-						if limit != nil {
-							l--
-						} // decrease limit count
-					}
-				}
-			} else {
-				return errors.New("unknown interpolation limit direction(s) specified")
-			}
+		if err := fill(ctx, getFillVal, fs, nil, *left, *right, ld, BackwardFill, limit, nil); err != nil {
+			return err
 		}
 	}
 
@@ -344,7 +193,7 @@ func backwardFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end i
 // Given a start and end that are non-nil, this function applies linear interpolation.
 func linearFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int, limit *int, ld InterpolationLimitDirection, la *InterpolationLimitArea) error {
 	var (
-		l, startOfSeg int
+		startOfSeg int
 	)
 
 	fmt.Println("before:")
@@ -356,15 +205,8 @@ func linearFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int
 		var (
 			left  *int
 			right *int
-			inc   int
-			// fillVal float64
+			// inc   int
 		)
-
-		if limit != nil {
-			l = *limit
-		}
-
-		fillVal := math.NaN() // reset fillVal for every iteration
 
 		if startOfSeg >= end-1 {
 			break
@@ -379,87 +221,10 @@ func linearFill(ctx context.Context, fs *dataframe.SeriesFloat64, start, end int
 		left, right = findSubSegment(fs, startOfSeg, end, Linear)
 		startOfSeg = *right
 
-		// Detect if there are nil values in between left and right segment
-		if (*right - *left) > 1 { // possible nil values inbetween
-
-			// Step 2: Fill in Inner region between left and right
-			if ld.has(Forward) && ld.has(Backward) {
-				// Loop through pos from middle of slice, outwards
-				// https://play.golang.org/p/wjCoOSV4yyh
-
-				for i := *left + 1; i < *right; i++ {
-
-					fillVal = getFillVal(fs, *left+inc, *right, Linear)
-					inc++
-
-					if limit != nil && l <= 0 {
-						break
-					}
-
-					var idx int
-
-					if i%2 == 0 {
-						idx = ((*left + 1) + (i / 2)) % len(fs.Values)
-					} else {
-						idx = ((*left + 1) + (len(fs.Values) - (1+i)/2)) % len(fs.Values)
-					}
-
-					val := fs.Values[idx]
-					if math.IsNaN(val) { // verifying that the value is actually nan
-						fs.Update(i, fillVal, dataframe.DontLock)
-						if limit != nil {
-							l--
-						} // decrease limit count
-					}
-
-				}
-
-			} else if ld.has(Backward) {
-				// loop from end of slice backwards
-
-				for i := *right - 1; i > *left; i-- {
-
-					fillVal = getFillVal(fs, *left, *right-inc, Linear)
-					inc++
-
-					if limit != nil && l <= 0 {
-						break
-					}
-
-					val := fs.Values[i]
-					if math.IsNaN(val) { // verifying that the value is actually nan
-						fs.Update(i, fillVal, dataframe.DontLock)
-						if limit != nil {
-							l--
-						} // decrease limit count
-					}
-				}
-			} else if ld.has(Forward) {
-				// loop from start of slice forward
-
-				for i := *left + 1; i < *right; i++ {
-
-					fillVal = getFillVal(fs, *left+inc, *right, Linear)
-					inc++
-
-					if limit != nil && l <= 0 {
-						break
-					}
-
-					val := fs.Values[i]
-					if math.IsNaN(val) { // verifying that the value is actually nan
-						fs.Update(i, fillVal, dataframe.DontLock)
-						if limit != nil {
-							l--
-						} // decrease limit count
-					}
-				}
-			} else {
-				return errors.New("unknown interpolation limit direction(s) specified")
-			}
-
+		inc := &[]int{0}[0]
+		if err := fill(ctx, getFillVal, fs, nil, *left, *right, ld, Linear, limit, inc); err != nil {
+			return err
 		}
-
 	}
 
 	fmt.Println("after:")
@@ -526,14 +291,32 @@ func findSubSegment(s *dataframe.SeriesFloat64, start, end int, mthd Interpolate
 	return left, right
 }
 
-func getFillVal(s *dataframe.SeriesFloat64, l, r int, mthd InterpolateMethod) float64 {
+func getFillVal(s *dataframe.SeriesFloat64, l, r int, mthd InterpolateMethod, dir InterpolationLimitDirection, incrmnt *int) float64 {
+
 	var val float64
+
+	inc := 0
+	if incrmnt != nil {
+		inc = *incrmnt
+		// Trying to increment for next call if it was set
+		*incrmnt++
+	}
 
 	if mthd == ForwardFill {
 		val = s.Values[l]
 	} else if mthd == BackwardFill {
 		val = s.Values[r]
 	} else if mthd == Linear {
+
+		if dir.has(Forward) && dir.has(Backward) {
+			// TODO: not sue what do to here now..just using forward mthd
+			l = l + inc
+		} else if dir.has(Forward) {
+			l = l + inc
+		} else if dir.has(Backward) {
+			r = r - inc
+		}
+
 		v1 := s.Values[l]
 		v2 := s.Values[r]
 
