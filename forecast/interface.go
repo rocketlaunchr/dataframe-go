@@ -24,7 +24,7 @@ type Algorithm interface {
 	Validate(sdf interface{}, r *dataframe.Range, errorType ErrorType) float64
 }
 
-// ExponentialSmootheningConfig is used to configure the ETS algorith.
+// ExponentialSmootheningConfig is used to configure the ETS algorithm.
 type ExponentialSmootheningConfig struct {
 	Alpha float64
 }
