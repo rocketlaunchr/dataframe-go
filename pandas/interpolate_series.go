@@ -99,7 +99,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 					grad := (fs.Values[*right] - fs.Values[*left]) / (*right - *left)
 					c := fs.Values[*left] + grad
 					fillFn := func(row int) float64 {
-						return grad*row + (fs.Values[*left] + grad)
+						return grad*row + c
 					}
 					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.LimitDirection, opts.Limit)
 					if err != nil {
@@ -109,6 +109,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 
 			}
 		} else {
+			// Outer
 			break
 		}
 
