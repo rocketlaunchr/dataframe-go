@@ -40,9 +40,15 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		return nil, err
 	}
 
+	startOfSeg := start
+
 	// Step 1: Find ranges that are nil values in between
 
 	for {
+
+		if startOfSeg >= end-1 {
+			break
+		}
 
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -53,7 +59,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 			right *int
 		)
 
-		for i := start; i <= end; i++ {
+		for i := startOfSeg; i <= end; i++ {
 			currentVal := fs.Values[i]
 			if !math.IsNaN(currentVal) {
 				if left == nil {
@@ -99,38 +105,13 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				}
 
 			}
+			startOfSeg = *right
 		} else {
 			// Outer
 			break
 		}
 
 	}
-
-	// if mthd == ForwardFill {
-	// 	// call forward fill function
-	// 	err := forwardFill(ctx, fs, start, end, lim, limDir, limArea)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// } else if mthd == BackwardFill {
-	// 	// call backward fill function
-	// 	err := backwardFill(ctx, fs, start, end, lim, limDir, limArea)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// } else if mthd == Linear {
-	// 	// call linear function
-
-	// 	err := linearFill(ctx, fs, start, end, lim, limDir, limArea)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// } else {
-	// 	return nil, errors.New("the specified interpolation method is not available")
-	// }
 
 	if opts.InPlace {
 		return nil, nil
