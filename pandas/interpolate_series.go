@@ -102,16 +102,48 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		}
 	}
 	// Extrapolating Outer values
-	// for Nan value at start edge assign the nearest valid value fwd to the right
-	// for nan value at the end edge assign the nearest valid value bkwd to the left
+	// for Nan values at start edge assign the nearest valid value fwd to the right
+	// for nan values at the end edge assign the nearest valid value bkwd to the left
 	// https://github.com/pandas-dev/pandas/issues/16284#issuecomment-303132712
 	if opts.LimitArea == nil || opts.LimitArea.has(Outer) {
+		var (
+			fillVal float64
+			cnt     int
+		)
 
+		// checking edge from start for consecutive Na values
 		if math.IsNaN(fs.Values[start]) {
-			fs.Values[start] = fs.Values[start+1]
+			cnt = 1
+			for i := start; i <= end; i++ {
+				if !math.IsNaN(fs.Values[i]) {
+					fillVal = fs.Values[i]
+
+					// fill nans
+					for j := 0; j < cnt; j++ {
+						fs.Values[start+j] = fillVal
+					}
+					break
+				}
+				cnt++
+			}
+
 		}
+		// checking edge from end for consecutive Na values
 		if math.IsNaN(fs.Values[end]) {
-			fs.Values[end] = fs.Values[end-1]
+			cnt = 1
+			for i := end; i >= start; i-- {
+				if !math.IsNaN(fs.Values[i]) {
+					fillVal = fs.Values[i]
+
+					// fill nans
+					for j := 0; j < cnt; j++ {
+						fs.Values[end-j] = fillVal
+					}
+					break
+				}
+				cnt++
+			}
+
 		}
 	}
 
