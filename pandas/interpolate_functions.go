@@ -2,7 +2,6 @@ package pandas
 
 import (
 	"context"
-	"errors"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
@@ -85,8 +84,6 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 			}
 		}
 
-	} else {
-		return errors.New("unknown interpolation limit direction(s) specified")
 	}
 
 	return nil
