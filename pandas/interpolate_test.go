@@ -11,7 +11,7 @@ import (
 func TestInterpolateSeriesForwardFillFwd(t *testing.T) {
 	ctx := context.Background()
 
-	fmt.Printf("\nInterpolate Series ForwardFill Fwd...\n\n")
+	fmt.Printf("\nInterpolate Series ForwardFill Fwd \n(Max consecutive NaN fill Limit => 1)...\n\n")
 
 	data := dataframe.NewSeriesFloat64("values", nil, nil, 50.3, nil, nil, 56.2, 45.34, nil, 39.26, nil)
 
@@ -21,6 +21,7 @@ func TestInterpolateSeriesForwardFillFwd(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:         ForwardFill,
 		LimitDirection: Forward,
+		Limit:          &[]int{1}[0],
 		LimitArea:      nil,
 		InPlace:        true,
 	}
@@ -188,7 +189,7 @@ func TestInterpolateSeriesLinearFillBkwd(t *testing.T) {
 		InPlace:        true,
 	}
 
-	fmt.Printf("\nInterpolate Series Linear Bkwd...\n\n")
+	fmt.Printf("\nInterpolate Series Linear Bkwd ...\n\n")
 	fmt.Println("before:")
 	fmt.Println(data.Values)
 
@@ -208,11 +209,11 @@ func TestInterpolateSeriesLinearFillBoth(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:         Linear,
 		LimitDirection: (Forward | Backward),
-		LimitArea:      nil,
+		LimitArea:      &[]InterpolationLimitArea{Inner}[0],
 		InPlace:        true,
 	}
 
-	fmt.Printf("\nInterpolate Series Linear Both (Fwd and Bkwd) ...\n\n")
+	fmt.Printf("\nInterpolate Series Linear Both (Fwd and Bkwd) \n(Limit Area of Inner only) ...\n\n")
 	fmt.Println("before:")
 	fmt.Println(data.Values)
 
