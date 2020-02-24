@@ -21,16 +21,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		omap = dataframe.NewOrderedMapIntFloat64()
 	}
 
-	var (
-		limArea *InterpolationLimitArea
-		r       *dataframe.Range
-	)
-
-	if limArea != nil {
-		limArea = opts.LimitArea
-	}
-
-	r = &dataframe.Range{}
+	r := &dataframe.Range{}
 	if opts.R != nil {
 		r = opts.R
 	}
@@ -115,7 +106,6 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 
 	if opts.InPlace {
 		return nil, nil
-	} else {
-		return omap, nil
 	}
+	return omap, nil
 }
