@@ -868,7 +868,7 @@ func (s *SeriesInt64) FillRand(src rand.Source, probNil float64, rander Rander, 
 }
 
 // IsEqual returns true if s2's values are equal to s.
-func (s *SeriesInt64) IsEqual(ctx context.Context, s2 Series, opts ...Options) (bool, error) {
+func (s *SeriesInt64) IsEqual(ctx context.Context, s2 Series, opts ...IsEqualOptions) (bool, error) {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
@@ -883,6 +883,13 @@ func (s *SeriesInt64) IsEqual(ctx context.Context, s2 Series, opts ...Options) (
 	// Check number of values
 	if len(s.values) != len(is.values) {
 		return false, nil
+	}
+
+	// Check name
+	if len(opts) != 0 && opts[0].CheckName {
+		if s.name != is.name {
+			return false, nil
+		}
 	}
 
 	// Check values

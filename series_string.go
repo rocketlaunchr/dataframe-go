@@ -871,21 +871,28 @@ func (s *SeriesString) FillRand(src rand.Source, probNil float64, rander Rander,
 }
 
 // IsEqual returns true if s2's values are equal to s.
-func (s *SeriesString) IsEqual(ctx context.Context, s2 Series, opts ...Options) (bool, error) {
+func (s *SeriesString) IsEqual(ctx context.Context, s2 Series, opts ...IsEqualOptions) (bool, error) {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
 
 	// Check type
-	is, ok := s2.(*SeriesString)
+	ss, ok := s2.(*SeriesString)
 	if !ok {
 		return false, nil
 	}
 
 	// Check number of values
-	if len(s.values) != len(is.values) {
+	if len(s.values) != len(s.values) {
 		return false, nil
+	}
+
+	// Check name
+	if len(opts) != 0 && opts[0].CheckName {
+		if s.name != ss.name {
+			return false, nil
+		}
 	}
 
 	// Check values
@@ -895,7 +902,7 @@ func (s *SeriesString) IsEqual(ctx context.Context, s2 Series, opts ...Options) 
 		}
 
 		if v == nil {
-			if is.values[i] == nil {
+			if ss.values[i] == nil {
 				// Both are nil
 				continue
 			} else {
@@ -903,7 +910,7 @@ func (s *SeriesString) IsEqual(ctx context.Context, s2 Series, opts ...Options) 
 			}
 		}
 
-		if *v != *is.values[i] {
+		if *v != *ss.values[i] {
 			return false, nil
 		}
 	}

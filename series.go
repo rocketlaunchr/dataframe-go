@@ -11,20 +11,30 @@ import (
 // Options provides a way to set various optional options.
 type Options struct {
 
-	// Don't apply lock
+	// Don't apply lock.
 	DontLock bool
+}
+
+// IsEqualOptions provides a way to set various optional options.
+type IsEqualOptions struct {
+
+	// Don't apply lock.
+	DontLock bool
+
+	// Check if name is the same.
+	CheckName bool
 }
 
 // NilCount provides a way to set various optional options for the NilCount function.
 type NilCountOptions struct {
 
-	// Ctx adds a context
+	// Ctx adds a context.
 	Ctx context.Context
 
 	// R is used to limit the range.
 	R *Range
 
-	// Don't apply lock
+	// Don't apply lock.
 	DontLock bool
 }
 
@@ -128,7 +138,7 @@ type Series interface {
 	NilCount(opts ...NilCountOptions) (int, error)
 
 	// IsEqual returns true if s2's values are equal to s.
-	IsEqual(ctx context.Context, s2 Series, opts ...Options) (bool, error)
+	IsEqual(ctx context.Context, s2 Series, opts ...IsEqualOptions) (bool, error)
 }
 
 // NewSerieser is an interface for a Series to create a new initialized Series of the same type.

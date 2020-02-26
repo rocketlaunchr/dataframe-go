@@ -824,21 +824,28 @@ func (s *SeriesMixed) FillRand(src rand.Source, probNil float64, rander Rander, 
 }
 
 // IsEqual returns true if s2's values are equal to s.
-func (s *SeriesMixed) IsEqual(ctx context.Context, s2 Series, opts ...Options) (bool, error) {
+func (s *SeriesMixed) IsEqual(ctx context.Context, s2 Series, opts ...IsEqualOptions) (bool, error) {
 	if len(opts) == 0 || !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
 
 	// Check type
-	is, ok := s2.(*SeriesMixed)
+	ms, ok := s2.(*SeriesMixed)
 	if !ok {
 		return false, nil
 	}
 
 	// Check number of values
-	if len(s.values) != len(is.values) {
+	if len(s.values) != len(ms.values) {
 		return false, nil
+	}
+
+	// Check name
+	if len(opts) != 0 && opts[0].CheckName {
+		if s.name != ms.name {
+			return false, nil
+		}
 	}
 
 	// Check values
@@ -848,7 +855,7 @@ func (s *SeriesMixed) IsEqual(ctx context.Context, s2 Series, opts ...Options) (
 		}
 
 		if v == nil {
-			if is.values[i] == nil {
+			if ms.values[i] == nil {
 				// Both are nil
 				continue
 			} else {
@@ -856,7 +863,7 @@ func (s *SeriesMixed) IsEqual(ctx context.Context, s2 Series, opts ...Options) (
 			}
 		}
 
-		if s.isEqualFunc(v, is.values[i]) {
+		if s.isEqualFunc(v, ms.values[i]) {
 			return false, nil
 		}
 	}
