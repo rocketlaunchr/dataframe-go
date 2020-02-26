@@ -975,3 +975,35 @@ func (s *SeriesComplex128) FillRand(src rand.Source, probNil float64, rander dat
 		}
 	}
 }
+
+// IsEqual returns true if s2's values are equal to s.
+func (s *SeriesComplex128) IsEqual(ctx context.Context, s2 dataframe.Series, opts ...dataframe.Options) (bool, error) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
+	// Check type
+	fs, ok := s2.(*SeriesComplex128)
+	if !ok {
+		return false, nil
+	}
+
+	// Check number of values
+	if len(s.Values) != len(fs.Values) {
+		return false, nil
+	}
+
+	// Check values
+	for i, v := range s.Values {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+
+		if v != fs.Values[i] {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}

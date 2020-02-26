@@ -631,3 +631,44 @@ func (s *SeriesGeneric) ToSeriesMixed(ctx context.Context, removeNil bool, conv 
 
 	return ss, nil
 }
+
+// IsEqual returns true if s2's values are equal to s.
+func (s *SeriesGeneric) IsEqual(ctx context.Context, s2 Series, opts ...Options) (bool, error) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
+	// Check type
+	is, ok := s2.(*SeriesGeneric)
+	if !ok {
+		return false, nil
+	}
+
+	// Check number of values
+	if len(s.values) != len(is.values) {
+		return false, nil
+	}
+
+	// Check values
+	for i, v := range s.values {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+
+		if v == nil {
+			if is.values[i] == nil {
+				// Both are nil
+				continue
+			} else {
+				return false, nil
+			}
+		}
+
+		if s.isEqualFunc(v, is.values[i]) {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}

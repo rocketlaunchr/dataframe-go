@@ -803,3 +803,44 @@ func (s *SeriesTime) FillRand(src rand.Source, probNil float64, rander Rander, o
 		}
 	}
 }
+
+// IsEqual returns true if s2's values are equal to s.
+func (s *SeriesTime) IsEqual(ctx context.Context, s2 Series, opts ...Options) (bool, error) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
+	// Check type
+	is, ok := s2.(*SeriesTime)
+	if !ok {
+		return false, nil
+	}
+
+	// Check number of values
+	if len(s.Values) != len(is.Values) {
+		return false, nil
+	}
+
+	// Check values
+	for i, v := range s.Values {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+
+		if v == nil {
+			if is.Values[i] == nil {
+				// Both are nil
+				continue
+			} else {
+				return false, nil
+			}
+		}
+
+		if !(*v).Equal(*is.Values[i]) {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}

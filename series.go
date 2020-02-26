@@ -113,6 +113,9 @@ type Series interface {
 
 	// NilCount will return how many nil values are in the series.
 	NilCount(opts ...Options) int
+
+	// IsEqual returns true if s2's values are equal to s.
+	IsEqual(ctx context.Context, s2 Series, opts ...Options) (bool, error)
 }
 
 // NewSerieser is an interface for a Series to create a new initialized Series of the same type.
