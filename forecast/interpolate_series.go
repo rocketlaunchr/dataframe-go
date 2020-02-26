@@ -33,6 +33,8 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		return nil, err
 	}
 
+	// TODO: Check if there is only 1 non-nil value between start and end.
+
 	var (
 		startOfSeg int = start
 
@@ -164,7 +166,16 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 					return nil, err
 				}
 			case Linear:
+				var grad float64
+				if omap != nil {
+					y2, _ := omap.Get(*firstRow + 1)
+					y1, _ := omap.Get(*firstRow)
+					grad = (y2 - y1) / 1.0
+				} else {
+					grad = (fs.Values[*firstRow+1] - fs.Values[*firstRow]) / 1.0
+				}
 
+				_ = grad
 			case Spline:
 				if method.Order == 3 {
 					splineVals := spline.Range(float64(start-1), float64(*firstRow), 1)
@@ -191,7 +202,16 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 					return nil, err
 				}
 			case Linear:
+				var grad float64
+				if omap != nil {
+					y2, _ := omap.Get(*lastRow)
+					y1, _ := omap.Get(*lastRow - 1)
+					grad = (y2 - y1) / 1.0
+				} else {
+					grad = (fs.Values[*lastRow] - fs.Values[*lastRow-1]) / 1.0
+				}
 
+				_ = grad
 			case Spline:
 				if method.Order == 3 {
 					splineVals := spline.Range(float64(*lastRow), float64(end+1), 1)
