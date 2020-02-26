@@ -488,3 +488,41 @@ func TestToSeriesString(t *testing.T) {
 	}
 
 }
+
+func TestSeriesIsEqual(t *testing.T) {
+	ctx := context.Background()
+	tRef := time.Date(2017, 1, 1, 5, 30, 12, 0, time.UTC)
+
+	// Create new series
+	init := []Series{
+		NewSeriesFloat64("test", &SeriesInit{1, 0}, 1.0, 2.0, 3.0),
+		NewSeriesInt64("test", &SeriesInit{1, 0}, 1, 2, 3),
+		NewSeriesString("test", &SeriesInit{1, 0}, "1", "2", "3"),
+		NewSeriesTime("test", &SeriesInit{1, 0}, tRef, tRef.Add(24*time.Hour), tRef.Add(2*24*time.Hour)),
+		// NewSeriesGeneric("test", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}),
+	}
+
+	expected := []Series{
+		NewSeriesFloat64("expected", &SeriesInit{1, 0}, 1.0, 2.0, 3.0),
+		NewSeriesInt64("expected", &SeriesInit{1, 0}, 1, 2, 3),
+		NewSeriesString("expected", &SeriesInit{1, 0}, "1", "2", "3"),
+		NewSeriesTime("expected", &SeriesInit{1, 0}, tRef, tRef.Add(24*time.Hour), tRef.Add(2*24*time.Hour)),
+		// NewSeriesGeneric("expected", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}),
+	}
+
+	for i := 0; i < len(init); i++ {
+		s1 := init[i]
+		s2 := expected[i]
+
+		eq, err := s1.IsEqual(ctx, s2)
+		if err != nil {
+			t.Errorf("error encountered: %s\n", err)
+		}
+
+		if !eq {
+			t.Errorf("s1: %v is not equal to s2: %v\n", s1, s2)
+		}
+
+	}
+
+}
