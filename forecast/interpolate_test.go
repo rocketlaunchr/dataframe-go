@@ -1,4 +1,6 @@
-package pandas
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+
+package forecast
 
 import (
 	"context"
