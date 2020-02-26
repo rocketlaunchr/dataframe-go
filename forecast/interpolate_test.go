@@ -24,7 +24,7 @@ func TestInterpolateSeriesForwardFillFwd(t *testing.T) {
 		Method:        ForwardFill,
 		FillDirection: Forward,
 		Limit:         &[]int{1}[0],
-		LimitArea:     nil,
+		FillRegion:    nil,
 		InPlace:       true,
 	}
 
@@ -47,7 +47,7 @@ func TestInterpolateSeriesForwardFillBkwd(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:        ForwardFill,
 		FillDirection: Backward,
-		LimitArea:     nil,
+		FillRegion:    nil,
 		InPlace:       true,
 	}
 
@@ -71,7 +71,7 @@ func TestInterpolateSeriesForwardFillBoth(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:        ForwardFill,
 		FillDirection: Forward | Backward,
-		LimitArea:     nil,
+		FillRegion:    nil,
 		InPlace:       true,
 	}
 
@@ -94,7 +94,7 @@ func TestInterpolateSeriesBackwardFillBkwd(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:        BackwardFill,
 		FillDirection: Backward,
-		LimitArea:     nil,
+		FillRegion:    nil,
 		InPlace:       true,
 	}
 
@@ -118,7 +118,7 @@ func TestInterpolateSeriesBackwardFillFwd(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:        BackwardFill,
 		FillDirection: Forward,
-		LimitArea:     nil,
+		FillRegion:    nil,
 		InPlace:       true,
 	}
 
@@ -138,7 +138,7 @@ func TestInterpolateSeriesBackwardFillBoth(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:        BackwardFill,
 		FillDirection: Forward | Backward,
-		LimitArea:     nil,
+		FillRegion:    nil,
 		InPlace:       true,
 	}
 
@@ -163,7 +163,7 @@ func TestInterpolateSeriesLinearFillFwd(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:        Linear,
 		FillDirection: Forward,
-		LimitArea:     nil,
+		FillRegion:    nil,
 		InPlace:       true,
 	}
 
@@ -187,7 +187,7 @@ func TestInterpolateSeriesLinearFillBkwd(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:        Linear,
 		FillDirection: Backward,
-		LimitArea:     nil,
+		FillRegion:    nil,
 		InPlace:       true,
 	}
 
@@ -211,7 +211,7 @@ func TestInterpolateSeriesLinearFillBoth(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:        Linear,
 		FillDirection: Forward | Backward,
-		LimitArea:     &[]InterpolationLimitArea{Inner}[0],
+		FillRegion:    &[]InterpolationFillRegion{Interpolation}[0],
 		InPlace:       true,
 	}
 

@@ -63,7 +63,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		}
 
 		if left != nil && right != nil {
-			if opts.LimitArea == nil || opts.LimitArea.has(Inner) {
+			if opts.FillRegion == nil || opts.FillRegion.has(Interpolation) {
 				// Fill Inner range
 
 				switch opts.Method {
@@ -105,7 +105,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 	// for Nan values at start edge assign the nearest valid value fwd to the right
 	// for nan values at the end edge assign the nearest valid value bkwd to the left
 	// https://github.com/pandas-dev/pandas/issues/16284#issuecomment-303132712
-	if opts.LimitArea == nil || opts.LimitArea.has(Outer) {
+	if opts.FillRegion == nil || opts.FillRegion.has(Extrapolation) {
 		var (
 			fillVal float64
 			cnt     int

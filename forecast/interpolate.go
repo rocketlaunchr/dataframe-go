@@ -15,21 +15,28 @@ func (opt InterpolationFillDirection) has(x InterpolationFillDirection) bool {
 }
 
 const (
+
+	// Forward interpolates nil values from left to right.
 	Forward InterpolationFillDirection = 1 << iota
 
+	// Backward interpolates nil values from right to left.
 	Backward
 )
 
-type InterpolationLimitArea uint8
+type InterpolationFillRegion uint8
 
-func (opt InterpolationLimitArea) has(x InterpolationLimitArea) bool {
+func (opt InterpolationFillRegion) has(x InterpolationFillRegion) bool {
 	return opt&x != 0
 }
 
 const (
-	Inner InterpolationLimitArea = 1 << iota
 
-	Outer
+	// Interpolation estimates values between two known values.
+	Interpolation InterpolationFillRegion = 1 << iota
+
+	// Extrapolation estimates values by extending a known sequence of values beyond
+	// what is certainly known.
+	Extrapolation
 )
 
 type InterpolateMethod int
@@ -67,8 +74,9 @@ type InterpolateOptions struct {
 	// The default is Forward.
 	FillDirection InterpolationFillDirection
 
-	// Default is Inner and Outer.
-	LimitArea *InterpolationLimitArea
+	// FillRegion sets whether the interpolation function should fill nil values by interpolating and/or extrapolating.
+	// The default is both.
+	FillRegion *InterpolationFillRegion
 
 	// InPlace will perform the interpolation operation on the current SeriesFloat64 or DataFrame.
 	// If InPlace is not set, an OrderedMapIntFloat64 will be returned. The original Series or DataFrame will be unmodified.
