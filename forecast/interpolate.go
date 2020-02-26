@@ -8,14 +8,14 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
-type InterpolationLimitDirection uint8
+type InterpolationFillDirection uint8
 
-func (opt InterpolationLimitDirection) has(x InterpolationLimitDirection) bool {
+func (opt InterpolationFillDirection) has(x InterpolationFillDirection) bool {
 	return opt&x != 0
 }
 
 const (
-	Forward InterpolationLimitDirection = 1 << iota
+	Forward InterpolationFillDirection = 1 << iota
 
 	Backward
 )
@@ -57,12 +57,15 @@ type InterpolateOptions struct {
 	Method InterpolateMethod
 
 	// Limit sets the maximum number of consecutive nil values to fill.
-	// The default is unlimited but if set, it must be greater than 0.
+	// The default is unlimited, but if set, it must be greater than 0.
 	Limit *int
 
 	// https://www.geeksforgeeks.org/python-pandas-dataframe-interpolate/
 	// https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.interpolate.html
-	LimitDirection InterpolationLimitDirection
+
+	// FillDirection sets the direction that nil values are interpolated.
+	// The default is Forward.
+	FillDirection InterpolationFillDirection
 
 	// Default is Inner and Outer.
 	LimitArea *InterpolationLimitArea

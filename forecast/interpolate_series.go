@@ -71,7 +71,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 					fillFn := func(row int) float64 {
 						return fs.Values[*left]
 					}
-					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.LimitDirection, opts.Limit)
+					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.FillDirection, opts.Limit)
 					if err != nil {
 						return nil, err
 					}
@@ -79,7 +79,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 					fillFn := func(row int) float64 {
 						return fs.Values[*right]
 					}
-					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.LimitDirection, opts.Limit)
+					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.FillDirection, opts.Limit)
 					if err != nil {
 						return nil, err
 					}
@@ -89,7 +89,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 					fillFn := func(row int) float64 {
 						return grad*float64(row) + c
 					}
-					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.LimitDirection, opts.Limit)
+					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.FillDirection, opts.Limit)
 					if err != nil {
 						return nil, err
 					}
