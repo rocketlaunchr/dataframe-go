@@ -719,6 +719,10 @@ func (s *SeriesMixed) NilCount(opts ...NilCountOptions) (int, error) {
 		return 0, err
 	}
 
+	if start == 0 && end == len(s.values)-1 {
+		return s.nilCount, nil
+	}
+
 	var nilCount int
 
 	for i := start; i <= end; i++ {

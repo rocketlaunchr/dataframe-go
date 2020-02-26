@@ -693,6 +693,10 @@ func (s *SeriesComplex128) NilCount(opts ...dataframe.NilCountOptions) (int, err
 		return 0, err
 	}
 
+	if start == 0 && end == len(s.Values)-1 {
+		return s.nilCount, nil
+	}
+
 	var nilCount int
 
 	for i := start; i <= end; i++ {
