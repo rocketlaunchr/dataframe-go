@@ -659,13 +659,53 @@ func (s *SeriesComplex128) ContainsNil(opts ...dataframe.Options) bool {
 }
 
 // NilCount will return how many nil values are in the series.
-func (s *SeriesComplex128) NilCount(opts ...dataframe.Options) int {
-	if len(opts) == 0 || !opts[0].DontLock {
+func (s *SeriesComplex128) NilCount(opts ...dataframe.NilCountOptions) (int, error) {
+	if len(opts) == 0 {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+		return s.nilCount, nil
+	}
+
+	if !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
 
-	return s.nilCount
+	var (
+		ctx context.Context
+		r   *dataframe.Range
+	)
+
+	if opts[0].Ctx == nil {
+		ctx = context.Background()
+	} else {
+		ctx = opts[0].Ctx
+	}
+
+	if opts[0].R == nil {
+		r = &dataframe.Range{}
+	} else {
+		r = opts[0].R
+	}
+
+	start, end, err := r.Limits(len(s.Values))
+	if err != nil {
+		return 0, err
+	}
+
+	var nilCount int
+
+	for i := start; i <= end; i++ {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+
+		if cmplx.IsNaN(s.Values[i]) {
+			nilCount++
+		}
+	}
+
+	return nilCount, nil
 }
 
 // DefaultValueFormatter will return a string representation

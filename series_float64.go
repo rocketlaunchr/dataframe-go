@@ -640,13 +640,53 @@ func (s *SeriesFloat64) ContainsNil(opts ...Options) bool {
 }
 
 // NilCount will return how many nil values are in the series.
-func (s *SeriesFloat64) NilCount(opts ...Options) int {
-	if len(opts) == 0 || !opts[0].DontLock {
+func (s *SeriesFloat64) NilCount(opts ...NilCountOptions) (int, error) {
+	if len(opts) == 0 {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+		return s.nilCount, nil
+	}
+
+	if !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
 
-	return s.nilCount
+	var (
+		ctx context.Context
+		r   *Range
+	)
+
+	if opts[0].Ctx == nil {
+		ctx = context.Background()
+	} else {
+		ctx = opts[0].Ctx
+	}
+
+	if opts[0].R == nil {
+		r = &Range{}
+	} else {
+		r = opts[0].R
+	}
+
+	start, end, err := r.Limits(len(s.Values))
+	if err != nil {
+		return 0, err
+	}
+
+	var nilCount int
+
+	for i := start; i <= end; i++ {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+
+		if isNaN(s.Values[i]) {
+			nilCount++
+		}
+	}
+
+	return nilCount, nil
 }
 
 // ToSeriesString will convert the Series to a SeriesString.

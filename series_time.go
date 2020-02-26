@@ -613,13 +613,53 @@ func (s *SeriesTime) ContainsNil(opts ...Options) bool {
 }
 
 // NilCount will return how many nil values are in the series.
-func (s *SeriesTime) NilCount(opts ...Options) int {
-	if len(opts) == 0 || !opts[0].DontLock {
+func (s *SeriesTime) NilCount(opts ...NilCountOptions) (int, error) {
+	if len(opts) == 0 {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+		return s.nilCount, nil
+	}
+
+	if !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
 
-	return s.nilCount
+	var (
+		ctx context.Context
+		r   *Range
+	)
+
+	if opts[0].Ctx == nil {
+		ctx = context.Background()
+	} else {
+		ctx = opts[0].Ctx
+	}
+
+	if opts[0].R == nil {
+		r = &Range{}
+	} else {
+		r = opts[0].R
+	}
+
+	start, end, err := r.Limits(len(s.Values))
+	if err != nil {
+		return 0, err
+	}
+
+	var nilCount int
+
+	for i := start; i <= end; i++ {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+
+		if s.Values[i] == nil {
+			nilCount++
+		}
+	}
+
+	return nilCount, nil
 }
 
 // ToSeriesInt64 will convert the Series to a SeriesInt64. The time format is Unix seconds.

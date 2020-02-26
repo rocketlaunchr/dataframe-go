@@ -15,6 +15,19 @@ type Options struct {
 	DontLock bool
 }
 
+// NilCount provides a way to set various optional options for the NilCount function.
+type NilCountOptions struct {
+
+	// Ctx adds a context
+	Ctx context.Context
+
+	// R is used to limit the range.
+	R *Range
+
+	// Don't apply lock
+	DontLock bool
+}
+
 // ValueToStringFormatter is used to convert a value
 // into a string. Val can be nil or the concrete
 // type stored by the series.
@@ -112,7 +125,7 @@ type Series interface {
 	ContainsNil(opts ...Options) bool
 
 	// NilCount will return how many nil values are in the series.
-	NilCount(opts ...Options) int
+	NilCount(opts ...NilCountOptions) (int, error)
 
 	// IsEqual returns true if s2's values are equal to s.
 	IsEqual(ctx context.Context, s2 Series, opts ...Options) (bool, error)
