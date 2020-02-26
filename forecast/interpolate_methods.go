@@ -31,24 +31,28 @@ type Linear struct{}
 
 func (m Linear) x() {}
 
-// const (
-// 	ForwardFill InterpolateMethod = 0
+// Spline will fill nil values using the spline algorithm.
+// Currently only Cubic is supported.
+type Spline struct {
 
-// 	// Sum will fill Nil values with the sum.
-// 	BackwardFill InterpolateMethod = 1
+	// Order must be 3 for now.
+	Order int
+}
 
-// 	Linear InterpolateMethod = 2
+func (m Spline) x() {}
 
-// 	// https://github.com/cnkei/gospline
-// 	// https://github.com/esimov/gospline
-// 	// http://blog.ivank.net/interpolation-with-cubic-splines.html
-// 	// http://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
-// 	Spline
+// Lagrange will fill nil values using the Lagrange interpolation algorithm.
+// Currently not implemented.
+//
+// See http://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
+// and https://github.com/DzananGanic/numericalgo
+type Lagrange struct {
 
-// 	// http://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
-// 	// https://github.com/DzananGanic/numericalgo
-// 	Lagrange
-// )
+	// Order is not implemented.
+	Order int
+}
+
+func (m Lagrange) x() {}
 
 func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFloat64, omap *dataframe.OrderedMapIntFloat64, start, end int, dir InterpolationFillDirection, limit *int) error {
 

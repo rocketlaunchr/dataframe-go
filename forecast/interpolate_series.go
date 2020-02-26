@@ -6,6 +6,8 @@ import (
 	"context"
 	"math"
 
+	"github.com/cnkei/gospline"
+
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
@@ -31,9 +33,38 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		return nil, err
 	}
 
-	startOfSeg := start
+	var (
+		startOfSeg int = start
 
-	// Step 1: Find ranges that are nil values in between
+		firstRow *int // row of first known value
+		lastRow  *int // row of last known value
+	)
+
+	//////// FOR SPLINE INTERPOLATION //////
+
+	var spline gospline.Spline
+
+	switch method := opts.Method.(type) {
+	case Spline:
+		if method.Order == 3 {
+			// requires at least 2 known values
+
+			xVals := []float64{}
+			yVals := []float64{}
+
+			for x := startOfSeg; x <= end; x++ {
+				y := fs.Values[x]
+				if !math.IsNaN(y) {
+					xVals = append(xVals, float64(x))
+					yVals = append(yVals, y)
+				}
+			}
+
+			spline = gospline.NewCubicSpline(xVals, yVals)
+		}
+	}
+
+	////////////////////////////////////////
 
 	for {
 
@@ -53,10 +84,16 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		for i := startOfSeg; i <= end; i++ {
 			currentVal := fs.Values[i]
 			if !math.IsNaN(currentVal) {
+
+				if firstRow == nil {
+					firstRow = &[]int{i}[0]
+				}
+
 				if left == nil {
 					left = &[]int{i}[0]
 				} else {
 					right = &[]int{i}[0]
+					lastRow = &[]int{i}[0]
 					break
 				}
 			}
@@ -66,7 +103,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 			if opts.FillRegion == nil || opts.FillRegion.has(Interpolation) {
 				// Fill Inner range
 
-				switch opts.Method.(type) {
+				switch method := opts.Method.(type) {
 				case ForwardFill:
 					fillFn := func(row int) float64 {
 						return fs.Values[*left]
@@ -93,58 +130,82 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 					if err != nil {
 						return nil, err
 					}
+				case Spline:
+					if method.Order == 3 {
+						splineVals := spline.Range(float64(*left), float64(*right), 1)
+						fillFn := func(row int) float64 {
+							return splineVals[row+1]
+						}
+						err := fill(ctx, fillFn, fs, omap, *left, *right, opts.FillDirection, opts.Limit)
+						if err != nil {
+							return nil, err
+						}
+					}
 				}
-
 			}
 			startOfSeg = *right
 		} else {
 			break
 		}
 	}
-	// Extrapolating Outer values
-	// for Nan values at start edge assign the nearest valid value fwd to the right
-	// for nan values at the end edge assign the nearest valid value bkwd to the left
-	// https://github.com/pandas-dev/pandas/issues/16284#issuecomment-303132712
+
+	// Extrapolation
 	if opts.FillRegion == nil || opts.FillRegion.has(Extrapolation) {
-		var (
-			fillVal float64
-			cnt     int
-		)
 
-		// checking edge from start for consecutive Na values
-		if math.IsNaN(fs.Values[start]) {
-			cnt = 1
-			for i := start; i <= end; i++ {
-				if !math.IsNaN(fs.Values[i]) {
-					fillVal = fs.Values[i]
-
-					// fill nans
-					for j := 0; j < cnt; j++ {
-						fs.Values[start+j] = fillVal
-					}
-					break
+		// Left side
+		if start != *firstRow {
+			switch method := opts.Method.(type) {
+			case ForwardFill, BackwardFill:
+				fillFn := func(row int) float64 {
+					return fs.Values[*firstRow]
 				}
-				cnt++
-			}
-
-		}
-		// checking edge from end for consecutive Na values
-		if math.IsNaN(fs.Values[end]) {
-			cnt = 1
-			for i := end; i >= start; i-- {
-				if !math.IsNaN(fs.Values[i]) {
-					fillVal = fs.Values[i]
-
-					// fill nans
-					for j := 0; j < cnt; j++ {
-						fs.Values[end-j] = fillVal
-					}
-					break
+				err := fill(ctx, fillFn, fs, omap, start, *firstRow, opts.FillDirection, opts.Limit)
+				if err != nil {
+					return nil, err
 				}
-				cnt++
-			}
+			case Linear:
 
+			case Spline:
+				if method.Order == 3 {
+					splineVals := spline.Range(float64(start), float64(*firstRow), 1)
+					fillFn := func(row int) float64 {
+						return splineVals[row+1]
+					}
+					err := fill(ctx, fillFn, fs, omap, start-1, *firstRow, opts.FillDirection, opts.Limit)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
 		}
+
+		// Right side
+		if end != *lastRow {
+			switch method := opts.Method.(type) {
+			case ForwardFill, BackwardFill:
+				fillFn := func(row int) float64 {
+					return fs.Values[*lastRow]
+				}
+				err := fill(ctx, fillFn, fs, omap, *lastRow, end, opts.FillDirection, opts.Limit)
+				if err != nil {
+					return nil, err
+				}
+			case Linear:
+
+			case Spline:
+				if method.Order == 3 {
+					splineVals := spline.Range(float64(*lastRow), float64(end), 1)
+					fillFn := func(row int) float64 {
+						return splineVals[row+1]
+					}
+					err := fill(ctx, fillFn, fs, omap, *lastRow, end+1, opts.FillDirection, opts.Limit)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
+
 	}
 
 	if opts.InPlace {
