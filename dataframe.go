@@ -3,8 +3,10 @@
 package dataframe
 
 import (
+	"context"
 	"errors"
 	"golang.org/x/exp/rand"
+	"golang.org/x/sync/errgroup"
 	"sync"
 )
 
@@ -540,4 +542,48 @@ func (df *DataFrame) FillRand(src rand.Source, probNil float64, rander Rander, o
 			sfr.FillRand(src, probNil, rander, opts...)
 		}
 	}
+}
+
+var errNotEqual = errors.New("not equal")
+
+func (df *DataFrame) IsEqual(ctx context.Context, df2 *DataFrame, opts ...IsEqualOptions) (bool, error) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		df.lock.RLock()
+		defer df.lock.RUnlock()
+	}
+
+	// Check if number of columns are the same
+	if len(df.Series) != len(df2.Series) {
+		return false, nil
+	}
+
+	// Check values
+	g, newCtx := errgroup.WithContext(ctx)
+
+	for i := range df.Series {
+		g.Go(func() error {
+
+			eq, err := df.Series[i].IsEqual(newCtx, df2.Series[i], opts...)
+			if err != nil {
+				return err
+			}
+
+			if !eq {
+				return errNotEqual
+			}
+
+			return nil
+		})
+	}
+
+	err := g.Wait()
+	if err != nil {
+		if err == errNotEqual {
+			return false, nil
+		} else {
+			return false, err
+		}
+	}
+
+	return true, nil
 }
