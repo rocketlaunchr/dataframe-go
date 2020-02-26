@@ -39,28 +39,10 @@ const (
 	Extrapolation
 )
 
-type InterpolateMethod int
-
-const (
-	ForwardFill InterpolateMethod = 0
-
-	// Sum will fill Nil values with the sum.
-	BackwardFill InterpolateMethod = 1
-
-	Linear InterpolateMethod = 2
-
-	// https://github.com/cnkei/gospline
-	// https://github.com/esimov/gospline
-	// http://blog.ivank.net/interpolation-with-cubic-splines.html
-	// http://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
-	Spline
-
-	// http://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
-	// https://github.com/DzananGanic/numericalgo
-	Lagrange
-)
-
 type InterpolateOptions struct {
+
+	// Method sets the algorithm used to interpolate.
+	// The default is to ForwardFill.
 	Method InterpolateMethod
 
 	// Limit sets the maximum number of consecutive nil values to fill.

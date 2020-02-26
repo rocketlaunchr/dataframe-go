@@ -66,7 +66,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 			if opts.FillRegion == nil || opts.FillRegion.has(Interpolation) {
 				// Fill Inner range
 
-				switch opts.Method {
+				switch opts.Method.(type) {
 				case ForwardFill:
 					fillFn := func(row int) float64 {
 						return fs.Values[*left]

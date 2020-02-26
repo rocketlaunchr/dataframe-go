@@ -21,7 +21,7 @@ func TestInterpolateSeriesForwardFillFwd(t *testing.T) {
 	fmt.Println(data.Values)
 
 	opts := InterpolateOptions{
-		Method:        ForwardFill,
+		Method:        ForwardFill{},
 		FillDirection: Forward,
 		Limit:         &[]int{1}[0],
 		FillRegion:    nil,
@@ -45,7 +45,7 @@ func TestInterpolateSeriesForwardFillBkwd(t *testing.T) {
 	fmt.Println(data.Values)
 
 	opts := InterpolateOptions{
-		Method:        ForwardFill,
+		Method:        ForwardFill{},
 		FillDirection: Backward,
 		FillRegion:    nil,
 		InPlace:       true,
@@ -69,7 +69,7 @@ func TestInterpolateSeriesForwardFillBoth(t *testing.T) {
 	fmt.Println(data.Values)
 
 	opts := InterpolateOptions{
-		Method:        ForwardFill,
+		Method:        ForwardFill{},
 		FillDirection: Forward | Backward,
 		FillRegion:    nil,
 		InPlace:       true,
@@ -92,7 +92,7 @@ func TestInterpolateSeriesBackwardFillBkwd(t *testing.T) {
 	fmt.Println(data.Values)
 
 	opts := InterpolateOptions{
-		Method:        BackwardFill,
+		Method:        BackwardFill{},
 		FillDirection: Backward,
 		FillRegion:    nil,
 		InPlace:       true,
@@ -116,7 +116,7 @@ func TestInterpolateSeriesBackwardFillFwd(t *testing.T) {
 	fmt.Println(data.Values)
 
 	opts := InterpolateOptions{
-		Method:        BackwardFill,
+		Method:        BackwardFill{},
 		FillDirection: Forward,
 		FillRegion:    nil,
 		InPlace:       true,
@@ -136,7 +136,7 @@ func TestInterpolateSeriesBackwardFillBoth(t *testing.T) {
 	data := dataframe.NewSeriesFloat64("values", nil, nil, 50.3, nil, nil, 56.2, 45.34, nil, 39.26, nil)
 
 	opts := InterpolateOptions{
-		Method:        BackwardFill,
+		Method:        BackwardFill{},
 		FillDirection: Forward | Backward,
 		FillRegion:    nil,
 		InPlace:       true,
@@ -161,7 +161,7 @@ func TestInterpolateSeriesLinearFillFwd(t *testing.T) {
 	data := dataframe.NewSeriesFloat64("values", nil, nil, 29.33, nil, nil, nil, 21.7, 35.14, nil, nil, 50.66, nil)
 
 	opts := InterpolateOptions{
-		Method:        Linear,
+		Method:        Linear{},
 		FillDirection: Forward,
 		FillRegion:    nil,
 		InPlace:       true,
@@ -185,7 +185,7 @@ func TestInterpolateSeriesLinearFillBkwd(t *testing.T) {
 	data := dataframe.NewSeriesFloat64("values", nil, nil, 29.33, nil, nil, nil, 21.7, 35.14, nil, nil, 50.66, nil)
 
 	opts := InterpolateOptions{
-		Method:        Linear,
+		Method:        Linear{},
 		FillDirection: Backward,
 		FillRegion:    nil,
 		InPlace:       true,
@@ -209,7 +209,7 @@ func TestInterpolateSeriesLinearFillBoth(t *testing.T) {
 	data := dataframe.NewSeriesFloat64("values", nil, nil, 29.33, nil, nil, nil, 21.7, 35.14, nil, nil, 50.66, nil)
 
 	opts := InterpolateOptions{
-		Method:        Linear,
+		Method:        Linear{},
 		FillDirection: Forward | Backward,
 		FillRegion:    &[]InterpolationFillRegion{Interpolation}[0],
 		InPlace:       true,
