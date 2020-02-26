@@ -167,7 +167,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 
 			case Spline:
 				if method.Order == 3 {
-					splineVals := spline.Range(float64(start), float64(*firstRow), 1)
+					splineVals := spline.Range(float64(start-1), float64(*firstRow), 1)
 					fillFn := func(row int) float64 {
 						return splineVals[row+1]
 					}
@@ -194,7 +194,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 
 			case Spline:
 				if method.Order == 3 {
-					splineVals := spline.Range(float64(*lastRow), float64(end), 1)
+					splineVals := spline.Range(float64(*lastRow), float64(end+1), 1)
 					fillFn := func(row int) float64 {
 						return splineVals[row+1]
 					}

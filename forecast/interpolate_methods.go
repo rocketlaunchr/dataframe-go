@@ -8,8 +8,9 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
-// InterpolateMethod is the algorithm used to interpolate.
-type InterpolateMethod interface {
+// interpolateMethod is the algorithm used to interpolate.
+// Keep unexported!
+type interpolateMethod interface {
 	x() // Keep unexported!
 }
 

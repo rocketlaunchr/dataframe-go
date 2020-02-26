@@ -45,7 +45,7 @@ type InterpolateOptions struct {
 
 	// Method sets the algorithm used to interpolate.
 	// The default is to ForwardFill.
-	Method InterpolateMethod
+	Method interpolateMethod
 
 	// Limit sets the maximum number of consecutive nil values to fill.
 	// The default is unlimited, but if set, it must be greater than 0.
