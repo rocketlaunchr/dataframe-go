@@ -432,6 +432,10 @@ func (s *SeriesFloat64) IsEqualFunc(a, b interface{}) bool {
 	f1 := a.(float64)
 	f2 := b.(float64)
 
+	if isNaN(f1) && isNaN(f2) {
+		return true
+	}
+
 	return f1 == f2
 }
 
@@ -860,6 +864,10 @@ func (s *SeriesFloat64) IsEqual(ctx context.Context, s2 Series, opts ...IsEqualO
 	for i, v := range s.Values {
 		if err := ctx.Err(); err != nil {
 			return false, err
+		}
+
+		if isNaN(v) && isNaN(fs.Values[i]) {
+			continue
 		}
 
 		if v != fs.Values[i] {
