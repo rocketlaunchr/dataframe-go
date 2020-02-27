@@ -4,7 +4,6 @@ package forecast
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/rocketlaunchr/dataframe-go"
@@ -13,12 +12,7 @@ import (
 func TestInterpolateSeriesForwardFillFwd(t *testing.T) {
 	ctx := context.Background()
 
-	fmt.Printf("\nInterpolate Series ForwardFill Fwd \n(Max consecutive NaN fill Limit => 1)...\n\n")
-
 	data := dataframe.NewSeriesFloat64("values", nil, nil, 50.3, nil, nil, 56.2, 45.34, nil, 39.26, nil)
-
-	fmt.Println("before:")
-	fmt.Println(data.Values)
 
 	opts := InterpolateOptions{
 		Method:        ForwardFill{},
@@ -27,22 +21,27 @@ func TestInterpolateSeriesForwardFillFwd(t *testing.T) {
 		FillRegion:    nil,
 		InPlace:       true,
 	}
+	expected := dataframe.NewSeriesFloat64("expected", nil, 50.3, 50.3, 50.3, nil, 56.2, 45.34, 45.34, 39.26, 39.26)
 
 	_, err := Interpolate(ctx, data, opts)
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
-	fmt.Println("after:")
-	fmt.Println(data.Values)
+
+	eq, err := data.IsEqual(ctx, expected)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+
+	if !eq {
+		t.Errorf("[%T] %v Not Equal to [%T] %v", data, data.Values, expected, expected.Values)
+	}
 }
 
 func TestInterpolateSeriesForwardFillBkwd(t *testing.T) {
 	ctx := context.Background()
-	fmt.Printf("\nInterpolate Series ForwardFill Bkwd...\n\n")
 
 	data := dataframe.NewSeriesFloat64("values", nil, nil, 25.7, nil, nil, 36.6, 45.2, nil, 39.26, nil)
-	fmt.Println("before:")
-	fmt.Println(data.Values)
 
 	opts := InterpolateOptions{
 		Method:        ForwardFill{},
@@ -50,23 +49,26 @@ func TestInterpolateSeriesForwardFillBkwd(t *testing.T) {
 		FillRegion:    nil,
 		InPlace:       true,
 	}
+	expected := dataframe.NewSeriesFloat64("expected", nil, 25.7, 25.7, 25.7, 25.7, 36.6, 45.2, 45.2, 39.26, 39.26)
 
 	_, err := Interpolate(ctx, data, opts)
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
-	fmt.Println("after:")
-	fmt.Println(data.Values)
+	eq, err := data.IsEqual(ctx, expected)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+
+	if !eq {
+		t.Errorf("[%T] %v Not Equal to [%T] %v", data, data.Values, expected, expected.Values)
+	}
 }
 
 func TestInterpolateSeriesForwardFillBoth(t *testing.T) {
 	ctx := context.Background()
 
-	fmt.Printf("\nInterpolate Series ForwardFill Both (Fwd and Bkwd) ...\n\n")
-
 	data := dataframe.NewSeriesFloat64("values", nil, nil, 50.3, nil, nil, 56.2, 45.34, nil, 39.26, nil)
-	fmt.Println("before:")
-	fmt.Println(data.Values)
 
 	opts := InterpolateOptions{
 		Method:        ForwardFill{},
@@ -74,22 +76,26 @@ func TestInterpolateSeriesForwardFillBoth(t *testing.T) {
 		FillRegion:    nil,
 		InPlace:       true,
 	}
+	expected := dataframe.NewSeriesFloat64("expected", nil, 50.3, 50.3, 50.3, 50.3, 56.2, 45.34, 45.34, 39.26, 39.26)
 
 	_, err := Interpolate(ctx, data, opts)
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
-	fmt.Println("after:")
-	fmt.Println(data.Values)
+	eq, err := data.IsEqual(ctx, expected)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+
+	if !eq {
+		t.Errorf("[%T] %v Not Equal to [%T] %v", data, data.Values, expected, expected.Values)
+	}
 }
 
 func TestInterpolateSeriesBackwardFillBkwd(t *testing.T) {
 	ctx := context.Background()
-	fmt.Printf("\nInterpolate Series BackwardFill Bkwd...\n\n")
 
 	data := dataframe.NewSeriesFloat64("values", nil, nil, 25.7, nil, nil, 36.6, 45.2, nil, 39.26, nil)
-	fmt.Println("before:")
-	fmt.Println(data.Values)
 
 	opts := InterpolateOptions{
 		Method:        BackwardFill{},
@@ -97,23 +103,26 @@ func TestInterpolateSeriesBackwardFillBkwd(t *testing.T) {
 		FillRegion:    nil,
 		InPlace:       true,
 	}
+	expected := dataframe.NewSeriesFloat64("expected", nil, 25.7, 25.7, 36.6, 36.6, 36.6, 45.2, 39.26, 39.26, 39.26)
 
 	_, err := Interpolate(ctx, data, opts)
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
-	fmt.Println("after:")
-	fmt.Println(data.Values)
+	eq, err := data.IsEqual(ctx, expected)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+
+	if !eq {
+		t.Errorf("[%T] %v Not Equal to [%T] %v", data, data.Values, expected, expected.Values)
+	}
 }
 
 func TestInterpolateSeriesBackwardFillFwd(t *testing.T) {
 	ctx := context.Background()
 
-	fmt.Printf("\nInterpolate Series BackwardFill Fwd...\n\n")
-
 	data := dataframe.NewSeriesFloat64("values", nil, nil, 50.3, nil, nil, 56.2, 45.34, nil, 39.26, nil)
-	fmt.Println("before:")
-	fmt.Println(data.Values)
 
 	opts := InterpolateOptions{
 		Method:        BackwardFill{},
@@ -121,13 +130,20 @@ func TestInterpolateSeriesBackwardFillFwd(t *testing.T) {
 		FillRegion:    nil,
 		InPlace:       true,
 	}
+	expected := dataframe.NewSeriesFloat64("expected", nil, 50.3, 50.3, 56.2, 56.2, 56.2, 45.34, 39.26, 39.26, 39.26)
 
 	_, err := Interpolate(ctx, data, opts)
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
-	fmt.Println("after:")
-	fmt.Println(data.Values)
+	eq, err := data.IsEqual(ctx, expected)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+
+	if !eq {
+		t.Errorf("[%T] %v Not Equal to [%T] %v", data, data.Values, expected, expected.Values)
+	}
 }
 
 func TestInterpolateSeriesBackwardFillBoth(t *testing.T) {
@@ -141,18 +157,20 @@ func TestInterpolateSeriesBackwardFillBoth(t *testing.T) {
 		FillRegion:    nil,
 		InPlace:       true,
 	}
-
-	fmt.Printf("\nInterpolate Series BackwardFill Both (Fwd and Bkwd) ...\n\n")
-
-	fmt.Println("before:")
-	fmt.Println(data.Values)
+	expected := dataframe.NewSeriesFloat64("expected", nil, 50.3, 50.3, 56.2, 56.2, 56.2, 45.34, 39.26, 39.26, 39.26)
 
 	_, err := Interpolate(ctx, data, opts)
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
-	fmt.Println("after:")
-	fmt.Println(data.Values)
+	eq, err := data.IsEqual(ctx, expected)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+
+	if !eq {
+		t.Errorf("[%T] %v Not Equal to [%T] %v", data, data.Values, expected, expected.Values)
+	}
 }
 
 func TestInterpolateSeriesLinearFillFwd(t *testing.T) {
@@ -166,17 +184,20 @@ func TestInterpolateSeriesLinearFillFwd(t *testing.T) {
 		FillRegion:    nil,
 		InPlace:       true,
 	}
-
-	fmt.Printf("\nInterpolate Series Linear Fwd...\n\n")
-	fmt.Println("before:")
-	fmt.Println(data.Values)
+	expected := dataframe.NewSeriesFloat64("expected", nil, 31.237499999999997, 29.33, 27.4225, 25.515, 23.6075, 21.7, 35.14, 40.31333333333333, 45.486666666666665, 50.66, 55.83333333333333)
 
 	_, err := Interpolate(ctx, data, opts)
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
-	fmt.Println("after:")
-	fmt.Println(data.Values)
+	eq, err := data.IsEqual(ctx, expected)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+
+	if !eq {
+		t.Errorf("[%T] %v Not Equal to [%T] %v", data, data.Values, expected, expected.Values)
+	}
 }
 
 func TestInterpolateSeriesLinearFillBkwd(t *testing.T) {
@@ -190,17 +211,19 @@ func TestInterpolateSeriesLinearFillBkwd(t *testing.T) {
 		FillRegion:    nil,
 		InPlace:       true,
 	}
-
-	fmt.Printf("\nInterpolate Series Linear Bkwd ...\n\n")
-	fmt.Println("before:")
-	fmt.Println(data.Values)
-
+	expected := dataframe.NewSeriesFloat64("expected", nil, 31.237499999999997, 29.33, 27.4225, 25.515, 23.6075, 21.7, 35.14, 40.31333333333333, 45.486666666666665, 50.66, 55.83333333333333)
 	_, err := Interpolate(ctx, data, opts)
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
-	fmt.Println("after:")
-	fmt.Println(data.Values)
+	eq, err := data.IsEqual(ctx, expected)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+
+	if !eq {
+		t.Errorf("[%T] %v Not Equal to [%T] %v", data, data.Values, expected, expected.Values)
+	}
 }
 
 func TestInterpolateSeriesLinearFillBoth(t *testing.T) {
@@ -214,15 +237,18 @@ func TestInterpolateSeriesLinearFillBoth(t *testing.T) {
 		FillRegion:    &[]InterpolationFillRegion{Interpolation}[0],
 		InPlace:       true,
 	}
-
-	fmt.Printf("\nInterpolate Series Linear Both (Fwd and Bkwd) \n(Limit Area of Inner only) ...\n\n")
-	fmt.Println("before:")
-	fmt.Println(data.Values)
+	expected := dataframe.NewSeriesFloat64("expected", nil, nil, 29.33, 27.4225, 23.6075, 25.515, 21.7, 35.14, 40.31333333333333, 45.486666666666665, 50.66, nil)
 
 	_, err := Interpolate(ctx, data, opts)
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
-	fmt.Println("after:")
-	fmt.Println(data.Values)
+	eq, err := data.IsEqual(ctx, expected)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+
+	if !eq {
+		t.Errorf("[%T] %v Not Equal to [%T] %v", data, data.Values, expected, expected.Values)
+	}
 }

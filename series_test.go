@@ -507,9 +507,7 @@ func TestSeriesIsEqual(t *testing.T) {
 		g1 := a.(civil.Date)
 		g2 := b.(civil.Date)
 
-		eq := !g1.After(g2) && !g1.Before(g2)
-		fmt.Println(eq)
-		return eq
+		return !g1.After(g2) && !g1.Before(g2)
 	})
 
 	expected := []Series{
