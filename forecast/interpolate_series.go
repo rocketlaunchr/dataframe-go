@@ -106,7 +106,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				// Fill Inner range
 
 				switch method := opts.Method.(type) {
-				case ForwardFill:
+				case nil, ForwardFill:
 					fillFn := func(row int) float64 {
 						return fs.Values[*left]
 					}
@@ -157,7 +157,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		// Left side
 		if start != *firstRow {
 			switch method := opts.Method.(type) {
-			case ForwardFill, BackwardFill:
+			case nil, ForwardFill, BackwardFill:
 				fillFn := func(row int) float64 {
 					return fs.Values[*firstRow]
 				}
@@ -200,7 +200,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		// Right side
 		if end != *lastRow {
 			switch method := opts.Method.(type) {
-			case ForwardFill, BackwardFill:
+			case nil, ForwardFill, BackwardFill:
 				fillFn := func(row int) float64 {
 					return fs.Values[*lastRow]
 				}
