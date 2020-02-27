@@ -721,7 +721,7 @@ func (s *SeriesGeneric) IsEqual(ctx context.Context, s2 Series, opts ...IsEqualO
 			}
 		}
 
-		if s.isEqualFunc(v, gs.values[i]) {
+		if !s.isEqualFunc(v, gs.values[i]) {
 			return false, nil
 		}
 	}

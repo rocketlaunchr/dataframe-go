@@ -868,7 +868,7 @@ func (s *SeriesMixed) IsEqual(ctx context.Context, s2 Series, opts ...IsEqualOpt
 			}
 		}
 
-		if s.isEqualFunc(v, ms.values[i]) {
+		if !s.isEqualFunc(v, ms.values[i]) {
 			return false, nil
 		}
 	}
