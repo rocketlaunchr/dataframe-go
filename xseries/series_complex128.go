@@ -451,6 +451,10 @@ func (s *SeriesComplex128) IsEqualFunc(a, b interface{}) bool {
 	f1 := a.(complex128)
 	f2 := b.(complex128)
 
+	if cmplx.IsNaN(f1) && cmplx.IsNaN(f2) {
+		return true
+	}
+
 	return f1 == f2
 }
 
@@ -1054,6 +1058,10 @@ func (s *SeriesComplex128) IsEqual(ctx context.Context, s2 dataframe.Series, opt
 	for i, v := range s.Values {
 		if err := ctx.Err(); err != nil {
 			return false, err
+		}
+
+		if cmplx.IsNaN(v) && cmplx.IsNaN(cs.Values[i]) {
+			continue
 		}
 
 		if v != cs.Values[i] {
