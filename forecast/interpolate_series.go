@@ -161,7 +161,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				fillFn := func(row int) float64 {
 					return fs.Values[*firstRow]
 				}
-				err := fill(ctx, fillFn, fs, omap, start, *firstRow, opts.FillDirection, opts.Limit)
+				err := fill(ctx, fillFn, fs, omap, start-1, *firstRow, opts.FillDirection, opts.Limit)
 				if err != nil {
 					return nil, err
 				}
@@ -174,8 +174,15 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				} else {
 					grad = (fs.Values[*firstRow+1] - fs.Values[*firstRow]) / 1.0
 				}
+				c := fs.Values[*firstRow] - grad*float64(*firstRow)
 
-				_ = grad
+				fillFn := func(row int) float64 {
+					return grad*float64(row+start) + c
+				}
+				err := fill(ctx, fillFn, fs, omap, start-1, *firstRow, opts.FillDirection, opts.Limit)
+				if err != nil {
+					return nil, err
+				}
 			case Spline:
 				if method.Order == 3 {
 					splineVals := spline.Range(float64(start-1), float64(*firstRow), 1)
@@ -197,7 +204,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				fillFn := func(row int) float64 {
 					return fs.Values[*lastRow]
 				}
-				err := fill(ctx, fillFn, fs, omap, *lastRow, end, opts.FillDirection, opts.Limit)
+				err := fill(ctx, fillFn, fs, omap, *lastRow, end+1, opts.FillDirection, opts.Limit)
 				if err != nil {
 					return nil, err
 				}
@@ -210,8 +217,15 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				} else {
 					grad = (fs.Values[*lastRow] - fs.Values[*lastRow-1]) / 1.0
 				}
+				c := fs.Values[*lastRow] - grad*float64(*lastRow)
 
-				_ = grad
+				fillFn := func(row int) float64 {
+					return grad*float64(row+*lastRow+1) + c
+				}
+				err := fill(ctx, fillFn, fs, omap, *lastRow, end+1, opts.FillDirection, opts.Limit)
+				if err != nil {
+					return nil, err
+				}
 			case Spline:
 				if method.Order == 3 {
 					splineVals := spline.Range(float64(*lastRow), float64(end+1), 1)
