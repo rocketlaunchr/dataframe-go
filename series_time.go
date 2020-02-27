@@ -613,13 +613,62 @@ func (s *SeriesTime) ContainsNil(opts ...Options) bool {
 }
 
 // NilCount will return how many nil values are in the series.
-func (s *SeriesTime) NilCount(opts ...Options) int {
-	if len(opts) == 0 || !opts[0].DontLock {
+func (s *SeriesTime) NilCount(opts ...NilCountOptions) (int, error) {
+	if len(opts) == 0 {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+		return s.nilCount, nil
+	}
+
+	if !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
 
-	return s.nilCount
+	var (
+		ctx context.Context
+		r   *Range
+	)
+
+	if opts[0].Ctx == nil {
+		ctx = context.Background()
+	} else {
+		ctx = opts[0].Ctx
+	}
+
+	if opts[0].R == nil {
+		r = &Range{}
+	} else {
+		r = opts[0].R
+	}
+
+	start, end, err := r.Limits(len(s.Values))
+	if err != nil {
+		return 0, err
+	}
+
+	if start == 0 && end == len(s.Values)-1 {
+		return s.nilCount, nil
+	}
+
+	var nilCount int
+
+	for i := start; i <= end; i++ {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+
+		if s.Values[i] == nil {
+
+			if opts[0].StopAtOneNil {
+				return 1, nil
+			}
+
+			nilCount++
+		}
+	}
+
+	return nilCount, nil
 }
 
 // ToSeriesInt64 will convert the Series to a SeriesInt64. The time format is Unix seconds.
@@ -802,4 +851,52 @@ func (s *SeriesTime) FillRand(src rand.Source, probNil float64, rander Rander, o
 			}
 		}
 	}
+}
+
+// IsEqual returns true if s2's values are equal to s.
+func (s *SeriesTime) IsEqual(ctx context.Context, s2 Series, opts ...IsEqualOptions) (bool, error) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
+	// Check type
+	ts, ok := s2.(*SeriesTime)
+	if !ok {
+		return false, nil
+	}
+
+	// Check number of values
+	if len(s.Values) != len(ts.Values) {
+		return false, nil
+	}
+
+	// Check name
+	if len(opts) != 0 && opts[0].CheckName {
+		if s.name != ts.name {
+			return false, nil
+		}
+	}
+
+	// Check values
+	for i, v := range s.Values {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+
+		if v == nil {
+			if ts.Values[i] == nil {
+				// Both are nil
+				continue
+			} else {
+				return false, nil
+			}
+		}
+
+		if !(*v).Equal(*ts.Values[i]) {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

@@ -14,12 +14,14 @@ import (
 
 func describeSeries(ctx context.Context, s dataframe.Series, opts ...DescribeOptions) (DescribeOutput, error) {
 
+	nc, _ := s.NilCount()
+
 	out := DescribeOutput{
 		percentiles: opts[0].Percentiles,
 		headers:     []string{s.Name()},
 
 		Count:    []int{s.NRows()},
-		NilCount: []int{s.NilCount()},
+		NilCount: []int{nc},
 	}
 
 	var (

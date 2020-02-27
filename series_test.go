@@ -488,3 +488,79 @@ func TestToSeriesString(t *testing.T) {
 	}
 
 }
+
+func TestSeriesIsEqual(t *testing.T) {
+	ctx := context.Background()
+	tRef := time.Date(2017, 1, 1, 5, 30, 12, 0, time.UTC)
+
+	// Create new series
+	init := []Series{
+		NewSeriesFloat64("test", &SeriesInit{1, 0}, 1.0, 2.0, 3.0),
+		NewSeriesInt64("test", &SeriesInit{1, 0}, 1, 2, 3),
+		NewSeriesString("test", &SeriesInit{1, 0}, "1", "2", "3"),
+		NewSeriesTime("test", &SeriesInit{1, 0}, tRef, tRef.Add(24*time.Hour), tRef.Add(2*24*time.Hour)),
+		// NewSeriesMixed("test", &SeriesInit{1, 0}, 1, "two", 3.0),
+		NewSeriesGeneric("test", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}),
+	}
+
+	(init[4].(*SeriesGeneric)).SetIsEqualFunc(func(a, b interface{}) bool {
+		g1 := a.(civil.Date)
+		g2 := b.(civil.Date)
+
+		eq := !g1.After(g2) && !g1.Before(g2)
+		fmt.Println(eq)
+		return eq
+	})
+
+	expected := []Series{
+		NewSeriesFloat64("expected", &SeriesInit{1, 0}, 1.0, 2.0, 3.0),
+		NewSeriesInt64("expected", &SeriesInit{1, 0}, 1, 2, 3),
+		NewSeriesString("expected", &SeriesInit{1, 0}, "1", "2", "3"),
+		NewSeriesTime("expected", &SeriesInit{1, 0}, tRef, tRef.Add(24*time.Hour), tRef.Add(2*24*time.Hour)),
+		// NewSeriesMixed("expected", &SeriesInit{1, 0}, 1, "two", 3.0),
+		NewSeriesGeneric("expected", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}),
+	}
+
+	for i := range init {
+		s1 := init[i]
+		s2 := expected[i]
+
+		eq, err := s1.IsEqual(ctx, s2)
+		if err != nil {
+			t.Errorf("error encountered: %s\n", err)
+		}
+
+		if !eq {
+			t.Errorf("s1: [%T] %v is not equal to s2: [%T] %v\n", s1, s1, s2, s2)
+		}
+
+	}
+
+}
+
+func TestStopAtOneNil(t *testing.T) {
+
+	tRef := time.Date(2017, 1, 1, 5, 30, 12, 0, time.UTC)
+
+	init := []Series{
+		NewSeriesFloat64("test", &SeriesInit{1, 0}, 1.0, 2.0, 3.0, nil, 5.9, nil),
+		NewSeriesInt64("test", &SeriesInit{1, 0}, 1, nil, nil, 2, 3),
+		NewSeriesString("test", &SeriesInit{1, 0}, nil, "1", "2", nil, "3"),
+		NewSeriesTime("test", &SeriesInit{1, 0}, tRef, nil, nil, tRef.Add(24*time.Hour), nil, tRef.Add(2*24*time.Hour)),
+		NewSeriesMixed("test", &SeriesInit{1, 0}, 1, "two", nil, nil, 3.0, nil, nil),
+		NewSeriesGeneric("test", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, nil, nil, civil.Date{2018, time.May, 02}, nil, nil, civil.Date{2018, time.May, 03}),
+	}
+
+	opts := NilCountOptions{StopAtOneNil: true}
+
+	for i := range init {
+		cnt, err := init[i].NilCount(opts)
+		if err != nil {
+			t.Errorf("error encountered: %s\n", err)
+		}
+
+		if cnt < 1 {
+			t.Errorf("error: stop-at-one-nil functionality not working for Series: %T \n", init[i])
+		}
+	}
+}

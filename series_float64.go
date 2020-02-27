@@ -432,6 +432,10 @@ func (s *SeriesFloat64) IsEqualFunc(a, b interface{}) bool {
 	f1 := a.(float64)
 	f2 := b.(float64)
 
+	if isNaN(f1) && isNaN(f2) {
+		return true
+	}
+
 	return f1 == f2
 }
 
@@ -640,13 +644,62 @@ func (s *SeriesFloat64) ContainsNil(opts ...Options) bool {
 }
 
 // NilCount will return how many nil values are in the series.
-func (s *SeriesFloat64) NilCount(opts ...Options) int {
-	if len(opts) == 0 || !opts[0].DontLock {
+func (s *SeriesFloat64) NilCount(opts ...NilCountOptions) (int, error) {
+	if len(opts) == 0 {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+		return s.nilCount, nil
+	}
+
+	if !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
 
-	return s.nilCount
+	var (
+		ctx context.Context
+		r   *Range
+	)
+
+	if opts[0].Ctx == nil {
+		ctx = context.Background()
+	} else {
+		ctx = opts[0].Ctx
+	}
+
+	if opts[0].R == nil {
+		r = &Range{}
+	} else {
+		r = opts[0].R
+	}
+
+	start, end, err := r.Limits(len(s.Values))
+	if err != nil {
+		return 0, err
+	}
+
+	if start == 0 && end == len(s.Values)-1 {
+		return s.nilCount, nil
+	}
+
+	var nilCount int
+
+	for i := start; i <= end; i++ {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+
+		if isNaN(s.Values[i]) {
+
+			if opts[0].StopAtOneNil {
+				return 1, nil
+			}
+
+			nilCount++
+		}
+	}
+
+	return nilCount, nil
 }
 
 // ToSeriesString will convert the Series to a SeriesString.
@@ -809,4 +862,47 @@ func (s *SeriesFloat64) FillRand(src rand.Source, probNil float64, rander Rander
 			}
 		}
 	}
+}
+
+// IsEqual returns true if s2's values are equal to s.
+func (s *SeriesFloat64) IsEqual(ctx context.Context, s2 Series, opts ...IsEqualOptions) (bool, error) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
+	// Check type
+	fs, ok := s2.(*SeriesFloat64)
+	if !ok {
+		return false, nil
+	}
+
+	// Check number of values
+	if len(s.Values) != len(fs.Values) {
+		return false, nil
+	}
+
+	// Check name
+	if len(opts) != 0 && opts[0].CheckName {
+		if s.name != fs.name {
+			return false, nil
+		}
+	}
+
+	// Check values
+	for i, v := range s.Values {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+
+		if isNaN(v) && isNaN(fs.Values[i]) {
+			continue
+		}
+
+		if v != fs.Values[i] {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

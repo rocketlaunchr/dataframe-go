@@ -611,13 +611,62 @@ func (s *SeriesString) ContainsNil(opts ...Options) bool {
 }
 
 // NilCount will return how many nil values are in the series.
-func (s *SeriesString) NilCount(opts ...Options) int {
-	if len(opts) == 0 || !opts[0].DontLock {
+func (s *SeriesString) NilCount(opts ...NilCountOptions) (int, error) {
+	if len(opts) == 0 {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+		return s.nilCount, nil
+	}
+
+	if !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
 
-	return s.nilCount
+	var (
+		ctx context.Context
+		r   *Range
+	)
+
+	if opts[0].Ctx == nil {
+		ctx = context.Background()
+	} else {
+		ctx = opts[0].Ctx
+	}
+
+	if opts[0].R == nil {
+		r = &Range{}
+	} else {
+		r = opts[0].R
+	}
+
+	start, end, err := r.Limits(len(s.values))
+	if err != nil {
+		return 0, err
+	}
+
+	if start == 0 && end == len(s.values)-1 {
+		return s.nilCount, nil
+	}
+
+	var nilCount int
+
+	for i := start; i <= end; i++ {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+
+		if s.values[i] == nil {
+
+			if opts[0].StopAtOneNil {
+				return 1, nil
+			}
+
+			nilCount++
+		}
+	}
+
+	return nilCount, nil
 }
 
 // ToSeriesInt64 will convert the Series to a SeriesInt64.
@@ -824,4 +873,52 @@ func (s *SeriesString) FillRand(src rand.Source, probNil float64, rander Rander,
 			}
 		}
 	}
+}
+
+// IsEqual returns true if s2's values are equal to s.
+func (s *SeriesString) IsEqual(ctx context.Context, s2 Series, opts ...IsEqualOptions) (bool, error) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
+	// Check type
+	ss, ok := s2.(*SeriesString)
+	if !ok {
+		return false, nil
+	}
+
+	// Check number of values
+	if len(s.values) != len(s.values) {
+		return false, nil
+	}
+
+	// Check name
+	if len(opts) != 0 && opts[0].CheckName {
+		if s.name != ss.name {
+			return false, nil
+		}
+	}
+
+	// Check values
+	for i, v := range s.values {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+
+		if v == nil {
+			if ss.values[i] == nil {
+				// Both are nil
+				continue
+			} else {
+				return false, nil
+			}
+		}
+
+		if *v != *ss.values[i] {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
