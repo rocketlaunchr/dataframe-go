@@ -24,13 +24,18 @@ type TableOptions struct {
 
 	// R is used to limit the range of rows.
 	R *Range
+
+	// DontLock can be set to true if the Dataframe should not be locked.
+	DontLock bool
 }
 
 // Table will produce the Dataframe in a table.
 func (df *DataFrame) Table(opts ...TableOptions) string {
 
-	df.lock.RLock()
-	defer df.lock.RUnlock()
+	if len(opts) == 0 || !opts[0].DontLock {
+		df.lock.RLock()
+		defer df.lock.RUnlock()
+	}
 
 	if len(opts) == 0 {
 		opts = append(opts, TableOptions{R: &Range{}})
@@ -120,14 +125,12 @@ func (df *DataFrame) Table(opts ...TableOptions) string {
 }
 
 // String will display Dataframe.
+// Note: It does not Lock the Dataframe.
 func (df *DataFrame) String() string {
 
 	if df.NRows() <= 6 {
 		return df.Table()
 	}
-
-	df.lock.RLock()
-	defer df.lock.RUnlock()
 
 	idx := []int{0, 1, 2, df.n - 3, df.n - 2, df.n - 1}
 
