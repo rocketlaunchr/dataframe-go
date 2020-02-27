@@ -37,7 +37,7 @@ type NilCountOptions struct {
 	// Don't apply lock.
 	DontLock bool
 
-	// When StopAtOneNil is set, the function will return after finding 1 nil value.
+	// When StopAtOneNil is set, the function will return after finding at least 1 nil value.
 	// It can be used as a ContainsNil function when used with R.
 	StopAtOneNil bool
 }
