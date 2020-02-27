@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"golang.org/x/exp/rand"
-	"golang.org/x/sync/errgroup"
 	"sync"
 )
 
@@ -559,31 +558,49 @@ func (df *DataFrame) IsEqual(ctx context.Context, df2 *DataFrame, opts ...IsEqua
 	}
 
 	// Check values
-	g, newCtx := errgroup.WithContext(ctx)
+	var (
+		wg sync.WaitGroup
+
+		lock   sync.Mutex
+		eqErr  error
+		failed bool
+	)
+
+	newCtx, cancelFunc := context.WithCancel(ctx)
+	defer cancelFunc()
 
 	for i := range df.Series {
-		g.Go(func() error {
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 
 			eq, err := df.Series[i].IsEqual(newCtx, df2.Series[i], opts...)
 			if err != nil {
-				return err
+				lock.Lock()
+				if err == nil {
+					eqErr = err
+				}
+				lock.Unlock()
+				cancelFunc()
+				return
 			}
 
 			if !eq {
-				return errNotEqual
+				lock.Lock()
+				failed = true
+				lock.Unlock()
+				cancelFunc()
 			}
-
-			return nil
-		})
+		}()
 	}
 
-	err := g.Wait()
-	if err != nil {
-		if err == errNotEqual {
-			return false, nil
-		} else {
-			return false, err
-		}
+	wg.Wait()
+	if eqErr != nil {
+		return false, eqErr
+	}
+	if failed {
+		return false, nil
 	}
 
 	return true, nil
