@@ -8,14 +8,14 @@ import (
 	"golang.org/x/exp/rand"
 )
 
-// Options provides a way to set various optional options.
+// Options sets various optional options.
 type Options struct {
 
 	// Don't apply lock.
 	DontLock bool
 }
 
-// IsEqualOptions provides a way to set various optional options.
+// IsEqualOptions sets various optional options for the IsEqual function.
 type IsEqualOptions struct {
 
 	// Don't apply lock.
@@ -25,7 +25,7 @@ type IsEqualOptions struct {
 	CheckName bool
 }
 
-// NilCount provides a way to set various optional options for the NilCount function.
+// NilCount sets various optional options for the NilCount function.
 type NilCountOptions struct {
 
 	// Ctx adds a context.
@@ -36,6 +36,10 @@ type NilCountOptions struct {
 
 	// Don't apply lock.
 	DontLock bool
+
+	// When StopAtOneNil is set, the function will return after finding 1 nil value.
+	// It can be used as a ContainsNil function when used with R.
+	StopAtOneNil bool
 }
 
 // ValueToStringFormatter is used to convert a value

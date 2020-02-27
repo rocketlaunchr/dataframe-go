@@ -705,6 +705,11 @@ func (s *SeriesComplex128) NilCount(opts ...dataframe.NilCountOptions) (int, err
 		}
 
 		if cmplx.IsNaN(s.Values[i]) {
+
+			if opts[0].StopAtOneNil {
+				return 1, nil
+			}
+
 			nilCount++
 		}
 	}

@@ -546,6 +546,7 @@ func (df *DataFrame) FillRand(src rand.Source, probNil float64, rander Rander, o
 
 var errNotEqual = errors.New("not equal")
 
+// IsEqual returns true if df2's values are equal to df.
 func (df *DataFrame) IsEqual(ctx context.Context, df2 *DataFrame, opts ...IsEqualOptions) (bool, error) {
 	if len(opts) == 0 || !opts[0].DontLock {
 		df.lock.RLock()

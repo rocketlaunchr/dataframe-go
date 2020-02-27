@@ -679,6 +679,11 @@ func (s *SeriesInt64) NilCount(opts ...NilCountOptions) (int, error) {
 		}
 
 		if s.values[i] == nil {
+
+			if opts[0].StopAtOneNil {
+				return 1, nil
+			}
+
 			nilCount++
 		}
 	}
