@@ -537,3 +537,33 @@ func TestSeriesIsEqual(t *testing.T) {
 	}
 
 }
+
+func TestStopAtOneNil(t *testing.T) {
+	ctx := context.Background()
+	tRef := time.Date(2017, 1, 1, 5, 30, 12, 0, time.UTC)
+
+	init := []Series{
+		NewSeriesFloat64("test", &SeriesInit{1, 0}, 1.0, 2.0, 3.0, nil, 5.9, nil),
+		NewSeriesInt64("test", &SeriesInit{1, 0}, 1, nil, nil, 2, 3),
+		NewSeriesString("test", &SeriesInit{1, 0}, nil, "1", "2", nil, "3"),
+		NewSeriesTime("test", &SeriesInit{1, 0}, tRef, nil, nil, tRef.Add(24*time.Hour), nil, tRef.Add(2*24*time.Hour)),
+		NewSeriesMixed("test", &SeriesInit{1, 0}, 1, "two", nil, nil, 3.0, nil, nil),
+		NewSeriesGeneric("test", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, nil, nil, civil.Date{2018, time.May, 02}, nil, nil, civil.Date{2018, time.May, 03}),
+	}
+
+	opts := NilCountOptions{
+		Ctx:          ctx,
+		StopAtOneNil: true,
+	}
+
+	for i := range init {
+		cnt, err := init[i].NilCount(opts)
+		if err != nil {
+			t.Errorf("error encountered: %s\n", err)
+		}
+		fmt.Println(cnt)
+		if cnt != 1 {
+			t.Errorf("error: stop-at-one-nil functionality not working for Series: %T \n", init[i])
+		}
+	}
+}
