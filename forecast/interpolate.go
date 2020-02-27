@@ -70,14 +70,24 @@ type InterpolateOptions struct {
 	R *dataframe.Range
 }
 
-// sdf can be a SeriesFloat64 or DataFrame.
-func Interpolate(ctx context.Context, sdf interface{}, opts InterpolateOptions) (*dataframe.OrderedMapIntFloat64, error) {
+// Interpolate will accept a DataFrame or SeriesFloat64 and interpolate the missing values.
+// If the InPlace option is set, the DataFrame or SeriesFloat64 is modified "in place".
+// Alternatively, a []*dataframe.OrderedMapIntFloat64 or *dataframe.OrderedMapIntFloat64 is returned respecively.
+func Interpolate(ctx context.Context, sdf interface{}, opts InterpolateOptions) (interface{}, error) {
 
 	switch typ := sdf.(type) {
 	case *dataframe.SeriesFloat64:
-		return interpolateSeriesFloat64(ctx, typ, opts)
+		x, err := interpolateSeriesFloat64(ctx, typ, opts)
+		if err != nil {
+			return nil, err
+		}
+		return x, err
 	case *dataframe.DataFrame:
-		// return interpolateDataFrame(ctx, typ)
+		x, err := interpolateDataFrame(ctx, typ, opts)
+		if err != nil {
+			return nil, err
+		}
+		return x, err
 	default:
 		panic("sdf must be a SeriesFloat64 or DataFrame")
 	}
