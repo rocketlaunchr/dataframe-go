@@ -16,6 +16,8 @@ type TableOptions struct {
 	// Series is used to display a given set of Series. When nil (default), all Series are displayed.
 	// An index of the Series or the name of the Series can be provided.
 	//
+	// NOTE: This option only applies to DataFrames.
+	//
 	// Example:
 	//
 	//  opts :=  TableOptions{Series: []interface{}{1, "time"}}
@@ -25,7 +27,7 @@ type TableOptions struct {
 	// R is used to limit the range of rows.
 	R *Range
 
-	// DontLock can be set to true if the DataFrame should not be locked.
+	// DontLock can be set to true if the DataFrame or Series should not be locked.
 	DontLock bool
 }
 

@@ -582,13 +582,15 @@ func (s *SeriesComplex128) Copy(r ...dataframe.Range) dataframe.Series {
 }
 
 // Table will produce the Series in a table.
-func (s *SeriesComplex128) Table(r ...dataframe.Range) string {
+func (s *SeriesComplex128) Table(opts ...dataframe.TableOptions) string {
 
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	if len(opts) == 0 {
+		opts = append(opts, dataframe.TableOptions{R: &dataframe.Range{}})
+	}
 
-	if len(r) == 0 {
-		r = append(r, dataframe.Range{})
+	if !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
 	}
 
 	data := [][]string{}
@@ -598,7 +600,7 @@ func (s *SeriesComplex128) Table(r ...dataframe.Range) string {
 
 	if len(s.Values) > 0 {
 
-		start, end, err := r[0].Limits(len(s.Values))
+		start, end, err := opts[0].R.Limits(len(s.Values))
 		if err != nil {
 			panic(err)
 		}
