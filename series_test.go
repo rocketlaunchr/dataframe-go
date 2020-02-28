@@ -506,10 +506,7 @@ func TestSeriesIsEqual(t *testing.T) {
 	(init[4].(*SeriesGeneric)).SetIsEqualFunc(func(a, b interface{}) bool {
 		g1 := a.(civil.Date)
 		g2 := b.(civil.Date)
-
-		eq := !g1.After(g2) && !g1.Before(g2)
-		fmt.Println(eq)
-		return eq
+		return g1 == g2
 	})
 
 	expected := []Series{
