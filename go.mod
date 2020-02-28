@@ -5,6 +5,7 @@ go 1.12
 require (
 	cloud.google.com/go v0.53.0
 	github.com/brianvoe/gofakeit/v4 v4.2.3
+	github.com/cnkei/gospline v0.0.0-20191204072713-842a72f86331
 	github.com/davecgh/go-spew v1.1.0
 	github.com/google/go-cmp v0.4.0
 	github.com/icza/gox v0.0.0-20200117090206-f8d4f2061c23
