@@ -326,7 +326,7 @@ func TestSeriesSort(t *testing.T) {
 }
 
 type Tabler interface {
-	Table(r ...Range) string
+	Table(...TableOptions) string
 	String() string
 }
 
