@@ -647,10 +647,8 @@ func (s *SeriesMixed) Table(r ...Range) string {
 	return buf.String()
 }
 
-// String implements Stringer interface.
+// String implements the fmt.Stringer interface. It does not lock the Series.
 func (s *SeriesMixed) String() string {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
 
 	count := len(s.values)
 

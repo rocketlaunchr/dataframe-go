@@ -25,11 +25,11 @@ type TableOptions struct {
 	// R is used to limit the range of rows.
 	R *Range
 
-	// DontLock can be set to true if the Dataframe should not be locked.
+	// DontLock can be set to true if the DataFrame should not be locked.
 	DontLock bool
 }
 
-// Table will produce the Dataframe in a table.
+// Table will produce the DataFrame in a table.
 func (df *DataFrame) Table(opts ...TableOptions) string {
 
 	if len(opts) == 0 || !opts[0].DontLock {
@@ -124,8 +124,7 @@ func (df *DataFrame) Table(opts ...TableOptions) string {
 	return buf.String()
 }
 
-// String will display Dataframe.
-// Note: It does not Lock the Dataframe.
+// String implements the fmt.Stringer interface. It does not lock the DataFrame.
 func (df *DataFrame) String() string {
 
 	if df.NRows() <= 6 {

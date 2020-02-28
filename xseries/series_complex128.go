@@ -625,10 +625,8 @@ func (s *SeriesComplex128) Table(r ...dataframe.Range) string {
 	return buf.String()
 }
 
-// String implements Stringer interface.
+// String implements the fmt.Stringer interface. It does not lock the Series.
 func (s *SeriesComplex128) String() string {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
 
 	count := len(s.Values)
 
