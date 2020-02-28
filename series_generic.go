@@ -495,13 +495,15 @@ func (s *SeriesGeneric) Copy(r ...Range) Series {
 }
 
 // Table will produce the Series in a table.
-func (s *SeriesGeneric) Table(r ...Range) string {
+func (s *SeriesGeneric) Table(opts ...TableOptions) string {
 
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	if len(opts) == 0 {
+		opts = append(opts, TableOptions{R: &Range{}})
+	}
 
-	if len(r) == 0 {
-		r = append(r, Range{})
+	if !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
 	}
 
 	data := [][]string{}
@@ -511,7 +513,7 @@ func (s *SeriesGeneric) Table(r ...Range) string {
 
 	if len(s.values) > 0 {
 
-		start, end, err := r[0].Limits(len(s.values))
+		start, end, err := opts[0].R.Limits(len(s.values))
 		if err != nil {
 			panic(err)
 		}
@@ -538,10 +540,8 @@ func (s *SeriesGeneric) Table(r ...Range) string {
 	return buf.String()
 }
 
-// String implements Stringer interface.
+// String implements the fmt.Stringer interface. It does not lock the Series.
 func (s *SeriesGeneric) String() string {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
 
 	count := len(s.values)
 

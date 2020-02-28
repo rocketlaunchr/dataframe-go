@@ -326,7 +326,7 @@ func TestSeriesSort(t *testing.T) {
 }
 
 type Tabler interface {
-	Table(r ...Range) string
+	Table(...TableOptions) string
 	String() string
 }
 
@@ -507,7 +507,7 @@ func TestSeriesIsEqual(t *testing.T) {
 		g1 := a.(civil.Date)
 		g2 := b.(civil.Date)
 
-		return !g1.After(g2) && !g1.Before(g2)
+		return g1 == g2
 	})
 
 	expected := []Series{
