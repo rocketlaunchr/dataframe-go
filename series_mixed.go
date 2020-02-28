@@ -604,13 +604,15 @@ func (s *SeriesMixed) Copy(r ...Range) Series {
 }
 
 // Table will produce the Series in a table.
-func (s *SeriesMixed) Table(r ...Range) string {
+func (s *SeriesMixed) Table(opts ...TableOptions) string {
 
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	if len(opts) == 0 {
+		opts = append(opts, TableOptions{R: &Range{}})
+	}
 
-	if len(r) == 0 {
-		r = append(r, Range{})
+	if !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
 	}
 
 	data := [][]string{}
@@ -620,7 +622,7 @@ func (s *SeriesMixed) Table(r ...Range) string {
 
 	if len(s.values) > 0 {
 
-		start, end, err := r[0].Limits(len(s.values))
+		start, end, err := opts[0].R.Limits(len(s.values))
 		if err != nil {
 			panic(err)
 		}
@@ -647,10 +649,8 @@ func (s *SeriesMixed) Table(r ...Range) string {
 	return buf.String()
 }
 
-// String implements Stringer interface.
+// String implements the fmt.Stringer interface. It does not lock the Series.
 func (s *SeriesMixed) String() string {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
 
 	count := len(s.values)
 
@@ -685,13 +685,62 @@ func (s *SeriesMixed) ContainsNil(opts ...Options) bool {
 }
 
 // NilCount will return how many nil values are in the series.
-func (s *SeriesMixed) NilCount(opts ...Options) int {
-	if len(opts) == 0 || !opts[0].DontLock {
+func (s *SeriesMixed) NilCount(opts ...NilCountOptions) (int, error) {
+	if len(opts) == 0 {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+		return s.nilCount, nil
+	}
+
+	if !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
 
-	return s.nilCount
+	var (
+		ctx context.Context
+		r   *Range
+	)
+
+	if opts[0].Ctx == nil {
+		ctx = context.Background()
+	} else {
+		ctx = opts[0].Ctx
+	}
+
+	if opts[0].R == nil {
+		r = &Range{}
+	} else {
+		r = opts[0].R
+	}
+
+	start, end, err := r.Limits(len(s.values))
+	if err != nil {
+		return 0, err
+	}
+
+	if start == 0 && end == len(s.values)-1 {
+		return s.nilCount, nil
+	}
+
+	var nilCount int
+
+	for i := start; i <= end; i++ {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+
+		if s.values[i] == nil {
+
+			if opts[0].StopAtOneNil {
+				return 1, nil
+			}
+
+			nilCount++
+		}
+	}
+
+	return nilCount, nil
 }
 
 // ToSeriesString will convert the Series to a SeriesString.
@@ -777,4 +826,52 @@ func (s *SeriesMixed) FillRand(src rand.Source, probNil float64, rander Rander, 
 			}
 		}
 	}
+}
+
+// IsEqual returns true if s2's values are equal to s.
+func (s *SeriesMixed) IsEqual(ctx context.Context, s2 Series, opts ...IsEqualOptions) (bool, error) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
+	// Check type
+	ms, ok := s2.(*SeriesMixed)
+	if !ok {
+		return false, nil
+	}
+
+	// Check number of values
+	if len(s.values) != len(ms.values) {
+		return false, nil
+	}
+
+	// Check name
+	if len(opts) != 0 && opts[0].CheckName {
+		if s.name != ms.name {
+			return false, nil
+		}
+	}
+
+	// Check values
+	for i, v := range s.values {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+
+		if v == nil {
+			if ms.values[i] == nil {
+				// Both are nil
+				continue
+			} else {
+				return false, nil
+			}
+		}
+
+		if !s.isEqualFunc(v, ms.values[i]) {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
