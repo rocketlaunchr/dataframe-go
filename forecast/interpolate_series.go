@@ -213,8 +213,11 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 			case Linear:
 				var grad float64
 				if omap != nil {
-					y2, _ := omap.Get(*firstRow + 1)
-					y1, _ := omap.Get(*firstRow)
+					y1 := fs.Values[*firstRow] // existing value
+					y2, exists := omap.Get(*firstRow + 1)
+					if !exists {
+						y2 = fs.Values[*firstRow+1]
+					}
 					grad = (y2 - y1) / 1.0
 				} else {
 					grad = (fs.Values[*firstRow+1] - fs.Values[*firstRow]) / 1.0
@@ -256,8 +259,11 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 			case Linear:
 				var grad float64
 				if omap != nil {
-					y2, _ := omap.Get(*lastRow)
-					y1, _ := omap.Get(*lastRow - 1)
+					y2 := fs.Values[*lastRow] // existing value
+					y1, exists := omap.Get(*lastRow - 1)
+					if !exists {
+						y1 = fs.Values[*lastRow-1]
+					}
 					grad = (y2 - y1) / 1.0
 				} else {
 					grad = (fs.Values[*lastRow] - fs.Values[*lastRow-1]) / 1.0
