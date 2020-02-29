@@ -4,8 +4,11 @@ package forecast
 
 import (
 	"context"
+	"golang.org/x/xerrors"
 	"math"
 
+	"github.com/DzananGanic/numericalgo/interpolate"
+	"github.com/DzananGanic/numericalgo/interpolate/lagrange"
 	"github.com/cnkei/gospline"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
@@ -87,9 +90,9 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		lastRow  *int // row of last known value
 	)
 
-	//////// FOR SPLINE INTERPOLATION //////
+	//////// FOR ALGORITHM PREPARATION //////
 
-	var spline gospline.Spline
+	var alg interface{}
 
 	switch method := opts.Method.(type) {
 	case Spline:
@@ -99,7 +102,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 			xVals := []float64{}
 			yVals := []float64{}
 
-			for x := startOfSeg; x <= end; x++ {
+			for x := start; x <= end; x++ {
 				y := fs.Values[x]
 				if !math.IsNaN(y) {
 					xVals = append(xVals, float64(x))
@@ -107,8 +110,25 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				}
 			}
 
-			spline = gospline.NewCubicSpline(xVals, yVals)
+			alg = gospline.NewCubicSpline(xVals, yVals)
 		}
+	case Lagrange:
+
+		xVals := []float64{}
+		yVals := []float64{}
+
+		for x := start; x <= end; x++ {
+			y := fs.Values[x]
+			if !math.IsNaN(y) {
+				xVals = append(xVals, float64(x))
+				yVals = append(yVals, y)
+			}
+		}
+
+		li := lagrange.New()
+		li.Fit(xVals, yVals)
+
+		alg = li
 	}
 
 	////////////////////////////////////////
@@ -179,7 +199,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 					}
 				case Spline:
 					if method.Order == 3 {
-						splineVals := spline.Range(float64(*left), float64(*right), 1)
+						splineVals := alg.(gospline.Spline).Range(float64(*left), float64(*right), 1)
 						fillFn := func(row int) float64 {
 							return splineVals[row+1]
 						}
@@ -187,6 +207,19 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 						if err != nil {
 							return nil, err
 						}
+					}
+				case Lagrange:
+					lagrangeXVals := n(float64(*left), float64(*right), 1)
+					lagrangeYVals, err := interpolate.WithMulti(alg.(*lagrange.Lagrange), lagrangeXVals)
+					if err != nil {
+						return nil, xerrors.Errorf("Lagrange method: %w", err)
+					}
+					fillFn := func(row int) float64 {
+						return lagrangeYVals[row+1]
+					}
+					err = fill(ctx, fillFn, fs, omap, *left, *right, opts.FillDirection, opts.Limit)
+					if err != nil {
+						return nil, err
 					}
 				}
 			}
@@ -233,7 +266,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				}
 			case Spline:
 				if method.Order == 3 {
-					splineVals := spline.Range(float64(start-1), float64(*firstRow), 1)
+					splineVals := alg.(gospline.Spline).Range(float64(start-1), float64(*firstRow), 1)
 					fillFn := func(row int) float64 {
 						return splineVals[row+1]
 					}
@@ -242,6 +275,9 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 						return nil, err
 					}
 				}
+			case Lagrange:
+				// Can't be used to extrapolate.
+				// Package returns error: Value to interpolate is too small and not in range
 			}
 		}
 
@@ -279,7 +315,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				}
 			case Spline:
 				if method.Order == 3 {
-					splineVals := spline.Range(float64(*lastRow), float64(end+1), 1)
+					splineVals := alg.(gospline.Spline).Range(float64(*lastRow), float64(end+1), 1)
 					fillFn := func(row int) float64 {
 						return splineVals[row+1]
 					}
@@ -288,6 +324,9 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 						return nil, err
 					}
 				}
+			case Lagrange:
+				// Can't be used to extrapolate.
+				// Package returns error: Value to interpolate is too small and not in range
 			}
 		}
 
