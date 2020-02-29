@@ -43,10 +43,9 @@ type Spline struct {
 func (m Spline) x() {}
 
 // Lagrange will fill nil values using the Lagrange interpolation algorithm.
-// Currently not implemented.
+// It can not be used to extrapolate.
 //
-// See http://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
-// and https://github.com/DzananGanic/numericalgo
+// See: http://mathworld.wolfram.com/LagrangeInterpolatingPolynomial.html
 type Lagrange struct {
 
 	// Order is not implemented.
@@ -93,7 +92,7 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 
 		}
 
-	} else if dir.has(Forward) {
+	} else if dir.has(Forward) || dir == 0 {
 
 		for j := 0; j < Len; j++ {
 
