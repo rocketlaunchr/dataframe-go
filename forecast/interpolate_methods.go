@@ -93,7 +93,7 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 
 		}
 
-	} else if dir.has(Forward) {
+	} else if dir.has(Forward) || dir == 0 {
 
 		for j := 0; j < Len; j++ {
 
