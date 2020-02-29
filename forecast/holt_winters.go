@@ -37,13 +37,41 @@ type HwModel struct {
 	lastTsVal            time.Time
 }
 
-// HwFitOpts is used to set necessary parameters
-// needed to run Fit on Holt Winters Algorithm
-type HwFitOpts struct {
-	Alpha  float64
-	Beta   float64
-	Gamma  float64
-	Period int
+func NewHwModel() *HwModel {
+	model := &HwModel{
+		data:                 []float64{},
+		trainData:            []float64{},
+		testData:             []float64{},
+		fcastData:            &dataframe.SeriesFloat64{},
+		initialSmooth:        0.0,
+		initialTrend:         0.0,
+		initialSeasonalComps: []float64{},
+		smoothingLevel:       0.0,
+		trendLevel:           0.0,
+		seasonalComps:        []float64{},
+		period:               0,
+		alpha:                0.0,
+		beta:                 0.0,
+		gamma:                0.0,
+		errorM:               &ErrorMeasurement{},
+		inputIsDf:            false,
+	}
+
+	return model
+}
+
+func (hm *HwModel) Configure(config interface{}) {
+	if cfg, ok := config.(*HoltWintersConfig); ok {
+
+		hm.alpha = cfg.Alpha
+		hm.beta = cfg.Beta
+		hm.gamma = cfg.Gamma
+		hm.period = cfg.Period
+		hm.errorM = cfg.ErrMeasurement
+
+	} else {
+		panic(fmt.Errorf("struct config parameter [%T] is not compartible with hw model", cfg))
+	}
 }
 
 // HoltWinters Function receives a series data of type dataframe.Seriesfloat64
@@ -200,7 +228,7 @@ func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{
 		errTyp  ErrorType
 	)
 
-	if o, ok := opts.(HwFitOpts); ok {
+	if o, ok := opts.(HoltWintersConfig); ok {
 
 		α = o.Alpha
 		β = o.Beta

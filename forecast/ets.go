@@ -31,10 +31,31 @@ type SesModel struct {
 	lastTsVal      time.Time
 }
 
-// SesFitOpts is used to set necessary parameters
-// needed to run Fit on a Simple Exponential Smoothing Algorithm
-type SesFitOpts struct {
-	Alpha float64
+func NewSesModel() *SesModel {
+	model := &SesModel{
+		alpha:          0.0,
+		data:           []float64{},
+		trainData:      []float64{},
+		testData:       []float64{},
+		fcastData:      &dataframe.SeriesFloat64{},
+		initialLevel:   0.0,
+		smoothingLevel: 0.0,
+		errorM:         &ErrorMeasurement{},
+		inputIsDf:      false,
+	}
+
+	return model
+}
+
+func (sm *SesModel) Configure(config interface{}) {
+	if cfg, ok := config.(*ExponentialSmootheningConfig); ok {
+
+		sm.alpha = cfg.Alpha
+		sm.errorM = cfg.ErrMeasurement
+
+	} else {
+		panic(fmt.Errorf("struct config parameter [%T] is not compartible with ses model", cfg))
+	}
 }
 
 // SimpleExponentialSmoothing Function receives a series data of type dataframe.Seriesfloat64
@@ -180,7 +201,7 @@ func (sm *SesModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface
 		errTyp ErrorType
 	)
 
-	if o, ok := opts.(SesFitOpts); ok {
+	if o, ok := opts.(ExponentialSmootheningConfig); ok {
 
 		α = o.Alpha
 

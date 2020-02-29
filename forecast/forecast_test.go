@@ -26,7 +26,7 @@ func TestSesSeries(t *testing.T) {
 
 	fModel := SimpleExponentialSmoothing(ctx, data)
 
-	opt := SesFitOpts{
+	opt := ExponentialSmootheningConfig{
 		Alpha: alpha,
 	}
 
@@ -77,7 +77,7 @@ func TestSesDF(t *testing.T) {
 
 	alpha := 0.4
 
-	fitOpts := SesFitOpts{
+	fitOpts := ExponentialSmootheningConfig{
 		Alpha: alpha,
 	}
 
@@ -120,7 +120,7 @@ func TestHwSeries(t *testing.T) {
 	beta := 0.03
 	gamma := 0.73
 
-	fitOpts := HwFitOpts{
+	fitOpts := HoltWintersConfig{
 		Alpha:  alpha,
 		Beta:   beta,
 		Gamma:  gamma,
@@ -180,7 +180,7 @@ func TestHwDF(t *testing.T) {
 	beta := 0.03
 	gamma := 0.73
 
-	fitOpts := HwFitOpts{
+	fitOpts := HoltWintersConfig{
 		Alpha:  alpha,
 		Beta:   beta,
 		Gamma:  gamma,

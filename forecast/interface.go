@@ -6,6 +6,8 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
+// Algorithm interface sets generic standards of similar methods
+// implemented by the Forecast Algorithms
 type Algorithm interface {
 
 	// Load loads historical data. sdf can be a SeriesFloat64 or DataFrame.
@@ -13,7 +15,7 @@ type Algorithm interface {
 
 	// Predict forecasts the next n values for a Series or DataFrame.
 	// If a Series was provided to Load function, then a Series is retured.
-	// Alternatively a DataFrame is returend.
+	// Alternatively a DataFrame is returned.
 	Predict(ctx context.Context, n int) (interface{}, error)
 
 	// Configure sets the various parameters for the Algorithm.
@@ -28,5 +30,15 @@ type Algorithm interface {
 
 // ExponentialSmootheningConfig is used to configure the ETS algorithm.
 type ExponentialSmootheningConfig struct {
-	Alpha float64
+	Alpha          float64
+	ErrMeasurement *ErrorMeasurement
+}
+
+// HoltWintersConfig is used to configure the HW algorithm.
+type HoltWintersConfig struct {
+	Alpha          float64
+	Beta           float64
+	Gamma          float64
+	Period         int
+	ErrMeasurement *ErrorMeasurement
 }
