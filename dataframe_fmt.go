@@ -130,7 +130,7 @@ func (df *DataFrame) Table(opts ...TableOptions) string {
 func (df *DataFrame) String() string {
 
 	if df.NRows() <= 6 {
-		return df.Table()
+		return df.Table(TableOptions{DontLock: true})
 	}
 
 	idx := []int{0, 1, 2, df.n - 3, df.n - 2, df.n - 1}
