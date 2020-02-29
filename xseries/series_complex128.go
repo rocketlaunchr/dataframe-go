@@ -451,6 +451,10 @@ func (s *SeriesComplex128) IsEqualFunc(a, b interface{}) bool {
 	f1 := a.(complex128)
 	f2 := b.(complex128)
 
+	if cmplx.IsNaN(f1) && cmplx.IsNaN(f2) {
+		return true
+	}
+
 	return f1 == f2
 }
 
@@ -578,13 +582,15 @@ func (s *SeriesComplex128) Copy(r ...dataframe.Range) dataframe.Series {
 }
 
 // Table will produce the Series in a table.
-func (s *SeriesComplex128) Table(r ...dataframe.Range) string {
+func (s *SeriesComplex128) Table(opts ...dataframe.TableOptions) string {
 
-	s.lock.RLock()
-	defer s.lock.RUnlock()
+	if len(opts) == 0 {
+		opts = append(opts, dataframe.TableOptions{R: &dataframe.Range{}})
+	}
 
-	if len(r) == 0 {
-		r = append(r, dataframe.Range{})
+	if !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
 	}
 
 	data := [][]string{}
@@ -594,7 +600,7 @@ func (s *SeriesComplex128) Table(r ...dataframe.Range) string {
 
 	if len(s.Values) > 0 {
 
-		start, end, err := r[0].Limits(len(s.Values))
+		start, end, err := opts[0].R.Limits(len(s.Values))
 		if err != nil {
 			panic(err)
 		}
@@ -621,10 +627,8 @@ func (s *SeriesComplex128) Table(r ...dataframe.Range) string {
 	return buf.String()
 }
 
-// String implements Stringer interface.
+// String implements the fmt.Stringer interface. It does not lock the Series.
 func (s *SeriesComplex128) String() string {
-	s.lock.RLock()
-	defer s.lock.RUnlock()
 
 	count := len(s.Values)
 
@@ -659,13 +663,62 @@ func (s *SeriesComplex128) ContainsNil(opts ...dataframe.Options) bool {
 }
 
 // NilCount will return how many nil values are in the series.
-func (s *SeriesComplex128) NilCount(opts ...dataframe.Options) int {
-	if len(opts) == 0 || !opts[0].DontLock {
+func (s *SeriesComplex128) NilCount(opts ...dataframe.NilCountOptions) (int, error) {
+	if len(opts) == 0 {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+		return s.nilCount, nil
+	}
+
+	if !opts[0].DontLock {
 		s.lock.RLock()
 		defer s.lock.RUnlock()
 	}
 
-	return s.nilCount
+	var (
+		ctx context.Context
+		r   *dataframe.Range
+	)
+
+	if opts[0].Ctx == nil {
+		ctx = context.Background()
+	} else {
+		ctx = opts[0].Ctx
+	}
+
+	if opts[0].R == nil {
+		r = &dataframe.Range{}
+	} else {
+		r = opts[0].R
+	}
+
+	start, end, err := r.Limits(len(s.Values))
+	if err != nil {
+		return 0, err
+	}
+
+	if start == 0 && end == len(s.Values)-1 {
+		return s.nilCount, nil
+	}
+
+	var nilCount int
+
+	for i := start; i <= end; i++ {
+		if err := ctx.Err(); err != nil {
+			return 0, err
+		}
+
+		if cmplx.IsNaN(s.Values[i]) {
+
+			if opts[0].StopAtOneNil {
+				return 1, nil
+			}
+
+			nilCount++
+		}
+	}
+
+	return nilCount, nil
 }
 
 // DefaultValueFormatter will return a string representation
@@ -974,4 +1027,47 @@ func (s *SeriesComplex128) FillRand(src rand.Source, probNil float64, rander dat
 			}
 		}
 	}
+}
+
+// IsEqual returns true if s2's values are equal to s.
+func (s *SeriesComplex128) IsEqual(ctx context.Context, s2 dataframe.Series, opts ...dataframe.IsEqualOptions) (bool, error) {
+	if len(opts) == 0 || !opts[0].DontLock {
+		s.lock.RLock()
+		defer s.lock.RUnlock()
+	}
+
+	// Check type
+	cs, ok := s2.(*SeriesComplex128)
+	if !ok {
+		return false, nil
+	}
+
+	// Check number of values
+	if len(s.Values) != len(cs.Values) {
+		return false, nil
+	}
+
+	// Check name
+	if len(opts) != 0 && opts[0].CheckName {
+		if s.name != cs.name {
+			return false, nil
+		}
+	}
+
+	// Check values
+	for i, v := range s.Values {
+		if err := ctx.Err(); err != nil {
+			return false, err
+		}
+
+		if cmplx.IsNaN(v) && cmplx.IsNaN(cs.Values[i]) {
+			continue
+		}
+
+		if v != cs.Values[i] {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

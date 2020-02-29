@@ -120,6 +120,11 @@ func GuessTimeFreq(ctx context.Context, ts *dataframe.SeriesTime, opts ...GuessT
 			candidates := map[parsed]struct{}{}
 			for i := start; i < end; i++ {
 
+				if err := ctx.Err(); err != nil {
+					ret2 = err
+					return
+				}
+
 				val1 := *ts.Values[i]
 				val2 := *ts.Values[i+1]
 

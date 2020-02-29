@@ -16,6 +16,8 @@ type TableOptions struct {
 	// Series is used to display a given set of Series. When nil (default), all Series are displayed.
 	// An index of the Series or the name of the Series can be provided.
 	//
+	// NOTE: This option only applies to DataFrames.
+	//
 	// Example:
 	//
 	//  opts :=  TableOptions{Series: []interface{}{1, "time"}}
@@ -24,13 +26,18 @@ type TableOptions struct {
 
 	// R is used to limit the range of rows.
 	R *Range
+
+	// DontLock can be set to true if the DataFrame or Series should not be locked.
+	DontLock bool
 }
 
-// Table will produce the Dataframe in a table.
+// Table will produce the DataFrame in a table.
 func (df *DataFrame) Table(opts ...TableOptions) string {
 
-	df.lock.RLock()
-	defer df.lock.RUnlock()
+	if len(opts) == 0 || !opts[0].DontLock {
+		df.lock.RLock()
+		defer df.lock.RUnlock()
+	}
 
 	if len(opts) == 0 {
 		opts = append(opts, TableOptions{R: &Range{}})
@@ -119,15 +126,12 @@ func (df *DataFrame) Table(opts ...TableOptions) string {
 	return buf.String()
 }
 
-// String will display Dataframe.
+// String implements the fmt.Stringer interface. It does not lock the DataFrame.
 func (df *DataFrame) String() string {
 
 	if df.NRows() <= 6 {
 		return df.Table()
 	}
-
-	df.lock.RLock()
-	defer df.lock.RUnlock()
 
 	idx := []int{0, 1, 2, df.n - 3, df.n - 2, df.n - 1}
 

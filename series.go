@@ -8,11 +8,38 @@ import (
 	"golang.org/x/exp/rand"
 )
 
-// Options provides a way to set various optional options.
+// Options sets various optional options.
 type Options struct {
 
-	// Don't apply lock
+	// Don't apply lock.
 	DontLock bool
+}
+
+// IsEqualOptions sets various optional options for the IsEqual function.
+type IsEqualOptions struct {
+
+	// Don't apply lock.
+	DontLock bool
+
+	// Check if name is the same.
+	CheckName bool
+}
+
+// NilCount sets various optional options for the NilCount function.
+type NilCountOptions struct {
+
+	// Ctx adds a context.
+	Ctx context.Context
+
+	// R is used to limit the range.
+	R *Range
+
+	// Don't apply lock.
+	DontLock bool
+
+	// When StopAtOneNil is set, the function will return after finding at least 1 nil value.
+	// It can be used as a ContainsNil function when used with R.
+	StopAtOneNil bool
 }
 
 // ValueToStringFormatter is used to convert a value
@@ -112,7 +139,10 @@ type Series interface {
 	ContainsNil(opts ...Options) bool
 
 	// NilCount will return how many nil values are in the series.
-	NilCount(opts ...Options) int
+	NilCount(opts ...NilCountOptions) (int, error)
+
+	// IsEqual returns true if s2's values are equal to s.
+	IsEqual(ctx context.Context, s2 Series, opts ...IsEqualOptions) (bool, error)
 }
 
 // NewSerieser is an interface for a Series to create a new initialized Series of the same type.

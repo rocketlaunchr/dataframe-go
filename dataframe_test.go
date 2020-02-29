@@ -205,3 +205,22 @@ func TestSort(t *testing.T) {
 	df.Unlock()
 
 }
+
+func TestDfIsEqual(t *testing.T) {
+	ctx := context.Background()
+
+	s1 := NewSeriesInt64("day", nil, nil, 1, 2, 4, 3, nil)
+	s2 := NewSeriesFloat64("sales", nil, nil, 50.3, 23.4, 23.4, 56.2, nil)
+
+	df1 := NewDataFrame(s1, s2)
+	df2 := NewDataFrame(s1, s2)
+
+	eq, err := df1.IsEqual(ctx, df2, IsEqualOptions{CheckName: true})
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+
+	if !eq {
+		t.Errorf("Df1: [%T] %s is not equal to Df2: [%T] %s\n", df1, df1.String(), df2, df2.String())
+	}
+}
