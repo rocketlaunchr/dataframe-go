@@ -79,7 +79,7 @@ type InterpolateOptions struct {
 // Interpolate will accept a DataFrame or SeriesFloat64 and interpolate the missing values.
 // If the InPlace option is set, the DataFrame or SeriesFloat64 is modified "in place".
 // Alternatively, a []*dataframe.OrderedMapIntFloat64 or *dataframe.OrderedMapIntFloat64 is returned respecively.
-// When used with a DataFrame, only SeriesFloat64 columns (that are not set as the XAxis) are interpolated.
+// When used with a DataFrame, only SeriesFloat64 columns (that is not set as the XAxis) are interpolated.
 func Interpolate(ctx context.Context, sdf interface{}, opts InterpolateOptions) (interface{}, error) {
 
 	switch typ := sdf.(type) {
