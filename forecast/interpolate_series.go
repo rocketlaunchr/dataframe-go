@@ -18,6 +18,22 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		defer fs.Unlock()
 	}
 
+	var xaxis *dataframe.SeriesFloat64
+	if opts.XAxis != nil {
+		switch s := opts.XAxis.(type) {
+		case *dataframe.SeriesFloat64:
+			xaxis = s
+		case dataframe.ToSeriesFloat64:
+			var err error
+			xaxis, err = s.ToSeriesFloat64(ctx, false)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			panic("XAxis option must be a SeriesFloat64 or convertable to a SeriesFloat64")
+		}
+	}
+
 	var omap *dataframe.OrderedMapIntFloat64
 	if !opts.InPlace {
 		omap = dataframe.NewOrderedMapIntFloat64()
@@ -31,6 +47,35 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 	start, end, err := r.Limits(len(fs.Values))
 	if err != nil {
 		return nil, err
+	}
+
+	if xaxis != nil {
+
+		subsetL := end - start + 1
+
+		if len(xaxis.Values) != len(fs.Values) && len(xaxis.Values) != subsetL {
+			panic("XAxis must contain the same number of rows")
+		}
+
+		// TODO: When !InPlace, check at the location of algorithm.
+		if opts.InPlace {
+
+			ncOpts := dataframe.NilCountOptions{
+				Ctx:          ctx,
+				R:            &dataframe.Range{Start: &start, End: &end},
+				DontLock:     true,
+				StopAtOneNil: true,
+			}
+
+			nc, err := xaxis.NilCount(ncOpts)
+			if err != nil {
+				return nil, err
+			}
+
+			if nc > 0 {
+				panic("XAxis must contain the no nil values")
+			}
+		}
 	}
 
 	// TODO: Check if there is only 1 non-nil value between start and end.

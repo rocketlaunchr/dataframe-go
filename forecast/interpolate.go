@@ -70,9 +70,10 @@ type InterpolateOptions struct {
 	R *dataframe.Range
 
 	// XAxis is used to set the "x-axis" for the purposes of interpolation.
-	// When interpolating a Series, it must be a SeriesFloat64 or implement ToSeriesFloat64. It must also contain the same
-	// number of rows as the Series being interpolated.
-	// When used with a DataFrame
+	// When interpolating a Series, it must implement dataframe.ToSeriesFloat64 or be a SeriesFloat64.
+	// It must also contain the same number of rows as R with no nil-values in that range.
+	// When used with a DataFrame, it can be an int or string used to identify the column of the DataFrame
+	// which will be used as the "x-axis".
 	XAxis interface{}
 }
 
