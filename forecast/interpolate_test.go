@@ -252,3 +252,37 @@ func TestInterpolateSeriesLinearFillBoth(t *testing.T) {
 		t.Errorf("[%T] %v Not Equal to [%T] %v", data, data.Values, expected, expected.Values)
 	}
 }
+
+func TestInterpolateDfForwardFill(t *testing.T) {
+	ctx := context.Background()
+
+	s1 := dataframe.NewSeriesFloat64("column 1", nil, nil, 29.33, nil, nil, nil, 21.7, 35.14, nil, nil)
+	s2 := dataframe.NewSeriesFloat64("column 2", nil, nil, 50.3, nil, nil, 56.2, 45.34, nil, 39.26, nil)
+
+	df := dataframe.NewDataFrame(s1, s2)
+	opts := InterpolateOptions{
+		Method:        ForwardFill{},
+		FillDirection: Forward,
+		Limit:         nil,
+		FillRegion:    nil,
+		InPlace:       true,
+	}
+
+	s3 := dataframe.NewSeriesFloat64("column 3", nil, 29.33, 29.33, 29.33, 29.33, 29.33, 21.7, 35.14, 35.14, 35.14)
+	s4 := dataframe.NewSeriesFloat64("column 4", nil, 50.3, 50.3, 50.3, 50.3, 56.2, 45.34, 45.34, 39.26, 39.26)
+
+	expected := dataframe.NewDataFrame(s3, s4)
+
+	_, err := Interpolate(ctx, df, opts)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+	eq, err := df.IsEqual(ctx, expected)
+	if err != nil {
+		t.Errorf("error encountered %s", err)
+	}
+
+	if !eq {
+		t.Errorf("df: [%T]\n[%s]\n is not equal to expected: [%T]\n%s\n", df, df.String(), expected, expected.String())
+	}
+}
