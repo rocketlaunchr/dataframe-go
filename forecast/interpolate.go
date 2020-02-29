@@ -68,11 +68,18 @@ type InterpolateOptions struct {
 
 	// R is used to limit the range of the Series for interpolation purposes.
 	R *dataframe.Range
+
+	// XAxis is used to set the "x-axis" for the purposes of interpolation.
+	// When interpolating a Series, it must be a SeriesFloat64 or implement ToSeriesFloat64. It must also contain the same
+	// number of rows as the Series being interpolated.
+	// When used with a DataFrame
+	XAxis interface{}
 }
 
 // Interpolate will accept a DataFrame or SeriesFloat64 and interpolate the missing values.
 // If the InPlace option is set, the DataFrame or SeriesFloat64 is modified "in place".
 // Alternatively, a []*dataframe.OrderedMapIntFloat64 or *dataframe.OrderedMapIntFloat64 is returned respecively.
+// When used with a DataFrame, only SeriesFloat64 columns (that are not set as the XAxis) are interpolated.
 func Interpolate(ctx context.Context, sdf interface{}, opts InterpolateOptions) (interface{}, error) {
 
 	switch typ := sdf.(type) {
