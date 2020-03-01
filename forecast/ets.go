@@ -8,7 +8,6 @@ import (
 
 	"github.com/bradfitz/iter"
 	dataframe "github.com/rocketlaunchr/dataframe-go"
-	pd "github.com/rocketlaunchr/dataframe-go/pandas"
 	"github.com/rocketlaunchr/dataframe-go/utils/utime"
 )
 
@@ -47,37 +46,34 @@ func NewEtsModel() *EtsModel {
 	return model
 }
 
+// Configure sets the various parameters for Ets Algorithm.
+// config must be a ExponentialSmootheningConfig struct.
 func (em *EtsModel) Configure(config interface{}) {
 	if cfg, ok := config.(*ExponentialSmootheningConfig); ok {
 
+		if (cfg.Alpha < 0.0) || (cfg.Alpha > 1.0) {
+			panic("alpha must be between [0,1]")
+		}
+
 		em.alpha = cfg.Alpha
-		em.errorM = cfg.ErrMeasurement
 
 	} else {
-		panic(fmt.Errorf("struct config parameter [%T] is not compartible with ets model", cfg))
+		panic(fmt.Errorf("struct config parameter [%T] is not compartible with ets model Type: [*forecast.ExponentialSmootheningConfig]", cfg))
 	}
 }
 
-// SimpleExponentialSmoothing Function receives a series data of type dataframe.Seriesfloat64
-// It returns a EtsModel from which Fit and Predict method can be carried out.
-func SimpleExponentialSmoothing(ctx context.Context, v interface{}) *EtsModel {
+// Load loads historical data. sdf can be a SeriesFloat64 or DataFrame.
+func (em *EtsModel) Load(sdf interface{}, r *dataframe.Range) {
+	ctx := context.Background()
 
-	var (
-		model *EtsModel
-		err   error
-	)
-
-	switch d := v.(type) {
+	switch d := sdf.(type) {
 	case *dataframe.SeriesFloat64:
 
-		model, err = etsSeries(ctx, d)
-		if err != nil {
-			panic(err)
-		}
+		em.data = d.Values
 
 	case *dataframe.DataFrame:
 
-		model, err = etsDataFrame(ctx, d)
+		err := em.loadDataFromDF(ctx, d)
 		if err != nil {
 			panic(err)
 		}
@@ -86,29 +82,42 @@ func SimpleExponentialSmoothing(ctx context.Context, v interface{}) *EtsModel {
 		panic("unknown data format passed in. make sure you pass in a SeriesFloat64 or a forecast standard two(2) column dataframe.")
 	}
 
-	return model
-}
-
-func etsSeries(ctx context.Context, s *dataframe.SeriesFloat64) (*EtsModel, error) {
-
-	model := &EtsModel{
-		alpha:          0.0,
-		data:           []float64{},
-		trainData:      []float64{},
-		testData:       []float64{},
-		fcastData:      &dataframe.SeriesFloat64{},
-		initialLevel:   0.0,
-		smoothingLevel: 0.0,
-		errorM:         &ErrorMeasurement{},
-		inputIsDf:      false,
+	tr := &dataframe.Range{}
+	if r != nil {
+		tr = r
 	}
 
-	model.data = s.Values
+	count := len(em.data)
+	if count == 0 {
+		panic(ErrNoRows)
+	}
 
-	return model, nil
+	start, end, err := tr.Limits(count)
+	if err != nil {
+		panic(err)
+	}
+
+	// Validation
+	if end-start < 1 {
+		panic("no values in selected series range")
+	}
+
+	trainData := em.data[start : end+1]
+	em.trainData = trainData
+
+	testData := em.data[end+1:]
+	if len(testData) < 3 {
+		panic("there should be a minimum of 3 data left as testing data")
+	}
+	em.testData = testData
+
+	err = em.trainModel(ctx, start, end)
+	if err != nil {
+		panic(err)
+	}
 }
 
-func etsDataFrame(ctx context.Context, d *dataframe.DataFrame) (*EtsModel, error) {
+func (em *EtsModel) loadDataFromDF(ctx context.Context, d *dataframe.DataFrame) error {
 
 	var (
 		data      []float64
@@ -120,18 +129,6 @@ func etsDataFrame(ctx context.Context, d *dataframe.DataFrame) (*EtsModel, error
 		lastTsVal time.Time
 	)
 
-	model := &EtsModel{
-		alpha:          0.0,
-		data:           []float64{},
-		trainData:      []float64{},
-		testData:       []float64{},
-		fcastData:      &dataframe.SeriesFloat64{},
-		initialLevel:   0.0,
-		smoothingLevel: 0.0,
-		errorM:         &ErrorMeasurement{},
-		inputIsDf:      false,
-	}
-
 	isDf = true
 	// validate that
 	// - DataFrame has exactly two columns
@@ -139,58 +136,90 @@ func etsDataFrame(ctx context.Context, d *dataframe.DataFrame) (*EtsModel, error
 	// - second column is SeriesFloat64
 	if len(d.Series) != 2 {
 
-		panic("dataframe passed in must have exactly two series/columns.")
-	} else {
-		if d.Series[0].Type() != "time" {
-			return nil, errors.New("first column/series must be a SeriesTime")
-		} else { // get the current time interval/freq from the seriesTime
-			if ts, ok := d.Series[0].(*dataframe.SeriesTime); ok {
-				tsName = ts.Name(dataframe.DontLock)
-
-				rowLen := ts.NRows(dataframe.DontLock)
-				// store the last value in timeSeries column
-				lastTsVal = ts.Value(rowLen-1, dataframe.DontLock).(time.Time)
-
-				// guessing with only half the original time series row length
-				half := rowLen / 2
-				utimeOpts := utime.GuessTimeFreqOptions{
-					R:        &dataframe.Range{End: &half},
-					DontLock: true,
-				}
-
-				tsInt, tReverse, err = utime.GuessTimeFreq(ctx, ts, utimeOpts)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				return nil, errors.New("column 0 not convertible to SeriesTime")
-			}
-		}
-
-		if d.Series[1].Type() != "float64" {
-			return nil, errors.New("second column/series must be a SeriesFloat64")
-		} else {
-			val := d.Series[1].Copy()
-			if v, ok := val.(*dataframe.SeriesFloat64); ok {
-				data = v.Values
-			} else {
-				return nil, errors.New("column 1 not convertible to SeriesFloat64")
-			}
-		}
+		return errors.New("dataframe passed in must have exactly two series/columns")
 	}
 
-	model.data = data
-	model.inputIsDf = isDf
-	model.tsInterval = tsInt
-	model.tsIntReverse = tReverse
-	model.tsName = tsName
-	model.lastTsVal = lastTsVal
+	if d.Series[0].Type() == "time" {
+		// get the current time interval/freq from the seriesTime
+		if ts, ok := d.Series[0].(*dataframe.SeriesTime); ok {
+			tsName = ts.Name(dataframe.DontLock)
 
-	return model, nil
+			rowLen := ts.NRows(dataframe.DontLock)
+			// store the last value in timeSeries column
+			lastTsVal = ts.Value(rowLen-1, dataframe.DontLock).(time.Time)
 
+			// guessing with only half the original time series row length
+			// for efficiency
+			half := rowLen / 2
+			utimeOpts := utime.GuessTimeFreqOptions{
+				R:        &dataframe.Range{End: &half},
+				DontLock: true,
+			}
+
+			tsInt, tReverse, err = utime.GuessTimeFreq(ctx, ts, utimeOpts)
+			if err != nil {
+				return err
+			}
+		} else {
+			return errors.New("column 0 not convertible to SeriesTime")
+		}
+	} else {
+		return errors.New("first column/series must be a SeriesTime")
+	}
+
+	if d.Series[1].Type() == "float64" {
+		val := d.Series[1].Copy()
+		if v, ok := val.(*dataframe.SeriesFloat64); ok {
+			data = v.Values
+		} else {
+			return errors.New("column 1 not convertible to SeriesFloat64")
+		}
+	} else {
+		return errors.New("second column/series must be a SeriesFloat64")
+	}
+
+	em.data = data
+	em.inputIsDf = isDf
+	em.tsInterval = tsInt
+	em.tsIntReverse = tReverse
+	em.tsName = tsName
+	em.lastTsVal = lastTsVal
+
+	return nil
 }
 
-// Fit Method performs the splitting and trainging of the EtsModel based on the Exponential Smoothing algorithm.
+func (em *EtsModel) trainModel(ctx context.Context, start, end int) error {
+	var (
+		α, st, Yorigin float64
+	)
+
+	α = em.alpha
+
+	// Training smoothing Level
+	for i := start; i < end+1; i++ {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
+		xt := em.data[i]
+
+		if i == start {
+			st = xt
+			em.initialLevel = xt
+
+		} else if i == end { // Setting the last value in traindata as Yorigin value for bootstrapping
+			Yorigin = em.data[i]
+			em.originValue = Yorigin
+		} else {
+			st = α*xt + (1-α)*st
+		}
+	}
+	em.smoothingLevel = st
+
+	return nil
+}
+
+// Fit Method performs the splitting and training of the EtsModel based on the Exponential Smoothing algorithm.
 // It returns a trained EtsModel ready to carry out future predictions.
 // The argument α must be between [0,1].
 func (em *EtsModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{}, et ...ErrorType) (*EtsModel, error) {
@@ -374,61 +403,4 @@ func (em *EtsModel) Predict(ctx context.Context, m int) (interface{}, error) {
 	}
 
 	return fdf, nil
-}
-
-// Summary function is used to Print out Data Summary
-// From the Trained Model
-func (em *EtsModel) Summary() {
-	// Display training info
-	alpha := dataframe.NewSeriesFloat64("Alpha", nil, em.alpha)
-	initLevel := dataframe.NewSeriesFloat64("Initial Level", nil, em.initialLevel)
-	st := dataframe.NewSeriesFloat64("Smooting Level", nil, em.smoothingLevel)
-
-	info := dataframe.NewDataFrame(alpha, initLevel, st)
-	fmt.Println(info.Table())
-
-	// Display error Measurement info
-	errTyp := em.errorM.Type()
-	errVal := em.errorM.Value()
-	errorM := dataframe.NewSeriesFloat64(errTyp, nil, errVal)
-
-	fmt.Println(errorM.Table())
-
-	// Display Test Data and Forecast data info
-	testSeries := dataframe.NewSeriesFloat64("Test Data", nil, em.testData)
-	fmt.Println(testSeries.Table())
-
-	fmt.Println(em.fcastData.Table())
-}
-
-// Describe outputs various statistical information of testData or trainData Series in EtsModel
-func (em *EtsModel) Describe(ctx context.Context, typ DataType, opts ...pd.DescribeOptions) {
-	var o pd.DescribeOptions
-
-	if len(opts) > 0 {
-		o = opts[0]
-	}
-
-	data := &dataframe.SeriesFloat64{}
-
-	if typ == TrainData {
-		trainSeries := dataframe.NewSeriesFloat64("Test Data", nil, em.trainData)
-		data = trainSeries
-	} else if typ == TestData {
-		testSeries := dataframe.NewSeriesFloat64("Test Data", nil, em.testData)
-		data = testSeries
-	} else if typ == MainData {
-		dataSeries := dataframe.NewSeriesFloat64("Complete Data", nil, em.data)
-		data = dataSeries
-	} else {
-		panic(errors.New("unrecognised data type selection specified"))
-	}
-
-	output, err := pd.Describe(ctx, data, o)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(output)
-
-	return
 }

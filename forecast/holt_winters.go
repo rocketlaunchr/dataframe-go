@@ -8,7 +8,6 @@ import (
 
 	"github.com/bradfitz/iter"
 	dataframe "github.com/rocketlaunchr/dataframe-go"
-	pd "github.com/rocketlaunchr/dataframe-go/pandas"
 	"github.com/rocketlaunchr/dataframe-go/utils/utime"
 )
 
@@ -60,75 +59,90 @@ func NewHwModel() *HwModel {
 	return model
 }
 
+// Configure sets the various parameters for Ets Algorithm.
+// config must be a HoltWintersConfig struct.
 func (hm *HwModel) Configure(config interface{}) {
 	if cfg, ok := config.(*HoltWintersConfig); ok {
+
+		if (cfg.Alpha < 0.0) || (cfg.Alpha > 1.0) {
+			panic("alpha must be between [0,1]")
+		}
+
+		if (cfg.Beta < 0.0) || (cfg.Beta > 1.0) {
+			panic("beta must be between [0,1]")
+		}
+
+		if (cfg.Gamma < 0.0) || (cfg.Gamma > 1.0) {
+			panic("gamma must be between [0,1]")
+		}
 
 		hm.alpha = cfg.Alpha
 		hm.beta = cfg.Beta
 		hm.gamma = cfg.Gamma
 		hm.period = cfg.Period
-		hm.errorM = cfg.ErrMeasurement
 
 	} else {
-		panic(fmt.Errorf("struct config parameter [%T] is not compartible with hw model", cfg))
+		panic(fmt.Errorf("struct config parameter [%T] is not compartible with ets model Type: [*forecast.HoltWintersConfig]", cfg))
 	}
 }
 
-// HoltWinters Function receives a series data of type dataframe.Seriesfloat64
-// It returns a HwModel from which Fit and Predict method can be carried out.
-func HoltWinters(ctx context.Context, v interface{}) *HwModel {
-	var (
-		model *HwModel
-		err   error
-	)
+// Load loads historical data. sdf can be a SeriesFloat64 or DataFrame.
+func (hm *HwModel) Load(sdf interface{}, r *dataframe.Range) {
+	ctx := context.Background()
 
-	switch d := v.(type) {
+	switch d := sdf.(type) {
 	case *dataframe.SeriesFloat64:
-		model, err = hwSeries(ctx, d)
-		if err != nil {
-			panic(err)
-		}
+
+		hm.data = d.Values
 
 	case *dataframe.DataFrame:
-		model, err = hwDataFrame(ctx, d)
+
+		err := hm.loadDataFromDF(ctx, d)
 		if err != nil {
 			panic(err)
 		}
 
 	default:
-		panic("unknown data format passed in. make sure you pass in a SeriesFloat64 or standard two(2) column dataframe")
+		panic("unknown data format passed in. make sure you pass in a SeriesFloat64 or a forecast standard two(2) column dataframe.")
 	}
 
-	return model
-}
-
-func hwSeries(ctx context.Context, s *dataframe.SeriesFloat64) (*HwModel, error) {
-
-	model := &HwModel{
-		data:                 []float64{},
-		trainData:            []float64{},
-		testData:             []float64{},
-		fcastData:            &dataframe.SeriesFloat64{},
-		initialSmooth:        0.0,
-		initialTrend:         0.0,
-		initialSeasonalComps: []float64{},
-		smoothingLevel:       0.0,
-		trendLevel:           0.0,
-		seasonalComps:        []float64{},
-		period:               0,
-		alpha:                0.0,
-		beta:                 0.0,
-		gamma:                0.0,
-		errorM:               &ErrorMeasurement{},
-		inputIsDf:            false,
+	tr := &dataframe.Range{}
+	if r != nil {
+		tr = r
 	}
 
-	model.data = s.Values
+	count := len(hm.data)
+	if count == 0 {
+		panic(ErrNoRows)
+	}
 
-	return model, nil
+	start, end, err := tr.Limits(count)
+	if err != nil {
+		panic(err)
+	}
+
+	// Validation
+	if end-start < 1 {
+		panic("no values in selected series range")
+	}
+
+	trainData := hm.data[start : end+1]
+	hm.trainData = trainData
+
+	testData := hm.data[end+1:]
+	if len(testData) < 3 {
+		panic("there should be a minimum of 3 data left as testing data")
+	}
+	hm.testData = testData
+
+	err = hm.trainModel(ctx, start, end)
+	if err != nil {
+		panic(err)
+	}
 }
 
-func hwDataFrame(ctx context.Context, d *dataframe.DataFrame) (*HwModel, error) {
+func (hm *HwModel) loadDataFromDF(ctx context.Context, d *dataframe.DataFrame) error {
+
 	var (
 		data      []float64
 		isDf      bool
@@ -139,25 +153,6 @@ func hwDataFrame(ctx context.Context, d *dataframe.DataFrame) (*HwModel, error) 
 		lastTsVal time.Time
 	)
 
-	model := &HwModel{
-		data:                 []float64{},
-		trainData:            []float64{},
-		testData:             []float64{},
-		fcastData:            &dataframe.SeriesFloat64{},
-		initialSmooth:        0.0,
-		initialTrend:         0.0,
-		initialSeasonalComps: []float64{},
-		smoothingLevel:       0.0,
-		trendLevel:           0.0,
-		seasonalComps:        []float64{},
-		period:               0,
-		alpha:                0.0,
-		beta:                 0.0,
-		gamma:                0.0,
-		errorM:               &ErrorMeasurement{},
-		inputIsDf:            false,
-	}
-
 	isDf = true
 	// validate that
 	// - DataFrame has exactly two columns
@@ -165,67 +160,128 @@ func hwDataFrame(ctx context.Context, d *dataframe.DataFrame) (*HwModel, error) 
 	// - second column is SeriesFloat64
 	if len(d.Series) != 2 {
 
-		return nil, errors.New("dataframe passed in must have exactly two series/columns.")
-	} else {
-		if d.Series[0].Type() != "time" {
-			return nil, errors.New("first column/series must be a SeriesTime")
-		} else { // get the current time interval/freq from the seriesTime
-			if ts, ok := d.Series[0].(*dataframe.SeriesTime); ok {
-				tsName = ts.Name(dataframe.DontLock)
-
-				rowLen := ts.NRows(dataframe.DontLock)
-				// store the last value in timeSeries column
-				lastTsVal = ts.Value(rowLen-1, dataframe.DontLock).(time.Time)
-
-				// guessing with only half the original time series row length
-				half := rowLen / 2
-				utimeOpts := utime.GuessTimeFreqOptions{
-					R:        &dataframe.Range{End: &half},
-					DontLock: true,
-				}
-
-				tsInt, tReverse, err = utime.GuessTimeFreq(ctx, ts, utimeOpts)
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				return nil, errors.New("column 0 not convertible to SeriesTime")
-			}
-		}
-
-		if d.Series[1].Type() != "float64" {
-			return nil, errors.New("second column/series must be a SeriesFloat64")
-		} else {
-			val := d.Series[1].Copy()
-			if v, ok := val.(*dataframe.SeriesFloat64); ok {
-				data = v.Values
-			} else {
-				return nil, errors.New("column 1 not convertible to SeriesFloat64")
-			}
-		}
+		return errors.New("dataframe passed in must have exactly two series/columns")
 	}
 
-	model.data = data
+	if d.Series[0].Type() == "time" {
+		// get the current time interval/freq from the seriesTime
+		if ts, ok := d.Series[0].(*dataframe.SeriesTime); ok {
+			tsName = ts.Name(dataframe.DontLock)
 
-	model.inputIsDf = isDf
-	model.tsInterval = tsInt
-	model.tsIntReverse = tReverse
-	model.tsName = tsName
-	model.lastTsVal = lastTsVal
+			rowLen := ts.NRows(dataframe.DontLock)
+			// store the last value in timeSeries column
+			lastTsVal = ts.Value(rowLen-1, dataframe.DontLock).(time.Time)
 
-	return model, nil
+			// guessing with only half the original time series row length
+			// for efficiency
+			half := rowLen / 2
+			utimeOpts := utime.GuessTimeFreqOptions{
+				R:        &dataframe.Range{End: &half},
+				DontLock: true,
+			}
+
+			tsInt, tReverse, err = utime.GuessTimeFreq(ctx, ts, utimeOpts)
+			if err != nil {
+				return err
+			}
+		} else {
+			return errors.New("column 0 not convertible to SeriesTime")
+		}
+	} else {
+		return errors.New("first column/series must be a SeriesTime")
+	}
+
+	if d.Series[1].Type() == "float64" {
+		val := d.Series[1].Copy()
+		if v, ok := val.(*dataframe.SeriesFloat64); ok {
+			data = v.Values
+		} else {
+			return errors.New("column 1 not convertible to SeriesFloat64")
+		}
+	} else {
+		return errors.New("second column/series must be a SeriesFloat64")
+	}
+
+	hm.data = data
+	hm.inputIsDf = isDf
+	hm.tsInterval = tsInt
+	hm.tsIntReverse = tReverse
+	hm.tsName = tsName
+	hm.lastTsVal = lastTsVal
+
+	return nil
 }
 
-// Fit Method performs the splitting and trainging of the HwModel based on the Tripple Exponential Smoothing algorithm.
+func (hm *HwModel) trainModel(ctx context.Context, start, end int) error {
+	var (
+		α, β, γ        float64
+		period         int
+		trnd, prevTrnd float64 // trend
+		st, prevSt     float64 // smooth
+	)
+
+	α = hm.alpha
+	β = hm.beta
+	γ = hm.gamma
+	period = hm.period
+
+	y := hm.data[start : end+1]
+
+	seasonals := initialSeasonalComponents(y, period)
+
+	hm.initialSeasonalComps = initialSeasonalComponents(y, period)
+
+	trnd = initialTrend(y, period)
+	hm.initialTrend = trnd
+
+	for i := start; i < end+1; i++ {
+		// Breaking out on context failure
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
+		xt := y[i]
+
+		if i == start { // Set initial smooth
+			st = xt
+
+			hm.initialSmooth = xt
+
+		} else {
+			// multiplicative method
+			// prevSt, st = st, α * (xt / seasonals[i % period]) + (1 - α) * (st + trnd)
+			// prevTrnd, trnd = trnd, β * (st - prevSt) + (1 - β) * trnd
+			// seasonals[i % period] = γ * (xt / (prevSt + prevTrnd)) + (1 - γ) * seasonals[i % period]
+
+			// additive method
+			prevSt, st = st, α*(xt-seasonals[i%period])+(1-α)*(st+trnd)
+			prevTrnd, trnd = trnd, β*(st-prevSt)+(1-β)*trnd
+			seasonals[i%period] = γ*(xt-prevSt-prevTrnd) + (1-γ)*seasonals[i%period]
+			// _ = prevTrnd
+			// fmt.Println(st + trnd + seasonals[i % period])
+		}
+
+	}
+
+	hm.smoothingLevel = st
+	hm.trendLevel = trnd
+	hm.period = period
+	hm.seasonalComps = seasonals
+
+	return nil
+}
+
+// Fit Method performs the splitting and training of the HwModel based on the Tripple Exponential Smoothing algorithm.
 // It returns a trained HwModel ready to carry out future predictions.
 // The arguments α, beta nd gamma must be between [0,1]. Recent values receive more weight when α is closer to 1.
 func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{}, et ...ErrorType) (*HwModel, error) {
 
 	var (
-		α, β, γ float64
-		period  int
-		r       *dataframe.Range
-		errTyp  ErrorType
+		α, β, γ        float64
+		period         int
+		r              *dataframe.Range
+		errTyp         ErrorType
+		trnd, prevTrnd float64 // trend
 	)
 
 	if o, ok := opts.(HoltWintersConfig); ok {
@@ -239,6 +295,7 @@ func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{
 		return nil, errors.New("fit options passed is not compartible with holtwinters model")
 	}
 
+	r = &dataframe.Range{}
 	if tr != nil {
 		r = tr
 	}
@@ -290,7 +347,6 @@ func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{
 
 	hm.initialSeasonalComps = initialSeasonalComponents(y, period)
 
-	var trnd, prevTrnd float64
 	trnd = initialTrend(y, period)
 	hm.initialTrend = trnd
 
@@ -443,80 +499,4 @@ func (hm *HwModel) Predict(ctx context.Context, h int) (interface{}, error) {
 	}
 
 	return fdf, nil
-}
-
-// Summary function is used to Print out Data Summary
-// From the Trained Model
-func (hm *HwModel) Summary() {
-	// Display training info
-	alpha := dataframe.NewSeriesFloat64("Alpha", nil, hm.alpha)
-	beta := dataframe.NewSeriesFloat64("Beta", nil, hm.beta)
-	gamma := dataframe.NewSeriesFloat64("Gamma", nil, hm.gamma)
-	period := dataframe.NewSeriesFloat64("Period", nil, hm.period)
-
-	infoConstants := dataframe.NewDataFrame(alpha, beta, gamma, period)
-	fmt.Println(infoConstants.Table())
-
-	initSmooth := dataframe.NewSeriesFloat64("Initial Smooothing Level", nil, hm.initialSmooth)
-	initTrend := dataframe.NewSeriesFloat64("Initial Trend Level", nil, hm.initialTrend)
-
-	st := dataframe.NewSeriesFloat64("Smooting Level", nil, hm.smoothingLevel)
-	trnd := dataframe.NewSeriesFloat64("Trend Level", nil, hm.trendLevel)
-
-	infoComponents := dataframe.NewDataFrame(initSmooth, initTrend, st, trnd)
-	fmt.Println(infoComponents.Table())
-
-	initSeasonalComps := dataframe.NewSeriesFloat64("Initial Seasonal Components", nil)
-	initSeasonalComps.Values = hm.initialSeasonalComps
-
-	seasonalComps := dataframe.NewSeriesFloat64("Trained Seasonal Components", nil)
-	seasonalComps.Values = hm.seasonalComps
-
-	fmt.Println(initSeasonalComps.Table())
-	fmt.Println(seasonalComps.Table())
-
-	// Display error Measurement info
-	errTyp := hm.errorM.Type()
-	errVal := hm.errorM.Value()
-	errorM := dataframe.NewSeriesFloat64(errTyp, nil, errVal)
-
-	fmt.Println(errorM.Table())
-
-	// Display Test Data and Forecast data info
-	testSeries := dataframe.NewSeriesFloat64("Test Data", nil, hm.testData)
-	fmt.Println(testSeries.Table())
-
-	fmt.Println(hm.fcastData.Table())
-}
-
-// Describe outputs various statistical information of testData or trainData Series in HwModel
-func (hm *HwModel) Describe(ctx context.Context, typ DataType, opts ...pd.DescribeOptions) {
-	var o pd.DescribeOptions
-
-	if len(opts) > 0 {
-		o = opts[0]
-	}
-
-	data := &dataframe.SeriesFloat64{}
-
-	if typ == TrainData {
-		trainSeries := dataframe.NewSeriesFloat64("Train Data", nil, hm.trainData)
-		data = trainSeries
-	} else if typ == TestData {
-		testSeries := dataframe.NewSeriesFloat64("Test Data", nil, hm.testData)
-		data = testSeries
-	} else if typ == MainData {
-		dataSeries := dataframe.NewSeriesFloat64("Complete Data", nil, hm.data)
-		data = dataSeries
-	} else {
-		panic(errors.New("unrecognised data type selection specified"))
-	}
-
-	output, err := pd.Describe(ctx, data, o)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(output)
-
-	return
 }

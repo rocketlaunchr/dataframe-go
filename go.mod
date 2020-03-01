@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go v0.53.0
 	github.com/bradfitz/iter v0.0.0-20191230175014-e8f45d346db8
 	github.com/brianvoe/gofakeit/v4 v4.2.1
+	github.com/davecgh/go-spew v1.1.0
 	github.com/google/go-cmp v0.4.0
 	github.com/icza/gox v0.0.0-20200117090206-f8d4f2061c23
 	github.com/olekukonko/tablewriter v0.0.4
