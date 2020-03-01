@@ -353,22 +353,22 @@ func (em *EtsModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface
 	return em, nil
 }
 
-// Predict method is used to run future predictions for Ets
-// Using Ets Bootstrapping method
-// It returns an interface{} result that is either dataframe.SeriesFloat64 or dataframe.Dataframe format
-func (em *EtsModel) Predict(ctx context.Context, m int) (interface{}, error) {
-	if m <= 0 {
+// Predict forecasts the next n values for a Series or DataFrame.
+// If a Series was provided to Load function, then a Series is retured.
+// Alternatively a DataFrame is returned.
+func (em *EtsModel) Predict(ctx context.Context, n int) (interface{}, error) {
+	if n <= 0 {
 		return nil, errors.New("m must be greater than 0")
 	}
 
-	forecast := make([]float64, m)
+	forecast := make([]float64, n)
 	α := em.alpha
 	Yorigin := em.originValue
 	st := em.smoothingLevel
 
 	// Now calculate forecast
 	pos := 0
-	for range iter.N(m) {
+	for range iter.N(n) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -384,7 +384,7 @@ func (em *EtsModel) Predict(ctx context.Context, m int) (interface{}, error) {
 
 	if em.inputIsDf {
 
-		size := m + 1
+		size := n + 1
 
 		// generate SeriesTime to start and continue from where it stopped in data input
 		opts := utime.NewSeriesTimeOptions{
@@ -392,7 +392,7 @@ func (em *EtsModel) Predict(ctx context.Context, m int) (interface{}, error) {
 		}
 		ts, err := utime.NewSeriesTime(ctx, em.tsName, em.tsInterval, em.lastTsVal, em.tsIntReverse, opts)
 		if err != nil {
-			panic(fmt.Errorf("error encountered while generating time interval prediction: %v\n", err))
+			panic(fmt.Errorf("error encountered while generating time interval prediction: %v", err))
 		}
 
 		// trying to exclude the first starting time

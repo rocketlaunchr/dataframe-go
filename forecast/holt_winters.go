@@ -443,16 +443,17 @@ func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{
 	return hm, nil
 }
 
-// Predict method runs future predictions for HoltWinter Model
-// It returns an interface{} result that is either dataframe.SeriesFloat64 or dataframe.Dataframe format
-func (hm *HwModel) Predict(ctx context.Context, h int) (interface{}, error) {
+// Predict forecasts the next n values for a Series or DataFrame.
+// If a Series was provided to Load function, then a Series is retured.
+// Alternatively a DataFrame is returned.
+func (hm *HwModel) Predict(ctx context.Context, n int) (interface{}, error) {
 
 	// Validation
-	if h <= 0 {
+	if n <= 0 {
 		return nil, errors.New("value of h must be greater than 0")
 	}
 
-	forecast := make([]float64, h)
+	forecast := make([]float64, n)
 
 	st := hm.smoothingLevel
 	seasonals := hm.seasonalComps
@@ -461,7 +462,7 @@ func (hm *HwModel) Predict(ctx context.Context, h int) (interface{}, error) {
 
 	m := 1
 	pos := 0
-	for range iter.N(h) {
+	for range iter.N(n) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -480,7 +481,7 @@ func (hm *HwModel) Predict(ctx context.Context, h int) (interface{}, error) {
 	fdf.Values = forecast
 
 	if hm.inputIsDf {
-		size := h + 1
+		size := n + 1
 
 		// generate SeriesTime to start and continue from where it stopped in data input
 		opts := utime.NewSeriesTimeOptions{
@@ -488,7 +489,7 @@ func (hm *HwModel) Predict(ctx context.Context, h int) (interface{}, error) {
 		}
 		ts, err := utime.NewSeriesTime(ctx, hm.tsName, hm.tsInterval, hm.lastTsVal, hm.tsIntReverse, opts)
 		if err != nil {
-			panic(fmt.Errorf("error encountered while generating time interval prediction: %v\n", err))
+			panic(fmt.Errorf("error encountered while generating time interval prediction: %v", err))
 		}
 
 		// trying to exclude the first starting time
