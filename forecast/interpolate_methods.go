@@ -54,7 +54,7 @@ type Lagrange struct {
 
 func (m Lagrange) x() {}
 
-func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFloat64, omap *dataframe.OrderedMapIntFloat64, start, end int, dir InterpolationFillDirection, limit *int) error {
+func fill(ctx context.Context, fillFn func(int) (float64, error), fs *dataframe.SeriesFloat64, omap *dataframe.OrderedMapIntFloat64, start, end int, dir InterpolationFillDirection, limit *int) error {
 
 	if end-start <= 1 {
 		return nil
@@ -79,10 +79,14 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 				idx = Len - (1+j)/2
 			}
 
+			y, err := fillFn(j)
+			if err != nil {
+				return err
+			}
 			if omap != nil {
-				omap.Set(start+1+idx, fillFn(j))
+				omap.Set(start+1+idx, y)
 			} else {
-				fs.Update(start+1+idx, fillFn(j), dataframe.DontLock)
+				fs.Update(start+1+idx, y, dataframe.DontLock)
 			}
 			added++
 
@@ -100,10 +104,14 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 				return err
 			}
 
+			y, err := fillFn(j)
+			if err != nil {
+				return err
+			}
 			if omap != nil {
-				omap.Set(start+1+j, fillFn(j))
+				omap.Set(start+1+j, y)
 			} else {
-				fs.Update(start+1+j, fillFn(j), dataframe.DontLock)
+				fs.Update(start+1+j, y, dataframe.DontLock)
 			}
 			added++
 
@@ -120,10 +128,14 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 				return err
 			}
 
+			y, err := fillFn(j)
+			if err != nil {
+				return err
+			}
 			if omap != nil {
-				omap.Set(start+1+j, fillFn(j))
+				omap.Set(start+1+j, y)
 			} else {
-				fs.Update(start+1+j, fillFn(j), dataframe.DontLock)
+				fs.Update(start+1+j, y, dataframe.DontLock)
 			}
 			added++
 
@@ -135,4 +147,29 @@ func fill(ctx context.Context, fillFn func(int) float64, fs *dataframe.SeriesFlo
 	}
 
 	return nil
+}
+
+func xVal(row int, fs *dataframe.SeriesFloat64, xaxisF *dataframe.SeriesFloat64, xaxisT *dataframe.SeriesTime, start int) float64 {
+
+	if xaxisF == nil && xaxisT == nil {
+		return float64(row)
+	}
+
+	if xaxisF != nil {
+		// SeriesFloat64
+		if len(fs.Values) == len(xaxisF.Values) {
+			return xaxisF.Values[row]
+		}
+
+		return xaxisF.Values[row-start]
+	}
+
+	// SeriesTime (Special case)
+	if len(fs.Values) == len(xaxisT.Values) {
+		t := xaxisT.Values[row].UnixNano()
+		return float64(t / 1000) // Change time from nanoseconds to microseconds
+	}
+
+	t := xaxisT.Values[row-start].UnixNano()
+	return float64(t / 1000) // Change time from nanoseconds to microseconds
 }

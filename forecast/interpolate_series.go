@@ -21,14 +21,20 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		defer fs.Unlock()
 	}
 
-	var xaxis *dataframe.SeriesFloat64
+	var (
+		xaxisF *dataframe.SeriesFloat64
+		xaxisT *dataframe.SeriesTime
+	)
+
 	if opts.XAxis != nil {
 		switch s := opts.XAxis.(type) {
 		case *dataframe.SeriesFloat64:
-			xaxis = s
+			xaxisF = s
+		case *dataframe.SeriesTime:
+			xaxisT = s
 		case dataframe.ToSeriesFloat64:
 			var err error
-			xaxis, err = s.ToSeriesFloat64(ctx, false)
+			xaxisF, err = s.ToSeriesFloat64(ctx, false)
 			if err != nil {
 				return nil, err
 			}
@@ -52,15 +58,20 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		return nil, err
 	}
 
-	if xaxis != nil {
+	if xaxisF != nil || xaxisT != nil {
 
 		subsetL := end - start + 1
 
-		if len(xaxis.Values) != len(fs.Values) && len(xaxis.Values) != subsetL {
-			panic("XAxis must contain the same number of rows")
+		if xaxisF != nil {
+			if len(xaxisF.Values) != len(fs.Values) && len(xaxisF.Values) != subsetL {
+				panic("XAxis must contain the same number of rows")
+			}
+		} else {
+			if len(xaxisT.Values) != len(fs.Values) && len(xaxisT.Values) != subsetL {
+				panic("XAxis must contain the same number of rows")
+			}
 		}
 
-		// TODO: When !InPlace, check at the location of algorithm.
 		if opts.InPlace {
 
 			ncOpts := dataframe.NilCountOptions{
@@ -70,13 +81,25 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				StopAtOneNil: true,
 			}
 
-			nc, err := xaxis.NilCount(ncOpts)
-			if err != nil {
-				return nil, err
+			var (
+				nc  int
+				err error
+			)
+
+			if xaxisF != nil {
+				nc, err = xaxisF.NilCount(ncOpts)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				nc, err = xaxisT.NilCount(ncOpts)
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			if nc > 0 {
-				panic("XAxis must contain the no nil values")
+				panic("XAxis must contain no nil values")
 			}
 		}
 	}
@@ -105,7 +128,11 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 			for x := start; x <= end; x++ {
 				y := fs.Values[x]
 				if !math.IsNaN(y) {
-					xVals = append(xVals, float64(x))
+					xVal := xVal(x, fs, xaxisF, xaxisT, start)
+					if math.IsNaN(xVal) {
+						panic("XAxis must contain no nil values")
+					}
+					xVals = append(xVals, xVal)
 					yVals = append(yVals, y)
 				}
 			}
@@ -120,7 +147,11 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		for x := start; x <= end; x++ {
 			y := fs.Values[x]
 			if !math.IsNaN(y) {
-				xVals = append(xVals, float64(x))
+				xVal := xVal(x, fs, xaxisF, xaxisT, start)
+				if math.IsNaN(xVal) {
+					panic("XAxis must contain no nil values")
+				}
+				xVals = append(xVals, xVal)
 				yVals = append(yVals, y)
 			}
 		}
@@ -172,51 +203,95 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 
 				switch method := opts.Method.(type) {
 				case nil, ForwardFill:
-					fillFn := func(row int) float64 {
-						return fs.Values[*left]
+					fillFn := func(row int) (float64, error) {
+						return fs.Values[*left], nil
 					}
 					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.FillDirection, opts.Limit)
 					if err != nil {
 						return nil, err
 					}
 				case BackwardFill:
-					fillFn := func(row int) float64 {
-						return fs.Values[*right]
+					fillFn := func(row int) (float64, error) {
+						return fs.Values[*right], nil
 					}
 					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.FillDirection, opts.Limit)
 					if err != nil {
 						return nil, err
 					}
 				case Linear:
-					grad := (fs.Values[*right] - fs.Values[*left]) / float64(*right-*left)
-					c := fs.Values[*left] + grad
-					fillFn := func(row int) float64 {
-						return grad*float64(row) + c
+					var fillFn func(int) (float64, error)
+					if xaxisF == nil && xaxisT == nil {
+						grad := (fs.Values[*right] - fs.Values[*left]) / float64(*right-*left)
+						c := fs.Values[*left] + grad
+						fillFn = func(row int) (float64, error) {
+							return grad*float64(row) + c, nil
+						}
+					} else {
+						xLeft := xVal(*left, fs, xaxisF, xaxisT, start)
+						if math.IsNaN(xLeft) {
+							panic("XAxis must contain no nil values")
+						}
+						xRight := xVal(*right, fs, xaxisF, xaxisT, start)
+						if math.IsNaN(xRight) {
+							panic("XAxis must contain no nil values")
+						}
+						grad := (fs.Values[*right] - fs.Values[*left]) / (xRight - xLeft)
+						fillFn = func(row int) (float64, error) {
+							xr := xVal(*left+row+1, fs, xaxisF, xaxisT, start)
+							if math.IsNaN(xr) {
+								panic("XAxis must contain no nil values")
+							}
+							Δx := xr - xLeft
+							return grad*Δx + fs.Values[*left], nil
+						}
 					}
+
 					err := fill(ctx, fillFn, fs, omap, *left, *right, opts.FillDirection, opts.Limit)
 					if err != nil {
 						return nil, err
 					}
 				case Spline:
 					if method.Order == 3 {
-						splineVals := alg.(gospline.Spline).Range(float64(*left), float64(*right), 1)
-						fillFn := func(row int) float64 {
-							return splineVals[row+1]
+						var fillFn func(int) (float64, error)
+						if xaxisF == nil && xaxisT == nil {
+							splineVals := alg.(gospline.Spline).Range(float64(*left), float64(*right), 1)
+							fillFn = func(row int) (float64, error) {
+								return splineVals[row+1], nil
+							}
+						} else {
+							fillFn = func(row int) (float64, error) {
+								xr := xVal(*left+row+1, fs, xaxisF, xaxisT, start)
+								return alg.(gospline.Spline).At(xr), nil
+							}
 						}
+
 						err := fill(ctx, fillFn, fs, omap, *left, *right, opts.FillDirection, opts.Limit)
 						if err != nil {
 							return nil, err
 						}
 					}
 				case Lagrange:
-					lagrangeXVals := dataframe.Float64Range(float64(*left), float64(*right), 1)
-					lagrangeYVals, err := interpolate.WithMulti(alg.(*lagrange.Lagrange), lagrangeXVals)
-					if err != nil {
-						return nil, xerrors.Errorf("Lagrange method: %w", err)
+					var fillFn func(int) (float64, error)
+					if xaxisF == nil && xaxisT == nil {
+						lagrangeXVals := dataframe.Float64Range(float64(*left), float64(*right), 1)
+						lagrangeYVals, err := interpolate.WithMulti(alg.(*lagrange.Lagrange), lagrangeXVals)
+						if err != nil {
+							return nil, xerrors.Errorf("Lagrange method: %w", err)
+						}
+						fillFn = func(row int) (float64, error) {
+							return lagrangeYVals[row+1], nil
+						}
+					} else {
+						fillFn = func(row int) (float64, error) {
+							xr := xVal(*left+row+1, fs, xaxisF, xaxisT, start)
+							lagrangeYVal, err := interpolate.WithSingle(alg.(*lagrange.Lagrange), xr)
+							if err != nil {
+								return 0, xerrors.Errorf("Lagrange method: %w", err)
+							}
+							return lagrangeYVal, nil
+						}
 					}
-					fillFn := func(row int) float64 {
-						return lagrangeYVals[row+1]
-					}
+
 					err = fill(ctx, fillFn, fs, omap, *left, *right, opts.FillDirection, opts.Limit)
 					if err != nil {
 						return nil, err
@@ -236,30 +311,67 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		if start != *firstRow {
 			switch method := opts.Method.(type) {
 			case nil, ForwardFill, BackwardFill:
-				fillFn := func(row int) float64 {
-					return fs.Values[*firstRow]
+				fillFn := func(row int) (float64, error) {
+					return fs.Values[*firstRow], nil
 				}
 				err := fill(ctx, fillFn, fs, omap, start-1, *firstRow, opts.FillDirection, opts.Limit)
 				if err != nil {
 					return nil, err
 				}
 			case Linear:
-				var grad float64
-				if omap != nil {
-					y1 := fs.Values[*firstRow] // existing value
-					y2, exists := omap.Get(*firstRow + 1)
-					if !exists {
-						y2 = fs.Values[*firstRow+1]
-					}
-					grad = (y2 - y1) / 1.0
-				} else {
-					grad = (fs.Values[*firstRow+1] - fs.Values[*firstRow]) / 1.0
-				}
-				c := fs.Values[*firstRow] - grad*float64(*firstRow)
+				var fillFn func(int) (float64, error)
 
-				fillFn := func(row int) float64 {
-					return grad*float64(row+start) + c
+				if xaxisF == nil && xaxisT == nil {
+					var grad float64
+					if omap != nil {
+						y1 := fs.Values[*firstRow] // existing value
+						y2, exists := omap.Get(*firstRow + 1)
+						if !exists {
+							y2 = fs.Values[*firstRow+1]
+						}
+						grad = (y2 - y1) / 1.0
+					} else {
+						grad = (fs.Values[*firstRow+1] - fs.Values[*firstRow]) / 1.0
+					}
+					c := fs.Values[*firstRow] - grad*float64(*firstRow)
+
+					fillFn = func(row int) (float64, error) {
+						return grad*float64(row+start) + c, nil
+					}
+				} else {
+					// Calculate gradient
+					xFirstRow := xVal(*firstRow, fs, xaxisF, xaxisT, start)
+					if math.IsNaN(xFirstRow) {
+						panic("XAxis must contain no nil values")
+					}
+					xFirstRowPlusOne := xVal(*firstRow+1, fs, xaxisF, xaxisT, start)
+					if math.IsNaN(xFirstRowPlusOne) {
+						panic("XAxis must contain no nil values")
+					}
+					Δx := xFirstRowPlusOne - xFirstRow
+
+					var grad float64
+					if omap != nil {
+						y1 := fs.Values[*firstRow] // existing value
+						y2, exists := omap.Get(*firstRow + 1)
+						if !exists {
+							y2 = fs.Values[*firstRow+1]
+						}
+						grad = (y2 - y1) / Δx
+					} else {
+						grad = (fs.Values[*firstRow+1] - fs.Values[*firstRow]) / Δx
+					}
+
+					fillFn = func(row int) (float64, error) {
+						xr := xVal(start+row, fs, xaxisF, xaxisT, start)
+						if math.IsNaN(xr) {
+							panic("XAxis must contain no nil values")
+						}
+						Δx := xFirstRow - xr
+						return fs.Values[*firstRow] - grad*Δx, nil
+					}
 				}
+
 				err := fill(ctx, fillFn, fs, omap, start-1, *firstRow, opts.FillDirection, opts.Limit)
 				if err != nil {
 					return nil, err
@@ -267,8 +379,8 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 			case Spline:
 				if method.Order == 3 {
 					splineVals := alg.(gospline.Spline).Range(float64(start-1), float64(*firstRow), 1)
-					fillFn := func(row int) float64 {
-						return splineVals[row+1]
+					fillFn := func(row int) (float64, error) {
+						return splineVals[row+1], nil
 					}
 					err := fill(ctx, fillFn, fs, omap, start-1, *firstRow, opts.FillDirection, opts.Limit)
 					if err != nil {
@@ -285,30 +397,67 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		if end != *lastRow {
 			switch method := opts.Method.(type) {
 			case nil, ForwardFill, BackwardFill:
-				fillFn := func(row int) float64 {
-					return fs.Values[*lastRow]
+				fillFn := func(row int) (float64, error) {
+					return fs.Values[*lastRow], nil
 				}
 				err := fill(ctx, fillFn, fs, omap, *lastRow, end+1, opts.FillDirection, opts.Limit)
 				if err != nil {
 					return nil, err
 				}
 			case Linear:
-				var grad float64
-				if omap != nil {
-					y2 := fs.Values[*lastRow] // existing value
-					y1, exists := omap.Get(*lastRow - 1)
-					if !exists {
-						y1 = fs.Values[*lastRow-1]
-					}
-					grad = (y2 - y1) / 1.0
-				} else {
-					grad = (fs.Values[*lastRow] - fs.Values[*lastRow-1]) / 1.0
-				}
-				c := fs.Values[*lastRow] - grad*float64(*lastRow)
+				var fillFn func(int) (float64, error)
 
-				fillFn := func(row int) float64 {
-					return grad*float64(row+*lastRow+1) + c
+				if xaxisF == nil && xaxisT == nil {
+					var grad float64
+					if omap != nil {
+						y2 := fs.Values[*lastRow] // existing value
+						y1, exists := omap.Get(*lastRow - 1)
+						if !exists {
+							y1 = fs.Values[*lastRow-1]
+						}
+						grad = (y2 - y1) / 1.0
+					} else {
+						grad = (fs.Values[*lastRow] - fs.Values[*lastRow-1]) / 1.0
+					}
+					c := fs.Values[*lastRow] - grad*float64(*lastRow)
+
+					fillFn = func(row int) (float64, error) {
+						return grad*float64(row+*lastRow+1) + c, nil
+					}
+				} else {
+					// Calculate gradient
+					xLastRow := xVal(*lastRow, fs, xaxisF, xaxisT, start)
+					if math.IsNaN(xLastRow) {
+						panic("XAxis must contain no nil values")
+					}
+					xLastRowMinusOne := xVal(*lastRow-1, fs, xaxisF, xaxisT, start)
+					if math.IsNaN(xLastRowMinusOne) {
+						panic("XAxis must contain no nil values")
+					}
+					Δx := xLastRow - xLastRowMinusOne
+
+					var grad float64
+					if omap != nil {
+						y2 := fs.Values[*lastRow] // existing value
+						y1, exists := omap.Get(*lastRow - 1)
+						if !exists {
+							y1 = fs.Values[*lastRow-1]
+						}
+						grad = (y2 - y1) / Δx
+					} else {
+						grad = (fs.Values[*lastRow] - fs.Values[*lastRow-1]) / Δx
+					}
+
+					fillFn = func(row int) (float64, error) {
+						xr := xVal(*lastRow+1+row, fs, xaxisF, xaxisT, start)
+						if math.IsNaN(xr) {
+							panic("XAxis must contain no nil values")
+						}
+						Δx := xr - xLastRow
+						return grad*Δx + fs.Values[*lastRow], nil
+					}
 				}
+
 				err := fill(ctx, fillFn, fs, omap, *lastRow, end+1, opts.FillDirection, opts.Limit)
 				if err != nil {
 					return nil, err
@@ -316,8 +465,8 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 			case Spline:
 				if method.Order == 3 {
 					splineVals := alg.(gospline.Spline).Range(float64(*lastRow), float64(end+1), 1)
-					fillFn := func(row int) float64 {
-						return splineVals[row+1]
+					fillFn := func(row int) (float64, error) {
+						return splineVals[row+1], nil
 					}
 					err := fill(ctx, fillFn, fs, omap, *lastRow, end+1, opts.FillDirection, opts.Limit)
 					if err != nil {
