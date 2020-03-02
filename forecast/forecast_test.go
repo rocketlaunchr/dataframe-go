@@ -41,6 +41,13 @@ func TestEtsSeries(t *testing.T) {
 		t.Errorf("error encountered: %s", err)
 	}
 	fmt.Println(etsPredict.(*dataframe.SeriesFloat64).String())
+
+	testData := data.Copy(dataframe.Range{Start: &[]int{6}[0]})
+	errVal, err := etsModel.Validate(ctx, testData, nil, RMSE)
+	if err != nil {
+		t.Errorf("error encountered: %s", err)
+	}
+	fmt.Println("Root Mean Squared Error", errVal)
 }
 
 func TestEtsDF(t *testing.T) {
@@ -84,6 +91,13 @@ func TestEtsDF(t *testing.T) {
 		t.Errorf("error encountered: %s", err)
 	}
 	fmt.Println(etsDfPredict.(*dataframe.DataFrame).String())
+
+	testData := dataF.Copy(dataframe.Range{Start: &[]int{6}[0]})
+	errVal, err := etsDfModel.Validate(ctx, testData, nil, RMSE)
+	if err != nil {
+		t.Errorf("error encountered: %s", err)
+	}
+	fmt.Println("Root Mean Squared Error", errVal)
 }
 
 func TestHwSeries(t *testing.T) {
@@ -124,6 +138,13 @@ func TestHwSeries(t *testing.T) {
 		t.Errorf("error encountered: %s", err)
 	}
 	fmt.Println(hwPredict.(*dataframe.SeriesFloat64).String())
+
+	testData := data.Copy(dataframe.Range{Start: &[]int{72}[0]})
+	errVal, err := hwModel.Validate(ctx, testData, nil, RMSE)
+	if err != nil {
+		t.Errorf("error encountered: %s", err)
+	}
+	fmt.Println("Root Mean Squared Error", errVal)
 }
 
 func TestHwDF(t *testing.T) {
@@ -179,4 +200,11 @@ func TestHwDF(t *testing.T) {
 		t.Errorf("error encountered: %s", err)
 	}
 	fmt.Println(hwDfPredict.(*dataframe.DataFrame).String())
+
+	testData := dataF.Copy(dataframe.Range{Start: &[]int{72}[0]})
+	errVal, err := hwDfModel.Validate(ctx, testData, nil, RMSE)
+	if err != nil {
+		t.Errorf("error encountered: %s", err)
+	}
+	fmt.Println("Root Mean Squared Error", errVal)
 }

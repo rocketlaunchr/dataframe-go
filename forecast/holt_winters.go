@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/bradfitz/iter"
@@ -103,7 +104,7 @@ func (hm *HwModel) Load(sdf interface{}, r *dataframe.Range) {
 		}
 
 	default:
-		panic("unknown data format passed in. make sure you pass in a SeriesFloat64 or a forecast standard two(2) column dataframe.")
+		panic("unknown data format passed in. make sure you pass in a SeriesFloat64 or a forecast standard two(2) column dataframe")
 	}
 
 	tr := &dataframe.Range{}
@@ -441,6 +442,87 @@ func (hm *HwModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{
 	}
 
 	return hm, nil
+}
+
+// Validate can be used by providing a validation set of data.
+// It will then forecast the values from the end of the loaded data and then compare
+// them with the validation set.
+func (hm *HwModel) Validate(ctx context.Context, sdf interface{}, r *dataframe.Range, errorType ErrorType) (float64, error) {
+
+	var (
+		actualDataset   *dataframe.SeriesFloat64
+		forecastDataset *dataframe.SeriesFloat64
+		errVal          float64
+	)
+
+	tr := &dataframe.Range{}
+	if r != nil {
+		tr = r
+	}
+
+	switch d := sdf.(type) {
+	case *dataframe.SeriesFloat64:
+
+		val := d.Copy(*tr)
+		if v, ok := val.(*dataframe.SeriesFloat64); ok {
+			actualDataset = v
+		} else {
+			return math.NaN(), errors.New("series data is not SeriesFloat64")
+		}
+
+	case *dataframe.DataFrame:
+
+		if val, ok := d.Series[1].(*dataframe.SeriesFloat64); ok {
+			actualDataset = val.Copy(*tr).(*dataframe.SeriesFloat64)
+		} else {
+			return math.NaN(), errors.New("series data is not SeriesFloat64")
+		}
+
+	default:
+		return math.NaN(), errors.New("unknown data format passed in. make sure you pass in a SeriesFloat64 or a forecast standard two(2) column dataframe")
+	}
+
+	m := len(actualDataset.Values)
+	forecast, err := hm.Predict(ctx, m)
+	if err != nil {
+		return math.NaN(), err
+	}
+
+	switch f := forecast.(type) {
+	case *dataframe.SeriesFloat64:
+		forecastDataset = f
+	case *dataframe.DataFrame:
+		forecastDataset = f.Series[1].(*dataframe.SeriesFloat64)
+	}
+
+	// Calculate error measurement between forecast and actual dataSet
+	errOpts := &ErrorOptions{}
+
+	if errorType == MAE {
+		errVal, _, err = MeanAbsoluteError(ctx, actualDataset, forecastDataset, errOpts)
+		if err != nil {
+			return math.NaN(), err
+		}
+	} else if errorType == SSE {
+		errVal, _, err = SumOfSquaredErrors(ctx, actualDataset, forecastDataset, errOpts)
+		if err != nil {
+			return math.NaN(), err
+		}
+	} else if errorType == RMSE {
+		errVal, _, err = RootMeanSquaredError(ctx, actualDataset, forecastDataset, errOpts)
+		if err != nil {
+			return math.NaN(), err
+		}
+	} else if errorType == MAPE {
+		errVal, _, err = MeanAbsolutePercentageError(ctx, actualDataset, forecastDataset, errOpts)
+		if err != nil {
+			return math.NaN(), err
+		}
+	} else {
+		return math.NaN(), errors.New("Unknown error type")
+	}
+
+	return errVal, nil
 }
 
 // Predict forecasts the next n values for a Series or DataFrame.
