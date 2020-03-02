@@ -39,7 +39,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				return nil, err
 			}
 		default:
-			panic("XAxis option must be a SeriesFloat64 or convertable to a SeriesFloat64")
+			panic("XAxis option must be a SeriesFloat64/SeriesTime or convertable to a SeriesFloat64")
 		}
 	}
 
