@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/bradfitz/iter"
@@ -17,12 +18,10 @@ type EtsModel struct {
 	data           []float64
 	trainData      []float64
 	testData       []float64
-	fcastData      *dataframe.SeriesFloat64
 	initialLevel   float64
 	originValue    float64
 	smoothingLevel float64
 	alpha          float64
-	errorM         *ErrorMeasurement
 	inputIsDf      bool
 	tsInterval     string
 	tsIntReverse   bool
@@ -36,10 +35,8 @@ func NewEtsModel() *EtsModel {
 		data:           []float64{},
 		trainData:      []float64{},
 		testData:       []float64{},
-		fcastData:      &dataframe.SeriesFloat64{},
 		initialLevel:   0.0,
 		smoothingLevel: 0.0,
-		errorM:         &ErrorMeasurement{},
 		inputIsDf:      false,
 	}
 
@@ -219,138 +216,85 @@ func (em *EtsModel) trainModel(ctx context.Context, start, end int) error {
 	return nil
 }
 
-// Fit Method performs the splitting and training of the EtsModel based on the Exponential Smoothing algorithm.
-// It returns a trained EtsModel ready to carry out future predictions.
-// The argument α must be between [0,1].
-func (em *EtsModel) Fit(ctx context.Context, tr *dataframe.Range, opts interface{}, et ...ErrorType) (*EtsModel, error) {
+// Validate can be used by providing a validation set of data.
+// It will then forecast the values from the end of the loaded data and then compare
+// them with the validation set.
+func (em *EtsModel) Validate(ctx context.Context, sdf interface{}, r *dataframe.Range, errorType ErrorType) (float64, error) {
 
 	var (
-		α      float64
-		r      *dataframe.Range
-		errTyp ErrorType
+		actualDataset   *dataframe.SeriesFloat64
+		forecastDataset *dataframe.SeriesFloat64
+		errVal          float64
 	)
 
-	if o, ok := opts.(ExponentialSmootheningConfig); ok {
-
-		α = o.Alpha
-
-	} else {
-		return nil, errors.New("fit options passed is not compartible with ets model")
+	tr := &dataframe.Range{}
+	if r != nil {
+		tr = r
 	}
 
-	if tr != nil {
-		r = tr
-	}
+	switch d := sdf.(type) {
+	case *dataframe.SeriesFloat64:
 
-	if len(et) > 0 {
-		errTyp = et[0]
-	}
-
-	count := len(em.data)
-	if count == 0 {
-		return nil, ErrNoRows
-	}
-
-	start, end, err := r.Limits(count)
-	if err != nil {
-		return nil, err
-	}
-
-	// Validation
-	if end-start < 1 {
-		return nil, errors.New("no values in selected series range")
-	}
-
-	if (α < 0.0) || (α > 1.0) {
-		return nil, errors.New("α must be between [0,1]")
-	}
-
-	em.alpha = α
-
-	trainData := em.data[start : end+1]
-	em.trainData = trainData
-
-	testData := em.data[end+1:]
-	if len(testData) < 3 {
-		return nil, errors.New("There should be a minimum of 3 data left as testing data")
-	}
-	em.testData = testData
-
-	testSeries := dataframe.NewSeriesFloat64("Test Data", nil, testData)
-
-	var st, Yorigin float64
-	// Training smoothing Level
-	for i := start; i < end+1; i++ {
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-
-		xt := em.data[i]
-
-		if i == start {
-			st = xt
-			em.initialLevel = xt
-
-		} else if i == end { // Setting the last value in traindata as Yorigin value for bootstrapping
-			Yorigin = em.data[i]
-			em.originValue = Yorigin
+		val := d.Copy(*tr)
+		if v, ok := val.(*dataframe.SeriesFloat64); ok {
+			actualDataset = v
 		} else {
-			st = α*xt + (1-α)*st
-		}
-	}
-	em.smoothingLevel = st
-
-	// building test forecast
-
-	fcast := []float64{}
-	for k := end + 1; k < len(em.data); k++ {
-		if err := ctx.Err(); err != nil {
-			return nil, err
+			return math.NaN(), errors.New("series data is not SeriesFloat64")
 		}
 
-		st = α*Yorigin + (1-α)*st
-		fcast = append(fcast, st)
+	case *dataframe.DataFrame:
 
+		if val, ok := d.Series[1].(*dataframe.SeriesFloat64); ok {
+			actualDataset = val.Copy(*tr).(*dataframe.SeriesFloat64)
+		} else {
+			return math.NaN(), errors.New("series data is not SeriesFloat64")
+		}
+
+	default:
+		return math.NaN(), errors.New("unknown data format passed in. make sure you pass in a SeriesFloat64 or a forecast standard two(2) column dataframe")
 	}
 
-	fcastSeries := dataframe.NewSeriesFloat64("Forecast Data", nil)
-	fcastSeries.Values = fcast
-	em.fcastData = fcastSeries
+	m := len(actualDataset.Values)
+	forecast, err := em.Predict(ctx, m)
+	if err != nil {
+		return math.NaN(), err
+	}
 
+	switch f := forecast.(type) {
+	case *dataframe.SeriesFloat64:
+		forecastDataset = f
+	case *dataframe.DataFrame:
+		forecastDataset = f.Series[1].(*dataframe.SeriesFloat64)
+	}
+
+	// Calculate error measurement between forecast and actual dataSet
 	errOpts := &ErrorOptions{}
 
-	var val float64
-
-	if errTyp == MAE {
-		val, _, err = MeanAbsoluteError(ctx, testSeries, fcastSeries, errOpts)
+	if errorType == MAE {
+		errVal, _, err = MeanAbsoluteError(ctx, actualDataset, forecastDataset, errOpts)
 		if err != nil {
-			return nil, err
+			return math.NaN(), err
 		}
-	} else if errTyp == SSE {
-		val, _, err = SumOfSquaredErrors(ctx, testSeries, fcastSeries, errOpts)
+	} else if errorType == SSE {
+		errVal, _, err = SumOfSquaredErrors(ctx, actualDataset, forecastDataset, errOpts)
 		if err != nil {
-			return nil, err
+			return math.NaN(), err
 		}
-	} else if errTyp == RMSE {
-		val, _, err = RootMeanSquaredError(ctx, testSeries, fcastSeries, errOpts)
+	} else if errorType == RMSE {
+		errVal, _, err = RootMeanSquaredError(ctx, actualDataset, forecastDataset, errOpts)
 		if err != nil {
-			return nil, err
+			return math.NaN(), err
 		}
-	} else if errTyp == MAPE {
-		val, _, err = MeanAbsolutePercentageError(ctx, testSeries, fcastSeries, errOpts)
+	} else if errorType == MAPE {
+		errVal, _, err = MeanAbsolutePercentageError(ctx, actualDataset, forecastDataset, errOpts)
 		if err != nil {
-			return nil, err
+			return math.NaN(), err
 		}
 	} else {
-		return nil, errors.New("Unknown error type")
+		return math.NaN(), errors.New("Unknown error type")
 	}
 
-	em.errorM = &ErrorMeasurement{
-		errorType: errTyp,
-		value:     val,
-	}
-
-	return em, nil
+	return errVal, nil
 }
 
 // Predict forecasts the next n values for a Series or DataFrame.
