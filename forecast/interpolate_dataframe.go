@@ -19,20 +19,18 @@ func interpolateDataFrame(ctx context.Context, df *dataframe.DataFrame, opts Int
 	var lock sync.Mutex
 	omaps := map[interface{}]*dataframe.OrderedMapIntFloat64{}
 
-	var xaxis dataframe.Series
-
 	if opts.HorizAxis != nil {
 		switch s := opts.HorizAxis.(type) {
 		case int:
-			xaxis = df.Series[s]
+			opts.HorizAxis = df.Series[s]
 		case string:
 			i, err := df.NameToColumn(s, dataframe.DontLock)
 			if err != nil {
 				return nil, err
 			}
-			xaxis = df.Series[i]
+			opts.HorizAxis = df.Series[i]
 		case dataframe.Series:
-			xaxis = s
+
 		default:
 			panic("HorizAxis option must be a SeriesFloat64/SeriesTime or convertable to a SeriesFloat64")
 		}
@@ -42,7 +40,7 @@ func interpolateDataFrame(ctx context.Context, df *dataframe.DataFrame, opts Int
 
 	for i := range df.Series {
 		i := i
-		if df.Series[i] == xaxis {
+		if df.Series[i] == opts.HorizAxis {
 			continue
 		}
 
