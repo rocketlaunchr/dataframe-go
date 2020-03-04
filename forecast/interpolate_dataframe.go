@@ -21,8 +21,8 @@ func interpolateDataFrame(ctx context.Context, df *dataframe.DataFrame, opts Int
 
 	var xaxis dataframe.Series
 
-	if opts.XAxis != nil {
-		switch s := opts.XAxis.(type) {
+	if opts.HorizAxis != nil {
+		switch s := opts.HorizAxis.(type) {
 		case int:
 			xaxis = df.Series[s]
 		case string:
@@ -34,7 +34,7 @@ func interpolateDataFrame(ctx context.Context, df *dataframe.DataFrame, opts Int
 		case dataframe.Series:
 			xaxis = s
 		default:
-			panic("XAxis option must be a SeriesFloat64/SeriesTime or convertable to a SeriesFloat64")
+			panic("HorizAxis option must be a SeriesFloat64/SeriesTime or convertable to a SeriesFloat64")
 		}
 	}
 

@@ -26,8 +26,8 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 		xaxisT *dataframe.SeriesTime
 	)
 
-	if opts.XAxis != nil {
-		switch s := opts.XAxis.(type) {
+	if opts.HorizAxis != nil {
+		switch s := opts.HorizAxis.(type) {
 		case *dataframe.SeriesFloat64:
 			xaxisF = s
 		case *dataframe.SeriesTime:
@@ -39,7 +39,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				return nil, err
 			}
 		default:
-			panic("XAxis option must be a SeriesFloat64/SeriesTime or convertable to a SeriesFloat64")
+			panic("HorizAxis option must be a SeriesFloat64/SeriesTime or convertable to a SeriesFloat64")
 		}
 	}
 
@@ -64,11 +64,11 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 
 		if xaxisF != nil {
 			if len(xaxisF.Values) != len(fs.Values) && len(xaxisF.Values) != subsetL {
-				panic("XAxis must contain the same number of rows")
+				panic("HorizAxis must contain the same number of rows")
 			}
 		} else {
 			if len(xaxisT.Values) != len(fs.Values) && len(xaxisT.Values) != subsetL {
-				panic("XAxis must contain the same number of rows")
+				panic("HorizAxis must contain the same number of rows")
 			}
 		}
 
@@ -99,7 +99,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 			}
 
 			if nc > 0 {
-				panic("XAxis must contain no nil values")
+				panic("HorizAxis must contain no nil values")
 			}
 		}
 	}
@@ -130,7 +130,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				if !math.IsNaN(y) {
 					xVal := xVal(x, fs, xaxisF, xaxisT, start)
 					if math.IsNaN(xVal) {
-						panic("XAxis must contain no nil values")
+						panic("HorizAxis must contain no nil values")
 					}
 					xVals = append(xVals, xVal)
 					yVals = append(yVals, y)
@@ -149,7 +149,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 			if !math.IsNaN(y) {
 				xVal := xVal(x, fs, xaxisF, xaxisT, start)
 				if math.IsNaN(xVal) {
-					panic("XAxis must contain no nil values")
+					panic("HorizAxis must contain no nil values")
 				}
 				xVals = append(xVals, xVal)
 				yVals = append(yVals, y)
@@ -229,17 +229,17 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 					} else {
 						xLeft := xVal(*left, fs, xaxisF, xaxisT, start)
 						if math.IsNaN(xLeft) {
-							panic("XAxis must contain no nil values")
+							panic("HorizAxis must contain no nil values")
 						}
 						xRight := xVal(*right, fs, xaxisF, xaxisT, start)
 						if math.IsNaN(xRight) {
-							panic("XAxis must contain no nil values")
+							panic("HorizAxis must contain no nil values")
 						}
 						grad := (fs.Values[*right] - fs.Values[*left]) / (xRight - xLeft)
 						fillFn = func(row int) (float64, error) {
 							xr := xVal(*left+row+1, fs, xaxisF, xaxisT, start)
 							if math.IsNaN(xr) {
-								panic("XAxis must contain no nil values")
+								panic("HorizAxis must contain no nil values")
 							}
 							Δx := xr - xLeft
 							return grad*Δx + fs.Values[*left], nil
@@ -342,11 +342,11 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 					// Calculate gradient
 					xFirstRow := xVal(*firstRow, fs, xaxisF, xaxisT, start)
 					if math.IsNaN(xFirstRow) {
-						panic("XAxis must contain no nil values")
+						panic("HorizAxis must contain no nil values")
 					}
 					xFirstRowPlusOne := xVal(*firstRow+1, fs, xaxisF, xaxisT, start)
 					if math.IsNaN(xFirstRowPlusOne) {
-						panic("XAxis must contain no nil values")
+						panic("HorizAxis must contain no nil values")
 					}
 					Δx := xFirstRowPlusOne - xFirstRow
 
@@ -365,7 +365,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 					fillFn = func(row int) (float64, error) {
 						xr := xVal(start+row, fs, xaxisF, xaxisT, start)
 						if math.IsNaN(xr) {
-							panic("XAxis must contain no nil values")
+							panic("HorizAxis must contain no nil values")
 						}
 						Δx := xFirstRow - xr
 						return fs.Values[*firstRow] - grad*Δx, nil
@@ -428,11 +428,11 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 					// Calculate gradient
 					xLastRow := xVal(*lastRow, fs, xaxisF, xaxisT, start)
 					if math.IsNaN(xLastRow) {
-						panic("XAxis must contain no nil values")
+						panic("HorizAxis must contain no nil values")
 					}
 					xLastRowMinusOne := xVal(*lastRow-1, fs, xaxisF, xaxisT, start)
 					if math.IsNaN(xLastRowMinusOne) {
-						panic("XAxis must contain no nil values")
+						panic("HorizAxis must contain no nil values")
 					}
 					Δx := xLastRow - xLastRowMinusOne
 
@@ -451,7 +451,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 					fillFn = func(row int) (float64, error) {
 						xr := xVal(*lastRow+1+row, fs, xaxisF, xaxisT, start)
 						if math.IsNaN(xr) {
-							panic("XAxis must contain no nil values")
+							panic("HorizAxis must contain no nil values")
 						}
 						Δx := xr - xLastRow
 						return grad*Δx + fs.Values[*lastRow], nil
