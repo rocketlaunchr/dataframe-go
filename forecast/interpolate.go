@@ -41,6 +41,7 @@ const (
 	Extrapolation
 )
 
+// InterpolateOptions is used to configure the Interpolate function.
 type InterpolateOptions struct {
 
 	// Method sets the algorithm used to interpolate.
