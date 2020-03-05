@@ -18,3 +18,8 @@ func nan() float64 {
 func isNaN(f float64) bool {
 	return f != f
 }
+
+// isInf returns whether f is +Inf or -Inf.
+func isInf(f float64, sign int) bool {
+	return sign >= 0 && f > 1.797693134862315708145274237317043567981e+308 || sign <= 0 && f < -1.797693134862315708145274237317043567981e+308
+}

@@ -27,7 +27,7 @@ type GuessTimeFreqOptions struct {
 	// R is used to limit the range of the Series.
 	R *dataframe.Range
 
-	// DontLock can be set to true if the series should not be locked.
+	// DontLock can be set to true if the Series should not be locked.
 	DontLock bool
 }
 

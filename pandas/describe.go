@@ -81,7 +81,7 @@ type DescribeOptions struct {
 	// Percentiles sets which Quantiles to return.
 	Percentiles []float64
 
-	// Whitelist sets which Series to provided statistics for.
+	// Whitelist sets which Series to provide statistics for.
 	Whitelist []interface{}
 
 	// Blacklist sets which Series to NOT provide statistics for.
