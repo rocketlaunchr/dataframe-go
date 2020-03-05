@@ -11,7 +11,7 @@ import (
 type Algorithm interface {
 
 	// Load loads historical data. sdf can be a SeriesFloat64 or DataFrame.
-	Load(sdf interface{}, r *dataframe.Range)
+	Load(ctx context.Context, sdf interface{}, r *dataframe.Range) error
 
 	// Predict forecasts the next n values for a Series or DataFrame.
 	// If a Series was provided to Load function, then a Series is retured.
@@ -32,6 +32,10 @@ type Algorithm interface {
 type ExponentialSmootheningConfig struct {
 	Alpha          float64
 	ErrMeasurement *ErrorMeasurement
+}
+
+func (cfg *ExponentialSmootheningConfig) Validate() error {
+
 }
 
 // HoltWintersConfig is used to configure the HW algorithm.

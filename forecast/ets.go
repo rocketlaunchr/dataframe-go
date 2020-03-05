@@ -12,6 +12,15 @@ import (
 	"github.com/rocketlaunchr/dataframe-go/utils/utime"
 )
 
+type trainingState struct {
+}
+
+type tsGen struct {
+	tsInterval   string
+	tsIntReverse bool
+	lastTsVal    time.Time
+}
+
 // EtsModel is a struct that holds necessary
 // computed values for a forecasting result
 type EtsModel struct {
@@ -23,13 +32,19 @@ type EtsModel struct {
 	smoothingLevel float64
 	alpha          float64
 	inputIsDf      bool
-	tsInterval     string
-	tsIntReverse   bool
-	tsName         string
-	lastTsVal      time.Time
+	ts             tsGen
+	training       trainingState
+}
+
+type ExponentialSmoothing struct {
+	data []float
+}
+
+type HoltWinters struct {
 }
 
 func NewEtsModel() *EtsModel {
+
 	model := &EtsModel{
 		alpha:          0.0,
 		data:           []float64{},
@@ -46,6 +61,9 @@ func NewEtsModel() *EtsModel {
 // Configure sets the various parameters for Ets Algorithm.
 // config must be a ExponentialSmootheningConfig struct.
 func (em *EtsModel) Configure(config interface{}) {
+
+	cfg := config.(*ExponentialSmootheningConfig)
+
 	if cfg, ok := config.(*ExponentialSmootheningConfig); ok {
 
 		if (cfg.Alpha < 0.0) || (cfg.Alpha > 1.0) {
@@ -60,7 +78,25 @@ func (em *EtsModel) Configure(config interface{}) {
 }
 
 // Load loads historical data. sdf can be a SeriesFloat64 or DataFrame.
-func (em *EtsModel) Load(sdf interface{}, r *dataframe.Range) {
+func (em *EtsModel) Load(ctx context.Context, sdf interface{}, r *dataframe.Range) error {
+
+	if r == nil {
+		r = &dataframe.Range{}
+	}
+
+	sf := sdf.(*dataframe.SeriesFloat64)
+
+	start, end, err := r.Limits(len(sf.Values))
+	if err != nil {
+		return err
+	}
+
+	em.datas = df.(*dataframe.SeriesFloat64).Values[start : end+1]
+
+	return nil
+
+	///////////////////
+
 	ctx := context.Background()
 
 	switch d := sdf.(type) {
@@ -69,6 +105,8 @@ func (em *EtsModel) Load(sdf interface{}, r *dataframe.Range) {
 		em.data = d.Values
 
 	case *dataframe.DataFrame:
+
+		err := d.Validate()
 
 		err := em.loadDataFromDF(ctx, d)
 		if err != nil {
