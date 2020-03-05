@@ -753,6 +753,35 @@ func (s *SeriesFloat64) ToSeriesString(ctx context.Context, removeNil bool, conv
 	return ss, nil
 }
 
+// ToSeriesFloat64 will create a new SeriesFloat64.
+// If removeNil is false, the function will simply create a copy.
+// In the current implementation, conv is ignored.
+// The operation does not lock the Series.
+func (s *SeriesFloat64) ToSeriesFloat64(ctx context.Context, removeNil bool, conv ...func(interface{}) (float64, error)) (*SeriesFloat64, error) {
+
+	if !removeNil {
+		return s.Copy().(*SeriesFloat64), nil
+	}
+
+	ss := NewSeriesFloat64(s.name, &SeriesInit{Capacity: s.NRows(dontLock) - s.nilCount})
+
+	for _, rowVal := range s.Values {
+
+		// Cancel operation
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
+		if isNaN(rowVal) {
+			continue
+		} else {
+			ss.Values = append(ss.Values, rowVal)
+		}
+	}
+
+	return ss, nil
+}
+
 // ToSeriesMixed will convert the Series to a SeriesMIxed.
 // The operation does not lock the Series.
 func (s *SeriesFloat64) ToSeriesMixed(ctx context.Context, removeNil bool, conv ...func(interface{}) (interface{}, error)) (*SeriesMixed, error) {
@@ -767,7 +796,7 @@ func (s *SeriesFloat64) ToSeriesMixed(ctx context.Context, removeNil bool, conv 
 			return nil, err
 		}
 
-		if rowVal == nan() {
+		if isNaN(rowVal) {
 			if removeNil {
 				continue
 			}

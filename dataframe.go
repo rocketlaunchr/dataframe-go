@@ -581,9 +581,8 @@ func (df *DataFrame) IsEqual(ctx context.Context, df2 *DataFrame, opts ...IsEqua
 	if err != nil {
 		if err == errNotEqual {
 			return false, nil
-		} else {
-			return false, err
 		}
+		return false, err
 	}
 
 	return true, nil

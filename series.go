@@ -8,14 +8,14 @@ import (
 	"golang.org/x/exp/rand"
 )
 
-// Options sets various optional options.
+// Options sets various options.
 type Options struct {
 
 	// Don't apply lock.
 	DontLock bool
 }
 
-// IsEqualOptions sets various optional options for the IsEqual function.
+// IsEqualOptions sets various options for the IsEqual function.
 type IsEqualOptions struct {
 
 	// Don't apply lock.
@@ -25,7 +25,7 @@ type IsEqualOptions struct {
 	CheckName bool
 }
 
-// NilCount sets various optional options for the NilCount function.
+// NilCountOptions sets various options for the NilCount function.
 type NilCountOptions struct {
 
 	// Ctx adds a context.

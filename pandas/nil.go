@@ -70,6 +70,17 @@ func dropNilDataFrame(ctx context.Context, df *dataframe.DataFrame, lock bool) e
 	return err
 }
 
+// SpecialFillNilValue is a special value type for the FillNil function.
+type SpecialFillNilValue int
+
+const (
+	// Mean will fill Nil values with the mean.
+	Mean SpecialFillNilValue = 0
+
+	// Sum will fill Nil values with the sum.
+	Sum SpecialFillNilValue = 1
+)
+
 // FillNil replaces all nil values with replaceVal. When applied to a DataFrame, replaceVal must be of type
 // map[interface{}]interface{}, where the key is the Series name or Series index.
 //
@@ -92,6 +103,30 @@ func fillNilSeries(ctx context.Context, replaceVal interface{}, s dataframe.Seri
 	if lock {
 		s.Lock()
 		defer s.Unlock()
+	}
+
+	switch replaceTyp := replaceVal.(type) {
+	case SpecialFillNilValue:
+		switch sf := s.(type) {
+		case *dataframe.SeriesFloat64:
+			if replaceTyp == Mean {
+				rv, err := sf.Mean(ctx)
+				if err != nil {
+					return err
+				}
+				replaceVal = rv
+			} else if replaceTyp == Sum {
+				rv, err := sf.Sum(ctx)
+				if err != nil {
+					return err
+				}
+				replaceVal = rv
+			} else {
+				panic("invalid SpecialFillNilValue for replaceVal")
+			}
+		default:
+			panic("series must be a *SeriesFloat64 when replaceVal is of type SpecialFillNilValue")
+		}
 	}
 
 	fn := dataframe.ApplySeriesFn(func(val interface{}, row, nRows int) interface{} {
