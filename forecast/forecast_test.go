@@ -24,15 +24,15 @@ func TestEtsSeries(t *testing.T) {
 
 	// fmt.Println(data.Table())
 
-	etsModel := NewEtsModel()
+	etsModel := NewExponentialSmoothing()
 
-	cfg := ExponentialSmootheningConfig{
+	cfg := ExponentialSmoothingConfig{
 		Alpha: alpha,
 	}
 
 	etsModel.Configure(&cfg)
 
-	etsModel.Load(data, &dataframe.Range{End: &[]int{5}[0]})
+	etsModel.Load(ctx, data, &dataframe.Range{End: &[]int{5}[0]})
 
 	// spew.Dump(etsModel)
 
@@ -72,17 +72,17 @@ func TestEtsDF(t *testing.T) {
 	fmt.Println(dataF.Table())
 
 	// create model
-	etsDfModel := NewEtsModel()
+	etsDfModel := NewExponentialSmoothing()
 
 	alpha := 0.4
 
-	cfg := ExponentialSmootheningConfig{
+	cfg := ExponentialSmoothingConfig{
 		Alpha: alpha,
 	}
 
 	etsDfModel.Configure(&cfg)
 
-	etsDfModel.Load(dataF, &dataframe.Range{End: &[]int{5}[0]})
+	etsDfModel.Load(ctx, dataF, &dataframe.Range{End: &[]int{5}[0]})
 
 	//	spew.Dump(etsDfModel)
 	m := 10

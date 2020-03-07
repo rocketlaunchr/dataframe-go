@@ -36,21 +36,21 @@ const (
 // ErrorMeasurement struct contains data
 // about selected error type in Model Fit
 type ErrorMeasurement struct {
-	errorType ErrorType
-	value     float64
+	errType ErrorType
+	value   float64
 }
 
 // Type method returns the error measurement type in String format
 func (em *ErrorMeasurement) Type() string {
 	var out string
 
-	if em.errorType == MAE {
+	if em.errType == MAE {
 		out = "Mean Absolute Error"
-	} else if em.errorType == SSE {
+	} else if em.errType == SSE {
 		out = "Sum Of Squared Error"
-	} else if em.errorType == RMSE {
+	} else if em.errType == RMSE {
 		out = "Root Mean Squared Error"
-	} else if em.errorType == MAPE {
+	} else if em.errType == MAPE {
 		out = "Mean Absolute Percentage Error"
 	}
 

@@ -2,6 +2,8 @@ package forecast
 
 import (
 	"context"
+	"errors"
+	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
@@ -28,14 +30,18 @@ type Algorithm interface {
 	Validate(ctx context.Context, sdf interface{}, r *dataframe.Range, errorType ErrorType) (float64, error)
 }
 
-// ExponentialSmootheningConfig is used to configure the ETS algorithm.
-type ExponentialSmootheningConfig struct {
+// ExponentialSmoothingConfig is used to configure the ETS algorithm.
+type ExponentialSmoothingConfig struct {
 	Alpha          float64
 	ErrMeasurement *ErrorMeasurement
 }
 
-func (cfg *ExponentialSmootheningConfig) Validate() error {
+func (cfg *ExponentialSmoothingConfig) Validate() error {
+	if (cfg.Alpha < 0.0) || (cfg.Alpha > 1.0) {
+		return errors.New("alpha must be between [0,1]")
+	}
 
+	return nil
 }
 
 // HoltWintersConfig is used to configure the HW algorithm.
@@ -45,4 +51,15 @@ type HoltWintersConfig struct {
 	Gamma          float64
 	Period         int
 	ErrMeasurement *ErrorMeasurement
+}
+
+// func (cfg *HoltWintersConfig) Validate() error {
+
+// }
+
+type tsGen struct {
+	tsName       string
+	tsInterval   string
+	tsIntReverse bool
+	lastTsVal    time.Time
 }
