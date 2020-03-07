@@ -30,43 +30,41 @@ func loadDataFromDF(ctx context.Context, model Algorithm, d *dataframe.DataFrame
 		return errors.New("dataframe passed in must have exactly two series/columns")
 	}
 
-	if d.Series[0].Type() == "time" {
+	switch ts := d.Series[0].(type) {
+	case *dataframe.SeriesTime:
 		// get the current time interval/freq from the seriesTime
-		if ts, ok := d.Series[0].(*dataframe.SeriesTime); ok {
-			tsName = ts.Name(dataframe.DontLock)
 
-			rowLen := ts.NRows(dataframe.DontLock)
-			// store the last value in timeSeries column
-			lastTsVal = ts.Value(rowLen-1, dataframe.DontLock).(time.Time)
+		tsName = ts.Name(dataframe.DontLock)
 
-			// guessing with only half the original time series row length
-			// for efficiency
-			half := rowLen / 2
-			utimeOpts := utime.GuessTimeFreqOptions{
-				R:        &dataframe.Range{End: &half},
-				DontLock: true,
-			}
+		rowLen := ts.NRows(dataframe.DontLock)
+		// store the last value in timeSeries column
+		lastTsVal = ts.Value(rowLen-1, dataframe.DontLock).(time.Time)
 
-			tsInt, tReverse, err = utime.GuessTimeFreq(ctx, ts, utimeOpts)
-			if err != nil {
-				return err
-			}
-		} else {
-			return errors.New("column 0 not convertible to SeriesTime")
+		// guessing with only half the original time series row length
+		// for efficiency
+		half := rowLen / 2
+		utimeOpts := utime.GuessTimeFreqOptions{
+			R:        &dataframe.Range{End: &half},
+			DontLock: true,
 		}
-	} else {
-		return errors.New("first column/series must be a SeriesTime")
+
+		tsInt, tReverse, err = utime.GuessTimeFreq(ctx, ts, utimeOpts)
+		if err != nil {
+			return err
+		}
+
+	default:
+		return errors.New("first column/series must be a time series")
+
 	}
 
-	if d.Series[1].Type() == "float64" {
-		val := d.Series[1].Copy()
-		if v, ok := val.(*dataframe.SeriesFloat64); ok {
-			data = v.Values
-		} else {
-			return errors.New("column 1 not convertible to SeriesFloat64")
-		}
-	} else {
-		return errors.New("second column/series must be a SeriesFloat64")
+	switch df := d.Series[1].(type) {
+	case *dataframe.SeriesFloat64:
+		v := df.Copy().(*dataframe.SeriesFloat64)
+		data = v.Values
+
+	default:
+		return errors.New("second column/series must be a float64 series")
 	}
 
 	switch m := model.(type) {
@@ -79,7 +77,7 @@ func loadDataFromDF(ctx context.Context, model Algorithm, d *dataframe.DataFrame
 		m.ts.lastTsVal = lastTsVal
 
 	default:
-		return errors.New("Unsupported Model passed")
+		return errors.New("unsupported model passed in")
 	}
 
 	return nil
