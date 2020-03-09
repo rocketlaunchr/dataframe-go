@@ -9,9 +9,10 @@ import (
 	"github.com/rocketlaunchr/dataframe-go/utils/utime"
 )
 
-func loadDataFromDF(ctx context.Context, model Algorithm, d *dataframe.DataFrame) error {
+func loadDataFromDF(ctx context.Context, model Algorithm, d *dataframe.DataFrame, dataCol, tsCol interface{}) error {
 	var (
 		data      []float64
+		ts        *dataframe.SeriesTime
 		isDf      bool
 		tsInt     string
 		tReverse  bool
@@ -30,41 +31,69 @@ func loadDataFromDF(ctx context.Context, model Algorithm, d *dataframe.DataFrame
 		return errors.New("dataframe passed in must have exactly two series/columns")
 	}
 
-	switch ts := d.Series[0].(type) {
-	case *dataframe.SeriesTime:
-		// get the current time interval/freq from the seriesTime
-
-		tsName = ts.Name(dataframe.DontLock)
-
-		rowLen := ts.NRows(dataframe.DontLock)
-		// store the last value in timeSeries column
-		lastTsVal = ts.Value(rowLen-1, dataframe.DontLock).(time.Time)
-
-		// guessing with only half the original time series row length
-		// for efficiency
-		half := rowLen / 2
-		utimeOpts := utime.GuessTimeFreqOptions{
-			R:        &dataframe.Range{End: &half},
-			DontLock: true,
+	if dataCol != nil {
+		switch dc := dataCol.(type) {
+		case int:
+			data = d.Series[dc].(*dataframe.SeriesFloat64).Values
+		case string:
+			i, err := d.NameToColumn(dc, dataframe.DontLock)
+			if err != nil {
+				return err
+			}
+			data = d.Series[i].(*dataframe.SeriesFloat64).Values
 		}
 
-		tsInt, tReverse, err = utime.GuessTimeFreq(ctx, ts, utimeOpts)
-		if err != nil {
-			return err
+	} else {
+		switch df := d.Series[1].(type) {
+		case *dataframe.SeriesFloat64:
+			data = df.Values
+
+		default:
+			return errors.New("either set 'DataCol' in config or make sure second column is a float64 series")
 		}
-
-	default:
-		return errors.New("first column/series must be a time series")
-
 	}
 
-	switch df := d.Series[1].(type) {
-	case *dataframe.SeriesFloat64:
-		v := df.Copy().(*dataframe.SeriesFloat64)
-		data = v.Values
+	if tsCol != nil {
+		switch tc := tsCol.(type) {
+		case int:
+			ts = d.Series[tc].(*dataframe.SeriesTime)
+		case string:
+			i, err := d.NameToColumn(tc, dataframe.DontLock)
+			if err != nil {
+				return err
+			}
+			ts = d.Series[i].(*dataframe.SeriesTime)
+		}
 
-	default:
-		return errors.New("second column/series must be a float64 series")
+	} else {
+		switch t := d.Series[0].(type) {
+		case *dataframe.SeriesTime:
+			ts = t
+
+		default:
+			return errors.New("either set 'TsCol' in config or make sure first column is a time series")
+		}
+	}
+
+	// get the current time interval/freq from the seriesTime
+
+	tsName = ts.Name(dataframe.DontLock)
+
+	rowLen := ts.NRows(dataframe.DontLock)
+	// store the last value in timeSeries column
+	lastTsVal = ts.Value(rowLen-1, dataframe.DontLock).(time.Time)
+
+	// guessing with only half the original time series row length
+	// for efficiency
+	half := rowLen / 2
+	utimeOpts := utime.GuessTimeFreqOptions{
+		R:        &dataframe.Range{End: &half},
+		DontLock: true,
+	}
+
+	tsInt, tReverse, err = utime.GuessTimeFreq(ctx, ts, utimeOpts)
+	if err != nil {
+		return err
 	}
 
 	switch m := model.(type) {

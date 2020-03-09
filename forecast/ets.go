@@ -51,6 +51,8 @@ func (em *ExponentialSmoothing) Configure(config interface{}) {
 	}
 
 	em.alpha = cfg.Alpha
+	em.ts.dataCol = cfg.DataCol
+	em.ts.timeCol = cfg.TsCol
 
 }
 
@@ -66,7 +68,7 @@ func (em *ExponentialSmoothing) Load(ctx context.Context, sdf interface{}, r *da
 
 		// err := d.Validate()
 
-		err := loadDataFromDF(ctx, em, d)
+		err := loadDataFromDF(ctx, em, d, em.ts.dataCol, em.ts.timeCol)
 		if err != nil {
 			panic(err)
 		}
@@ -124,10 +126,24 @@ func (em *ExponentialSmoothing) Validate(ctx context.Context, sdf interface{}, r
 
 	case *dataframe.DataFrame:
 
-		if val, ok := d.Series[1].(*dataframe.SeriesFloat64); ok {
+		var dataColIdx int = 1 // setting datacolumn on DataFrame to default of second column
+		if em.ts.dataCol != nil {
+			switch dc := em.ts.dataCol.(type) {
+			case int:
+				dataColIdx = dc
+			case string:
+				i, err := d.NameToColumn(dc, dataframe.DontLock)
+				if err != nil {
+					return math.NaN(), err
+				}
+				dataColIdx = i
+			}
+		}
+
+		if val, ok := d.Series[dataColIdx].(*dataframe.SeriesFloat64); ok {
 			expectedDataset = val.Copy(*r).(*dataframe.SeriesFloat64)
 		} else {
-			return math.NaN(), errors.New("series data is not SeriesFloat64")
+			return math.NaN(), fmt.Errorf("selected data column: %d from dataframe is not SeriesFloat64", dataColIdx)
 		}
 
 	default:

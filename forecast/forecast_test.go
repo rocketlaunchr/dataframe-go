@@ -77,7 +77,9 @@ func TestEtsDF(t *testing.T) {
 	alpha := 0.4
 
 	cfg := ExponentialSmoothingConfig{
-		Alpha: alpha,
+		Alpha:   alpha,
+		DataCol: 1,
+		TsCol:   0,
 	}
 
 	etsDfModel.Configure(&cfg)

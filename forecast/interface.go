@@ -32,13 +32,34 @@ type Algorithm interface {
 
 // ExponentialSmoothingConfig is used to configure the ETS algorithm.
 type ExponentialSmoothingConfig struct {
-	Alpha          float64
-	ErrMeasurement *ErrorMeasurement
+	Alpha   float64
+	TsCol   interface{}
+	DataCol interface{}
 }
 
 func (cfg *ExponentialSmoothingConfig) Validate() error {
 	if (cfg.Alpha < 0.0) || (cfg.Alpha > 1.0) {
 		return errors.New("alpha must be between [0,1]")
+	}
+
+	if cfg.DataCol != nil {
+		switch dc := cfg.DataCol.(type) {
+		case int:
+		case string:
+			_ = dc
+		default:
+			return errors.New("datacol must be an int or a string input")
+		}
+	}
+
+	if cfg.TsCol != nil {
+		switch tc := cfg.TsCol.(type) {
+		case int:
+		case string:
+			_ = tc
+		default:
+			return errors.New("tscol must be an int or a string input")
+		}
 	}
 
 	return nil
@@ -58,6 +79,8 @@ type HoltWintersConfig struct {
 // }
 
 type tsGen struct {
+	timeCol      interface{}
+	dataCol      interface{}
 	tsName       string
 	tsInterval   string
 	tsIntReverse bool
