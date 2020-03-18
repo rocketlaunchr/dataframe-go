@@ -3,6 +3,8 @@ package forecast
 import (
 	"context"
 	"errors"
+	"fmt"
+	"reflect"
 	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
@@ -42,24 +44,14 @@ func (cfg *ExponentialSmoothingConfig) Validate() error {
 		return errors.New("alpha must be between [0,1]")
 	}
 
-	if cfg.DataCol != nil {
-		switch dc := cfg.DataCol.(type) {
-		case int:
-		case string:
-			_ = dc
-		default:
-			return errors.New("datacol must be an int or a string input")
-		}
+	dColTyp := reflect.TypeOf(cfg.DataCol)
+	if dColTyp != reflect.TypeOf(int(1)) && dColTyp != reflect.TypeOf("s") && dColTyp != nil {
+		return fmt.Errorf("datacol must be an int or a string input not [%T]", cfg.DataCol)
 	}
 
-	if cfg.TsCol != nil {
-		switch tc := cfg.TsCol.(type) {
-		case int:
-		case string:
-			_ = tc
-		default:
-			return errors.New("tscol must be an int or a string input")
-		}
+	tsColTyp := reflect.TypeOf(cfg.TsCol)
+	if tsColTyp != reflect.TypeOf(int(1)) && tsColTyp != reflect.TypeOf("s") && tsColTyp != nil {
+		return fmt.Errorf("tscol must be an int or a string input not [%T]", cfg.TsCol)
 	}
 
 	return nil
