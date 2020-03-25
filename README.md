@@ -27,6 +27,15 @@ It is recommended your package manager locks to a commit id instead of the maste
 
 # DataFrames
 
+## Imports for README code snippets
+
+```go
+import (
+  dataframe "github.com/rocketlaunchr/dataframe-go"
+  "github.com/rocketlaunchr/dataframe-go/imports"
+)
+```
+
 ## Creating a DataFrame
 
 ```go
@@ -36,7 +45,7 @@ s2 := dataframe.NewSeriesFloat64("sales", nil, 50.3, 23.4, 56.2, nil, nil, 84.2,
 df := dataframe.NewDataFrame(s1, s2)
 
 fmt.Print(df.Table())
-  
+
 OUTPUT:
 +-----+-------+---------+
 |     |  DAY  |  SALES  |
@@ -235,7 +244,7 @@ The `exports` sub-package has support for exporting to csv, jsonl, Excel and dir
 
 ## Optimizations
 
-* If you know the number of rows in advance, you can set the capacity of the underlying slice of a series using `SeriesInit{}`. This will preallocate memory and provide speed improvements. 
+* If you know the number of rows in advance, you can set the capacity of the underlying slice of a series using `SeriesInit{}`. This will preallocate memory and provide speed improvements.
 
 # Generic Series
 
