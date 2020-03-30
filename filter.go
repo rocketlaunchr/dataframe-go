@@ -121,7 +121,7 @@ func filterSeries(ctx context.Context, s Series, fn FilterSeriesFn, opts ...Filt
 
 	if !opts[0].InPlace {
 		// Create a New Series
-		ns := (s.(NewSerieser)).NewSeries(s.Name(), &SeriesInit{Capacity: len(transfer)})
+		ns := (s.(NewSerieser)).NewSeries(s.Name(dontLock), &SeriesInit{Capacity: len(transfer)})
 		for _, rowToTransfer := range transfer {
 			val := s.Value(rowToTransfer, dontLock)
 			ns.Append(val, dontLock)
