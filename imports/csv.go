@@ -55,11 +55,11 @@ type CSVLoadOptions struct {
 	// Common values are: NULL, \N, NaN, NA
 	NilValue *string
 
-	// DataTypeInference can be set to true if the underlying data type should be automatically detected.
+	// InferDataTypes can be set to true if the underlying data type should be automatically detected.
 	// Using DictateDataType is the recommended approach (especially for large datasets or memory constrained systems).
 	// DictateDataType always takes precendence when determining the type.
 	// If the data type could not be detected, NewSeriesString is used.
-	DataTypeInference bool
+	InferDataTypes bool
 }
 
 // LoadFromCSV will load data from a csv file.
@@ -156,7 +156,16 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 						seriess = append(seriess, dataframe.NewSeriesGeneric(name, typ, init))
 					}
 				} else {
-					seriess = append(seriess, dataframe.NewSeriesString(name, init))
+					if len(options) > 0 && options[0].InferDataTypes {
+						var knownSize *int
+						if init != nil {
+							knownSize = &init.Capacity
+						}
+						is := newInferSeries(name, knownSize)
+						seriess = append(seriess, is)
+					} else {
+						seriess = append(seriess, dataframe.NewSeriesString(name, init))
+					}
 				}
 
 			}

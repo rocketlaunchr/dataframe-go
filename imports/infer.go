@@ -3,6 +3,7 @@
 package imports
 
 import (
+	"context"
 	"strconv"
 	"time"
 
@@ -205,4 +206,59 @@ func (is *inferSeries) inferred() (dataframe.Series, bool) {
 	}
 
 	panic("should not reach here")
+}
+
+/* Stubs to satisfy dataframe.Series interface */
+func (*inferSeries) Name(opts ...dataframe.Options) string { return "" }
+
+func (*inferSeries) Rename(n string, opts ...dataframe.Options) {}
+
+func (*inferSeries) Type() string { return "" }
+
+func (*inferSeries) NRows(opts ...dataframe.Options) int { return 0 }
+
+func (*inferSeries) Value(row int, opts ...dataframe.Options) interface{} { return "" }
+
+func (*inferSeries) ValueString(row int, opts ...dataframe.Options) string { return "" }
+
+func (*inferSeries) Prepend(val interface{}, opts ...dataframe.Options) {}
+
+func (*inferSeries) Append(val interface{}, opts ...dataframe.Options) int { return 0 }
+
+func (*inferSeries) Insert(row int, val interface{}, opts ...dataframe.Options) {}
+
+func (*inferSeries) Remove(row int, opts ...dataframe.Options) {}
+
+func (*inferSeries) Reset(opts ...dataframe.Options) {}
+
+func (*inferSeries) ValuesIterator(opts ...dataframe.ValuesOptions) func() (*int, interface{}, int) {
+	return nil
+}
+
+func (*inferSeries) Update(row int, val interface{}, opts ...dataframe.Options) {}
+
+func (*inferSeries) SetValueToStringFormatter(f dataframe.ValueToStringFormatter) {}
+
+func (*inferSeries) Sort(ctx context.Context, opts ...dataframe.SortOptions) (completed bool) {
+	return false
+}
+
+func (*inferSeries) IsEqualFunc(a, b interface{}) bool { return false }
+
+func (*inferSeries) IsLessThanFunc(a, b interface{}) bool { return false }
+
+func (*inferSeries) Swap(row1, row2 int, opts ...dataframe.Options) {}
+
+func (*inferSeries) Lock() {}
+
+func (*inferSeries) Unlock() {}
+
+func (*inferSeries) Copy(r ...dataframe.Range) dataframe.Series { return nil }
+
+func (*inferSeries) ContainsNil(opts ...dataframe.Options) bool { return false }
+
+func (*inferSeries) NilCount(opts ...dataframe.NilCountOptions) (int, error) { return 0, nil }
+
+func (*inferSeries) IsEqual(ctx context.Context, s2 dataframe.Series, opts ...dataframe.IsEqualOptions) (bool, error) {
+	return false, nil
 }
