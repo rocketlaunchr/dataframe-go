@@ -7,11 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/exp/rand"
 	"math/cmplx"
 	"reflect"
 	"sort"
 	"sync"
+
+	"golang.org/x/exp/rand"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -224,7 +225,7 @@ func (s *SeriesMixed) insert(row int, val interface{}) {
 	case []interface{}:
 		// count how many NaN
 		for _, v := range V {
-			if reflect.ValueOf(v).IsNil() {
+			if v == nil {
 				s.nilCount++
 			}
 		}
@@ -320,9 +321,12 @@ func (s *SeriesMixed) ValuesIterator(opts ...ValuesOptions) func() (*int, interf
 			return nil, nil, 0
 		}
 
-		var out interface{} = s.values[row]
-		if reflect.ValueOf(out).IsNil() {
+		val := s.values[row]
+		var out interface{}
+		if val == nil {
 			out = nil
+		} else {
+			out = val
 		}
 		row = row + step
 		return &[]int{row - step}[0], out, len(s.values)
