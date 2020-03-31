@@ -573,6 +573,7 @@ func (df *DataFrame) IsEqual(ctx context.Context, df2 *DataFrame, opts ...IsEqua
 	g, newCtx := errgroup.WithContext(ctx)
 
 	for i := range df.Series {
+		i := i
 		g.Go(func() error {
 
 			eq, err := df.Series[i].IsEqual(newCtx, df2.Series[i], opts...)
