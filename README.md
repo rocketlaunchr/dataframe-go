@@ -192,7 +192,7 @@ std := stat.StdDev(sf.Values, nil)
 
 ## Importing Data
 
-The `imports` sub-package has support for importing csv, jsonl and directly from a SQL database. The `DictateDataType` option can be set to specify the true underlying data type.
+The `imports` sub-package has support for importing csv, jsonl and directly from a SQL database. The `DictateDataType` option can be set to specify the true underlying data type. Alternatively, `InferDataTypes` option can be set.
 
 ### CSV
 
