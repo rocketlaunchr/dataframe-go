@@ -139,11 +139,17 @@ func (is *inferSeries) add(val string) {
 				x.Values = append(x.Values, f)
 			}
 		case *dataframe.SeriesInt64:
-			f, err := strconv.ParseInt(val, 10, 64)
-			if err != nil {
-				toRemove = append(toRemove, i)
+			if val == "true" || val == "TRUE" || val == "True" {
+				s.Append(int64(1), dataframe.DontLock)
+			} else if val == "false" || val == "FALSE" || val == "False" {
+				s.Append(int64(0), dataframe.DontLock)
 			} else {
-				s.Append(f, dataframe.DontLock)
+				f, err := strconv.ParseInt(val, 10, 64)
+				if err != nil {
+					toRemove = append(toRemove, i)
+				} else {
+					s.Append(f, dataframe.DontLock)
+				}
 			}
 		case *dataframe.SeriesString:
 			s.Append(val, dataframe.DontLock)

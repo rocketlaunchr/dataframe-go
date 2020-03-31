@@ -200,9 +200,9 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 						case string:
 							insertVals = append(insertVals, v)
 						case bool:
-							if v == "TRUE" || v == "true" || v == "1" {
+							if v == "TRUE" || v == "true" || v == "True" || v == "1" {
 								insertVals = append(insertVals, int64(1))
-							} else if v == "FALSE" || v == "false" || v == "0" {
+							} else if v == "FALSE" || v == "false" || v == "False" || v == "0" {
 								insertVals = append(insertVals, int64(0))
 							} else {
 								return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", v, row-1, name)

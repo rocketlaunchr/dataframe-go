@@ -248,9 +248,9 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 					case string:
 						insertVals[fieldName] = *val
 					case bool:
-						if *val == "true" || *val == "TRUE" || *val == "1" {
+						if *val == "true" || *val == "TRUE" || *val == "True" || *val == "1" {
 							insertVals[fieldName] = int64(1)
-						} else if *val == "false" || *val == "FALSE" || *val == "0" {
+						} else if *val == "false" || *val == "FALSE" || *val == "False" || *val == "0" {
 							insertVals[fieldName] = int64(0)
 						} else {
 							return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", *val, row-1, fieldName)
@@ -303,9 +303,9 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 				}
 				insertVals[fieldName] = n
 			case "BOOL":
-				if *val == "true" || *val == "TRUE" || *val == "1" {
+				if *val == "true" || *val == "TRUE" || *val == "True" || *val == "1" {
 					insertVals[fieldName] = int64(1)
-				} else if *val == "false" || *val == "FALSE" || *val == "0" {
+				} else if *val == "false" || *val == "FALSE" || *val == "False" || *val == "0" {
 					insertVals[fieldName] = int64(0)
 				} else {
 					return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", *val, row-1, fieldName)

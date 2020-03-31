@@ -90,9 +90,9 @@ func dictateForce(row int, insertVals map[string]interface{}, name string, typ i
 		// Force v to int64 (bools are treated as int64)
 		switch v := val.(type) {
 		case string:
-			if v == "TRUE" || v == "true" || v == "1" {
+			if v == "TRUE" || v == "true" || v == "True" || v == "1" {
 				insertVals[name] = int64(1)
-			} else if v == "FALSE" || v == "false" || v == "0" {
+			} else if v == "FALSE" || v == "false" || v == "False" || v == "0" {
 				insertVals[name] = int64(0)
 			} else {
 				return fmt.Errorf("can't force string: %s to bool. row: %d field: %s", v, row-1, name)
