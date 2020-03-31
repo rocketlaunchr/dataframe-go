@@ -61,7 +61,8 @@ type SQLLoadOptions struct {
 	// WARNING: Some databases may allow tables to contain more rows than the maximum supported.
 	KnownRowCount *int
 
-	// DictateDataType is used to inform LoadFromSQL what the true underlying data type is for a given field name.
+	// DictateDataType is used to inform LoadFromSQL what the true underlying data type is for a given column name.
+	// The key must be the case-sensitive column name.
 	// The value for a given key must be of the data type of the data.
 	// eg. For a string use "". For a int64 use int64(0). What is relevant is the data type and not the value itself.
 	//
