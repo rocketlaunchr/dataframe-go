@@ -381,6 +381,17 @@ func (df *DataFrame) Names(opts ...Options) []string {
 	return names
 }
 
+// MustNameToColumn returns the index of the series based on the name.
+// The starting index is 0. If seriesName doesn't exist it panics.
+func (df *DataFrame) MustNameToColumn(seriesName string, opts ...Options) int {
+	col, err := df.NameToColumn(seriesName, opts...)
+	if err != nil {
+		panic(err)
+	}
+
+	return col
+}
+
 // NameToColumn returns the index of the series based on the name.
 // The starting index is 0.
 func (df *DataFrame) NameToColumn(seriesName string, opts ...Options) (int, error) {
