@@ -40,6 +40,12 @@ type inferSeries struct {
 func newInferSeries(name string, knownSize *int) *inferSeries {
 
 	initCap := 5
+	if knownSize != nil {
+		initCap2 := int(0.05 * float64(*knownSize))
+		if initCap2 > initCap {
+			initCap = initCap2
+		}
+	}
 	init := &dataframe.SeriesInit{Capacity: initCap}
 
 	is := &inferSeries{knownSize: knownSize, initCap: initCap}
