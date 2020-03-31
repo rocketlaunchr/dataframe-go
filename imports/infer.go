@@ -59,7 +59,10 @@ func newInferSeries(name string, knownSize *int) *inferSeries {
 	return is
 }
 
-func (is *inferSeries) add(val string) {
+// 	We are only appending in here
+func (is *inferSeries) Insert(row int, val interface{}, opts ...dataframe.Options) {
+
+	// val can be nil or string
 
 	if len(is.series) == 0 {
 		return
@@ -68,6 +71,7 @@ func (is *inferSeries) add(val string) {
 	is.added++
 
 	if is.knownSize != nil && is.added == is.initCap+1 {
+		// Create a new series with full capacity and then copy old values over
 
 		init := &dataframe.SeriesInit{Capacity: *is.knownSize}
 
@@ -129,22 +133,30 @@ func (is *inferSeries) add(val string) {
 	for i := range is.series {
 		s := is.series[i]
 
+		if val == nil {
+			s.Append(nil, dataframe.DontLock)
+			continue
+		}
+
+		// val is string from here onwards
+
 		switch x := s.(type) {
 		case *dataframe.SeriesFloat64:
-			f, err := strconv.ParseFloat(val, 64)
+			f, err := strconv.ParseFloat(val.(string), 64)
 			if err != nil {
 				toRemove = append(toRemove, i)
 			} else {
-				// Check for nil?
 				x.Values = append(x.Values, f)
 			}
 		case *dataframe.SeriesInt64:
-			if val == "true" || val == "TRUE" || val == "True" {
+			valStr := val.(string)
+
+			if valStr == "true" || valStr == "TRUE" || valStr == "True" {
 				s.Append(int64(1), dataframe.DontLock)
-			} else if val == "false" || val == "FALSE" || val == "False" {
+			} else if valStr == "false" || valStr == "FALSE" || valStr == "False" {
 				s.Append(int64(0), dataframe.DontLock)
 			} else {
-				f, err := strconv.ParseInt(val, 10, 64)
+				f, err := strconv.ParseInt(valStr, 10, 64)
 				if err != nil {
 					toRemove = append(toRemove, i)
 				} else {
@@ -154,7 +166,7 @@ func (is *inferSeries) add(val string) {
 		case *dataframe.SeriesString:
 			s.Append(val, dataframe.DontLock)
 		case *dataframe.SeriesTime:
-			t, err := time.Parse(x.Layout, val)
+			t, err := time.Parse(x.Layout, val.(string))
 			if err != nil {
 				toRemove = append(toRemove, i)
 			} else {
@@ -168,6 +180,7 @@ func (is *inferSeries) add(val string) {
 		idx := toRemove[i]
 		is.series = append(is.series[:idx], is.series[idx+1:]...)
 	}
+
 }
 
 func (is *inferSeries) inferred() (dataframe.Series, bool) {
@@ -214,8 +227,11 @@ func (is *inferSeries) inferred() (dataframe.Series, bool) {
 	panic("should not reach here")
 }
 
+func (is *inferSeries) Name(opts ...dataframe.Options) string {
+	return is.series[0].Name(dataframe.DontLock)
+}
+
 /* Stubs to satisfy dataframe.Series interface */
-func (*inferSeries) Name(opts ...dataframe.Options) string { return "" }
 
 func (*inferSeries) Rename(n string, opts ...dataframe.Options) {}
 
@@ -230,8 +246,6 @@ func (*inferSeries) ValueString(row int, opts ...dataframe.Options) string { ret
 func (*inferSeries) Prepend(val interface{}, opts ...dataframe.Options) {}
 
 func (*inferSeries) Append(val interface{}, opts ...dataframe.Options) int { return 0 }
-
-func (*inferSeries) Insert(row int, val interface{}, opts ...dataframe.Options) {}
 
 func (*inferSeries) Remove(row int, opts ...dataframe.Options) {}
 
