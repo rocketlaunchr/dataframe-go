@@ -54,6 +54,12 @@ type CSVLoadOptions struct {
 	//
 	// Common values are: NULL, \N, NaN, NA
 	NilValue *string
+
+	// DataTypeInference can be set to true if the underlying data type should be automatically detected.
+	// Using DictateDataType is the recommended approach (especially for large datasets or memory constrained systems).
+	// DictateDataType always takes precendence when determining the type.
+	// If the data type could not be detected, NewSeriesString is used.
+	DataTypeInference bool
 }
 
 // LoadFromCSV will load data from a csv file.
