@@ -60,3 +60,30 @@ func TestGuessTimeFreq(t *testing.T) {
 		}
 	}
 }
+
+func TestGuessHintTimeFreq(t *testing.T) {
+
+	ctx := context.Background()
+	timeFreq := "3M2W"
+	reverse := false
+	now := time.Date(2020, 2, 13, 22, 25, 28, 0, time.UTC)
+
+	opts := NewSeriesTimeOptions{
+		Size: &[]int{7}[0],
+	}
+
+	ts, err := NewSeriesTime(ctx, "Time Series", timeFreq, now, reverse, opts)
+	if err != nil {
+		t.Errorf("error encountered: %v", err)
+	}
+
+	hintGuess := "3M2W"
+	guess, _, err := GuessTimeFreq(ctx, ts, GuessTimeFreqOptions{Hint: hintGuess})
+	if err != nil {
+		t.Errorf("error encountered: %v", err)
+	}
+
+	if guess != hintGuess {
+		t.Errorf("error: actual guess: %s not same as hint guess: %s\n", guess, hintGuess)
+	}
+}
