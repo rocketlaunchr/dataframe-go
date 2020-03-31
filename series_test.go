@@ -5,6 +5,7 @@ package dataframe
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -277,7 +278,7 @@ func TestSeriesSort(t *testing.T) {
 		NewSeriesString("test", &SeriesInit{1, 0}, nil, "1", "2", "3", nil),
 		NewSeriesTime("test", &SeriesInit{1, 0}, nil, tRef, tRef.Add(24*time.Hour), tRef.Add(2*24*time.Hour), nil),
 		NewSeriesGeneric("test", civil.Date{}, &SeriesInit{0, 1}, nil, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}, nil),
-		//		NewSeriesMixed("test", &SeriesInit{1, 0}, nil, 1, 2, 3, nil),
+		NewSeriesMixed("test", &SeriesInit{1, 0}, nil, 1, 2.0, "three", nil),
 	}
 
 	// Set IsLessThanFunc(a, b interface{}) bool
@@ -289,10 +290,32 @@ func TestSeriesSort(t *testing.T) {
 		return g1.Before(g2)
 	})
 
-	// (init[5].(*SeriesMixed)).SetIsLessThanFunc(func(a, b interface{}) bool {
+	(init[5].(*SeriesMixed)).SetIsLessThanFunc(func(a, b interface{}) bool {
 
-	// 	return b.(int) > a.(int)
-	// })
+		vals := []interface{}{a, b}
+
+		sVals := []string{}
+
+		for _, val := range vals {
+			switch typ := val.(type) {
+			case int64:
+				cv := strconv.FormatInt(typ, 10)
+				sVals = append(sVals, cv)
+
+			case float64:
+				cv := strconv.FormatFloat(typ, 'G', -1, 64)
+				sVals = append(sVals, cv)
+
+			case string:
+				sVals = append(sVals, typ)
+			default:
+				t.Errorf("error: unknown type [%T]. yet to be added.", typ)
+
+			}
+		}
+
+		return sVals[0] < sVals[1]
+	})
 
 	// Sort values
 	for i := range init {
@@ -306,7 +329,7 @@ func TestSeriesSort(t *testing.T) {
 		{"3", "2", "1", "NaN", "NaN"},
 		{tRef.Add(2 * 24 * time.Hour), tRef.Add(24 * time.Hour), tRef, "NaN", "NaN"},
 		{civil.Date{2018, time.May, 3}, civil.Date{2018, time.May, 2}, civil.Date{2018, time.May, 1}, "NaN", "NaN"},
-		// {3, 2, 1, "NaN", "NaN"},
+		{"three", 2.0, 1, "NaN", "NaN"},
 	}
 
 	for i := range init {
@@ -341,6 +364,7 @@ func TestSeriesTable(t *testing.T) {
 		NewSeriesString("test", &SeriesInit{1, 0}, "1", "2", "3"),
 		NewSeriesTime("test", &SeriesInit{1, 0}, tRef, tRef.Add(24*time.Hour), tRef.Add(2*24*time.Hour)),
 		NewSeriesGeneric("test", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}),
+		NewSeriesMixed("test", &SeriesInit{1, 0}, 1, 2.1, "three"),
 	}
 
 	expected := []string{
@@ -389,6 +413,16 @@ func TestSeriesTable(t *testing.T) {
 +-----+------------+
 | 3X1 | CIVIL DATE |
 +-----+------------+`,
+
+		`+-----+-------+
+|     | TEST  |
++-----+-------+
+| 0:  |   1   |
+| 1:  |  2.1  |
+| 2:  | three |
++-----+-------+
+| 3X1 | MIXED |
++-----+-------+`,
 	}
 
 	for i := range init {
@@ -397,7 +431,7 @@ func TestSeriesTable(t *testing.T) {
 		if v, ok := s.(Tabler); ok {
 
 			if strings.TrimSpace(v.Table()) != strings.TrimSpace(expected[i]) {
-				t.Errorf("wrong val: expected: %v actual: %v", expected[i], v.Table())
+				t.Errorf("wrong val: expected: \n%v\n actual: \n%v\n", expected[i], v.Table())
 			}
 		}
 	}
@@ -415,12 +449,14 @@ func TestSeriesString(t *testing.T) {
 		NewSeriesString("test", &SeriesInit{1, 0}, "1", "2", "3"),
 		NewSeriesTime("test", &SeriesInit{1, 0}, tRef, tRef.Add(24*time.Hour), tRef.Add(2*24*time.Hour)),
 		NewSeriesGeneric("test", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}),
+		NewSeriesMixed("test", &SeriesInit{1, 0}, 1, 2.1, "three"),
 
 		NewSeriesFloat64("test", &SeriesInit{1, 0}, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0),
 		NewSeriesInt64("test", &SeriesInit{1, 0}, 1, 2, 3, 4, 5, 6, 7),
 		NewSeriesString("test", &SeriesInit{1, 0}, "1", "2", "3", "4", "5", "6", "7"),
 		NewSeriesTime("test", &SeriesInit{1, 0}, tRef, tRef.Add(24*time.Hour), tRef.Add(2*24*time.Hour), tRef.Add(3*24*time.Hour), tRef.Add(4*24*time.Hour), tRef.Add(5*24*time.Hour), tRef.Add(6*24*time.Hour)),
 		NewSeriesGeneric("test", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}, civil.Date{2018, time.May, 04}, civil.Date{2018, time.May, 05}, civil.Date{2018, time.May, 06}, civil.Date{2018, time.May, 07}),
+		NewSeriesMixed("test", &SeriesInit{1, 0}, 1, 2.1, "three", 4.3, 5, tRef, 7),
 	}
 
 	expected := []string{`[ 1 2 3 ]`,
@@ -428,11 +464,14 @@ func TestSeriesString(t *testing.T) {
 		`[ 1 2 3 ]`,
 		`[ 2017-01-01 05:30:12 +0000 UTC 2017-01-02 05:30:12 +0000 UTC 2017-01-03 05:30:12 +0000 UTC ]`,
 		`[ 2018-05-01 2018-05-02 2018-05-03 ]`,
+		`[ 1 2.1 three ]`,
+
 		`[ 1 2 3 ... 5 6 7 ]`,
 		`[ 1 2 3 ... 5 6 7 ]`,
 		`[ 1 2 3 ... 5 6 7 ]`,
 		`[ 2017-01-01 05:30:12 +0000 UTC 2017-01-02 05:30:12 +0000 UTC 2017-01-03 05:30:12 +0000 UTC ... 2017-01-05 05:30:12 +0000 UTC 2017-01-06 05:30:12 +0000 UTC 2017-01-07 05:30:12 +0000 UTC ]`,
 		`[ 2018-05-01 2018-05-02 2018-05-03 ... 2018-05-05 2018-05-06 2018-05-07 ]`,
+		`[ 1 2.1 three ... 5 2017-01-01 05:30:12 +0000 UTC 7 ]`,
 	}
 
 	for i := range init {
@@ -441,7 +480,7 @@ func TestSeriesString(t *testing.T) {
 		if v, ok := s.(Tabler); ok {
 
 			if strings.TrimSpace(v.String()) != strings.TrimSpace(expected[i]) {
-				t.Errorf("wrong val: expected: %v actual: %v", expected[i], v.String())
+				t.Errorf("wrong val: expected: \n%v\n actual: \n%v\n", expected[i], v.String())
 			}
 		}
 	}
@@ -453,11 +492,17 @@ func TestSeriesCopy(t *testing.T) {
 	// Create new series
 	init := []Series{
 		NewSeriesFloat64("test", &SeriesInit{1, 0}, 1, nil, 2, 3),
+		NewSeriesFloat64("test", nil),
 		NewSeriesInt64("test", &SeriesInit{1, 0}, 1, nil, 2, 3),
+		NewSeriesInt64("test", nil),
 		NewSeriesString("test", &SeriesInit{1, 0}, "1", nil, "2", "3"),
+		NewSeriesString("test", nil),
 		NewSeriesTime("test", &SeriesInit{1, 0}, time.Now(), nil, time.Now(), time.Now()),
+		NewSeriesTime("test", nil),
 		NewSeriesMixed("test", &SeriesInit{1, 0}, 1, nil, 2, 3),
+		NewSeriesMixed("test", nil),
 		NewSeriesGeneric("test", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, nil, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}),
+		NewSeriesGeneric("test", civil.Date{}, nil),
 	}
 
 	for i := range init {
@@ -470,94 +515,4 @@ func TestSeriesCopy(t *testing.T) {
 		}
 	}
 
-}
-
-func TestToSeriesString(t *testing.T) {
-	ctx := context.Background()
-
-	sm := NewSeriesMixed("test", &SeriesInit{1, 0}, 1, nil, 2, 3)
-	ss, err := sm.ToSeriesString(ctx, false)
-	if err != nil {
-		t.Errorf("error encountered: %s\n", err)
-	}
-
-	// convert SeriesString back to SeriesMixed
-	_, err = ss.ToSeriesMixed(ctx, false)
-	if err != nil {
-		t.Errorf("error encountered: %s\n", err)
-	}
-
-}
-
-func TestSeriesIsEqual(t *testing.T) {
-	ctx := context.Background()
-	tRef := time.Date(2017, 1, 1, 5, 30, 12, 0, time.UTC)
-
-	// Create new series
-	init := []Series{
-		NewSeriesFloat64("test", &SeriesInit{1, 0}, 1.0, 2.0, 3.0),
-		NewSeriesInt64("test", &SeriesInit{1, 0}, 1, 2, 3),
-		NewSeriesString("test", &SeriesInit{1, 0}, "1", "2", "3"),
-		NewSeriesTime("test", &SeriesInit{1, 0}, tRef, tRef.Add(24*time.Hour), tRef.Add(2*24*time.Hour)),
-		// NewSeriesMixed("test", &SeriesInit{1, 0}, 1, "two", 3.0),
-		NewSeriesGeneric("test", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}),
-	}
-
-	(init[4].(*SeriesGeneric)).SetIsEqualFunc(func(a, b interface{}) bool {
-		g1 := a.(civil.Date)
-		g2 := b.(civil.Date)
-		return g1 == g2
-	})
-
-	expected := []Series{
-		NewSeriesFloat64("expected", &SeriesInit{1, 0}, 1.0, 2.0, 3.0),
-		NewSeriesInt64("expected", &SeriesInit{1, 0}, 1, 2, 3),
-		NewSeriesString("expected", &SeriesInit{1, 0}, "1", "2", "3"),
-		NewSeriesTime("expected", &SeriesInit{1, 0}, tRef, tRef.Add(24*time.Hour), tRef.Add(2*24*time.Hour)),
-		// NewSeriesMixed("expected", &SeriesInit{1, 0}, 1, "two", 3.0),
-		NewSeriesGeneric("expected", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}),
-	}
-
-	for i := range init {
-		s1 := init[i]
-		s2 := expected[i]
-
-		eq, err := s1.IsEqual(ctx, s2)
-		if err != nil {
-			t.Errorf("error encountered: %s\n", err)
-		}
-
-		if !eq {
-			t.Errorf("s1: [%T] %v is not equal to s2: [%T] %v\n", s1, s1, s2, s2)
-		}
-
-	}
-
-}
-
-func TestStopAtOneNil(t *testing.T) {
-
-	tRef := time.Date(2017, 1, 1, 5, 30, 12, 0, time.UTC)
-
-	init := []Series{
-		NewSeriesFloat64("test", &SeriesInit{1, 0}, 1.0, 2.0, 3.0, nil, 5.9, nil),
-		NewSeriesInt64("test", &SeriesInit{1, 0}, 1, nil, nil, 2, 3),
-		NewSeriesString("test", &SeriesInit{1, 0}, nil, "1", "2", nil, "3"),
-		NewSeriesTime("test", &SeriesInit{1, 0}, tRef, nil, nil, tRef.Add(24*time.Hour), nil, tRef.Add(2*24*time.Hour)),
-		NewSeriesMixed("test", &SeriesInit{1, 0}, 1, "two", nil, nil, 3.0, nil, nil),
-		NewSeriesGeneric("test", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, nil, nil, civil.Date{2018, time.May, 02}, nil, nil, civil.Date{2018, time.May, 03}),
-	}
-
-	opts := NilCountOptions{StopAtOneNil: true}
-
-	for i := range init {
-		cnt, err := init[i].NilCount(opts)
-		if err != nil {
-			t.Errorf("error encountered: %s\n", err)
-		}
-
-		if cnt < 1 {
-			t.Errorf("error: stop-at-one-nil functionality not working for Series: %T \n", init[i])
-		}
-	}
 }
