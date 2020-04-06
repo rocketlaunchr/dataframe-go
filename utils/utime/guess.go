@@ -24,6 +24,9 @@ var (
 // GuessTimeFreqOptions configures how GuessTimeFreq behaves.
 type GuessTimeFreqOptions struct {
 
+	// Hint can be set if you have some idea what timeFreq may be.
+	Hint string
+
 	// R is used to limit the range of the Series.
 	R *dataframe.Range
 
@@ -78,6 +81,14 @@ func GuessTimeFreq(ctx context.Context, ts *dataframe.SeriesTime, opts ...GuessT
 		return "", false, ErrNoPattern
 	} else if val1.After(val2) {
 		reverse = true
+	}
+
+	// Check if Hint is correct
+	if opts[0].Hint != "" {
+		err := ValidateSeriesTime(ctx, ts, opts[0].Hint, ValidateSeriesTimeOptions{DontLock: true})
+		if err == nil {
+			return opts[0].Hint, reverse, nil
+		}
 	}
 
 	var wg sync.WaitGroup

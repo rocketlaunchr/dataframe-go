@@ -192,7 +192,7 @@ std := stat.StdDev(sf.Values, nil)
 
 ## Importing Data
 
-The `imports` sub-package has support for importing csv, jsonl and directly from a SQL database.
+The `imports` sub-package has support for importing csv, jsonl and directly from a SQL database. The `DictateDataType` option can be set to specify the true underlying data type. Alternatively, `InferDataTypes` option can be set.
 
 ### CSV
 
@@ -211,21 +211,20 @@ Spain,2012-02-01,66,555.42,00241
 df, err := imports.LoadFromCSV(ctx, strings.NewReader(csvStr))
 
 OUTPUT:
-+-----+----------------+------------+--------+--------+--------+
-|     |    COUNTRY     |    DATE    |  AGE   | AMOUNT |   ID   |
-+-----+----------------+------------+--------+--------+--------+
-| 0:  | United States  | 2012-02-01 |   50   | 112.1  | 01234  |
-| 1:  | United States  | 2012-02-01 |   32   | 321.31 | 54320  |
-| 2:  | United Kingdom | 2012-02-01 |   17   |  18.2  | 12345  |
-| 3:  | United States  | 2012-02-01 |   32   | 321.31 | 54320  |
-| 4:  | United Kingdom | 2012-02-01 |   NA   |  18.2  | 12345  |
-| 5:  | United States  | 2012-02-01 |   32   | 321.31 | 54320  |
-| 6:  | United States  | 2012-02-01 |   32   | 321.31 | 54320  |
-| 7:  |     Spain      | 2012-02-01 |   66   | 555.42 | 00241  |
-+-----+----------------+------------+--------+--------+--------+
-| 8X5 |     STRING     |   STRING   | STRING | STRING | STRING |
-+-----+----------------+------------+--------+--------+--------+
-
++-----+----------------+------------+-------+---------+-------+
+|     |    COUNTRY     |    DATE    |  AGE  | AMOUNT  |  ID   |
++-----+----------------+------------+-------+---------+-------+
+| 0:  | United States  | 2012-02-01 |  50   |  112.1  | 1234  |
+| 1:  | United States  | 2012-02-01 |  32   | 321.31  | 54320 |
+| 2:  | United Kingdom | 2012-02-01 |  17   |  18.2   | 12345 |
+| 3:  | United States  | 2012-02-01 |  32   | 321.31  | 54320 |
+| 4:  | United Kingdom | 2015-05-07 |  NaN  |  18.2   | 12345 |
+| 5:  | United States  | 2012-02-01 |  32   | 321.31  | 54320 |
+| 6:  | United States  | 2012-02-01 |  32   | 321.31  | 54320 |
+| 7:  |     Spain      | 2012-02-01 |  66   | 555.42  |  241  |
++-----+----------------+------------+-------+---------+-------+
+| 8X5 |     STRING     |    TIME    | INT64 | FLOAT64 | INT64 |
++-----+----------------+------------+-------+---------+-------+
 ```
 
 ## Exporting Data

@@ -19,6 +19,11 @@ import (
 type SeriesTime struct {
 	valFormatter ValueToStringFormatter
 
+	// Layout is for internal use only at the moment. Do not use.
+	//
+	// See: https://golang.org/pkg/time/#Parse
+	Layout string
+
 	lock sync.RWMutex
 	name string
 	// Values is exported to better improve interoperability with various sub-packages.

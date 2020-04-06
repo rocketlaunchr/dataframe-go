@@ -61,7 +61,8 @@ type SQLLoadOptions struct {
 	// WARNING: Some databases may allow tables to contain more rows than the maximum supported.
 	KnownRowCount *int
 
-	// DictateDataType is used to inform LoadFromSQL what the true underlying data type is for a given field name.
+	// DictateDataType is used to inform LoadFromSQL what the true underlying data type is for a given column name.
+	// The key must be the case-sensitive column name.
 	// The value for a given key must be of the data type of the data.
 	// eg. For a string use "". For a int64 use int64(0). What is relevant is the data type and not the value itself.
 	//
@@ -247,9 +248,9 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 					case string:
 						insertVals[fieldName] = *val
 					case bool:
-						if *val == "true" || *val == "TRUE" || *val == "1" {
+						if *val == "true" || *val == "TRUE" || *val == "True" || *val == "1" {
 							insertVals[fieldName] = int64(1)
-						} else if *val == "false" || *val == "FALSE" || *val == "0" {
+						} else if *val == "false" || *val == "FALSE" || *val == "False" || *val == "0" {
 							insertVals[fieldName] = int64(0)
 						} else {
 							return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", *val, row-1, fieldName)
@@ -302,9 +303,9 @@ func LoadFromSQL(ctx context.Context, stmt interface{}, options *SQLLoadOptions,
 				}
 				insertVals[fieldName] = n
 			case "BOOL":
-				if *val == "true" || *val == "TRUE" || *val == "1" {
+				if *val == "true" || *val == "TRUE" || *val == "True" || *val == "1" {
 					insertVals[fieldName] = int64(1)
-				} else if *val == "false" || *val == "FALSE" || *val == "0" {
+				} else if *val == "false" || *val == "FALSE" || *val == "False" || *val == "0" {
 					insertVals[fieldName] = int64(0)
 				} else {
 					return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", *val, row-1, fieldName)
