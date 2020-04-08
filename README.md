@@ -24,6 +24,7 @@ It is recommended your package manager locks to a commit id instead of the maste
 7. [pandas sub-package](https://pandas.pydata.org/pandas-docs/stable/reference/frame.html) ![Help Required](https://img.shields.io/badge/help-required-blueviolet)
 8. Fake data generation
 9. Interpolation (ForwardFill, BackwardFill, Linear, Spline, Lagrange)
+10. Time-series Forecasting
 
 # DataFrames
 

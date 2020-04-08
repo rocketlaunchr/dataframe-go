@@ -1,80 +1,57 @@
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+
 package forecast
 
 import (
 	"context"
 	"errors"
-	"fmt"
-	"reflect"
-	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
-// Algorithm interface sets generic standards of similar methods
-// implemented by the Forecast Algorithms
-type Algorithm interface {
+// ForecastingAlgorithm defines the methods that all forecasting algorithms must implement.
+type ForecastingAlgorithm interface {
 
-	// Load loads historical data. sdf can be a SeriesFloat64 or DataFrame.
-	Load(ctx context.Context, sdf interface{}, r *dataframe.Range) error
+	// Configure sets the various parameters for the algorithm.
+	// config must be a struct that the particular algorithm recognizes.
+	Configure(config interface{}) error
 
-	// Predict forecasts the next n values for a Series or DataFrame.
-	// If a Series was provided to Load function, then a Series is retured.
-	// Alternatively a DataFrame is returned.
-	Predict(ctx context.Context, n int) (interface{}, error)
+	// Load loads historical data.
+	// Some forecasting algorithms do not tolerate nil values and will require interpolation.
+	// r is used to limit which rows of sf are loaded. Prediction will always begin
+	// from the row after that defined by r. r can be thought of as defining a "training set".
+	Load(ctx context.Context, sf *dataframe.SeriesFloat64, r *dataframe.Range) error
 
-	// Configure sets the various parameters for the Algorithm.
-	// config must be a struct that the particular Algorithm understands.
-	Configure(config interface{})
+	// Predict forecasts the next n values for the loaded data.
+	Predict(ctx context.Context, n uint) (*dataframe.SeriesFloat64, error)
 
-	// Validate can be used by providing a validation set of data.
-	// It will then forecast the values from the end of the loaded data and then compare
-	// them with the validation set.
-	Validate(ctx context.Context, sdf interface{}, r *dataframe.Range, errorType ErrorType) (float64, error)
+	// Evaluate will measure the quality of the predicted values based on the evaluation calculation defined by evalFunc.
+	// It will compare the error between sf and the values from the end of the loaded data ("validation set").
+	// sf is usually the output of the Predict method.
+	//
+	// NOTE: You can use the functions directly from the validation subpackage if you need to do something
+	// other than that described above.
+	Evaluate(ctx context.Context, sf *dataframe.SeriesFloat64, evalFunc EvaluationFunc) (float64, error)
 }
 
-// ExponentialSmoothingConfig is used to configure the ETS algorithm.
-type ExponentialSmoothingConfig struct {
-	Alpha   float64
-	TsCol   interface{}
-	DataCol interface{}
+// EvaluationFuncOptions is used to modify the behavior of the EvaluationFunc.
+type EvaluationFuncOptions struct {
+
+	// SkipInvalids will skip Inf and NaN values.
+	// If set to false (default) and an invalid value is encountered, then an ErrIndeterminate is returned.
+	SkipInvalids bool
 }
 
-func (cfg *ExponentialSmoothingConfig) Validate() error {
-	if (cfg.Alpha < 0.0) || (cfg.Alpha > 1.0) {
-		return errors.New("alpha must be between [0,1]")
-	}
+// EvaluationFunc compares the validationSet and forecastSet and calculates the error.
+// See the validation subpackage for various approaches to calculating the error.
+type EvaluationFunc func(ctx context.Context, validationSet, forecastSet []float64, opts *EvaluationFuncOptions) (float64, int, error)
 
-	dColTyp := reflect.TypeOf(cfg.DataCol)
-	if dColTyp != reflect.TypeOf(int(1)) && dColTyp != reflect.TypeOf("s") && dColTyp != nil {
-		return fmt.Errorf("datacol must be an int or a string input not [%T]", cfg.DataCol)
-	}
+// ErrInsufficientDataPoints signifies that a particular forecasting algorithm requires more
+// data points to operate.
+var ErrInsufficientDataPoints = errors.New("insufficient data points or nil values found")
 
-	tsColTyp := reflect.TypeOf(cfg.TsCol)
-	if tsColTyp != reflect.TypeOf(int(1)) && tsColTyp != reflect.TypeOf("s") && tsColTyp != nil {
-		return fmt.Errorf("tscol must be an int or a string input not [%T]", cfg.TsCol)
-	}
+// ErrMismatchLen signifies that there is a mismatch between the length of 2 Series or slices.
+var ErrMismatchLen = errors.New("mismatch length")
 
-	return nil
-}
-
-// HoltWintersConfig is used to configure the HW algorithm.
-type HoltWintersConfig struct {
-	Alpha          float64
-	Beta           float64
-	Gamma          float64
-	Period         int
-	ErrMeasurement *ErrorMeasurement
-}
-
-// func (cfg *HoltWintersConfig) Validate() error {
-
-// }
-
-type tsGen struct {
-	timeCol      interface{}
-	dataCol      interface{}
-	tsName       string
-	tsInterval   string
-	tsIntReverse bool
-	lastTsVal    time.Time
-}
+// ErrIndeterminate indicates that the result of a calculation is indeterminate.
+var ErrIndeterminate = errors.New("indeterminate")
