@@ -33,6 +33,13 @@ func TestRange(t *testing.T) {
 			ExpE:  3,
 		},
 		{
+			Start: i(1),
+			End:   i(3),
+			ExpN:  3,
+			ExpS:  1,
+			ExpE:  3,
+		},
+		{
 			Start: nil,
 			End:   i(-1),
 			ExpN:  4,
