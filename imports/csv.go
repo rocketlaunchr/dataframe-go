@@ -57,7 +57,7 @@ type CSVLoadOptions struct {
 
 	// InferDataTypes can be set to true if the underlying data type should be automatically detected.
 	// Using DictateDataType is the recommended approach (especially for large datasets or memory constrained systems).
-	// DictateDataType always takes precendence when determining the type.
+	// DictateDataType always takes precedence when determining the type.
 	// If the data type could not be detected, NewSeriesString is used.
 	InferDataTypes bool
 }
