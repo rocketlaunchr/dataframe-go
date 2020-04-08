@@ -21,14 +21,14 @@ type Range struct {
 func (r Range) String() string {
 	if r.Start == nil {
 		if r.End == nil {
-			return "Range:nil-nil"
+			return "Range:nil—nil"
 		}
-		return fmt.Sprintf("Range:nil-%d", *r.End)
+		return fmt.Sprintf("Range:nil—%d", *r.End)
 	}
 	if r.End == nil {
-		return fmt.Sprintf("Range:%d-nil", *r.Start)
+		return fmt.Sprintf("Range:%d—nil", *r.Start)
 	}
-	return fmt.Sprintf("Range:%d-%d", *r.Start, *r.End)
+	return fmt.Sprintf("Range:%d—%d", *r.Start, *r.End)
 }
 
 // NRows returns the number of rows contained by Range.
