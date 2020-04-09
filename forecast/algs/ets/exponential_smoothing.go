@@ -13,7 +13,7 @@ import (
 // ExponentialSmoothingConfig is used to configure the ETS algorithm.
 // ETS models the error, trend and seasonal elements of the data with exponential smoothing.
 //
-// NOTE: ETS algorithm does not tolerate nil values. You may need use the interpolation subpackage.
+// NOTE: ETS algorithm does not tolerate nil values. You may need to use the interpolation subpackage.
 type ExponentialSmoothingConfig struct {
 
 	// Alpha must be between 0 and 1. The closer Alpha is to 1, the more the algorithm
@@ -23,7 +23,7 @@ type ExponentialSmoothingConfig struct {
 
 func (cfg *ExponentialSmoothingConfig) Validate() error {
 	if (cfg.Alpha < 0.0) || (cfg.Alpha > 1.0) {
-		return errors.New("alpha must be between [0,1]")
+		return errors.New("Alpha must be between [0,1]")
 	}
 
 	return nil
@@ -58,7 +58,7 @@ func (es *ExponentialSmoothing) Configure(config interface{}) error {
 // r is used to limit which rows of sf are loaded. Prediction will always begin
 // from the row after that defined by r. r can be thought of as defining a "training set".
 //
-// NOTE: ETS algorithm does not tolerate nil values. You may need use the interpolation subpackage.
+// NOTE: ETS algorithm does not tolerate nil values. You may need to use the interpolation subpackage.
 func (es *ExponentialSmoothing) Load(ctx context.Context, sf *dataframe.SeriesFloat64, r *dataframe.Range) error {
 
 	if r == nil {
