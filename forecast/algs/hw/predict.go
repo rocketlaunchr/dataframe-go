@@ -5,7 +5,6 @@ package hw
 import (
 	"context"
 
-	"github.com/bradfitz/iter"
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
@@ -26,7 +25,7 @@ func (hw *HoltWinters) Predict(ctx context.Context, n uint) (*dataframe.SeriesFl
 
 	m := 1
 	pos := 0
-	for range iter.N(n) {
+	for i := uint(0); i < n; i++ {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}

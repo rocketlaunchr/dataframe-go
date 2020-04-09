@@ -18,20 +18,20 @@ type trainingState struct {
 func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 
 	var (
-		α, β, γ float64 = hw.cfg.Alpha, hw.cfg.Beta, hw.cfg.Gamma
-		period  int     = hw.cfg.Period
-		st      float64
-		Yorigin float64
+		α, β, γ        float64 = hw.cfg.Alpha, hw.cfg.Beta, hw.cfg.Gamma
+		period         int     = hw.cfg.Period
+		trnd, prevTrnd float64 // trend
+		st, prevSt     float64 // smooth
 	)
 
-	y := hm.sf.Values[start : end+1]
+	y := hw.sf.Values[start : end+1]
 
 	seasonals := initialSeasonalComponents(y, period)
 
-	hm.initialSeasonalComps = initialSeasonalComponents(y, period)
+	hw.tstate.initialSeasonalComps = initialSeasonalComponents(y, period)
 
 	trnd = initialTrend(y, period)
-	hm.initialTrend = trnd
+	hw.tstate.initialTrend = trnd
 
 	// Training smoothing Level
 	for i := start; i < end+1; i++ {
@@ -45,7 +45,7 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 		if i == start { // Set initial smooth
 			st = xt
 
-			hm.tstate.initialSmooth = xt
+			hw.tstate.initialSmooth = xt
 
 		} else {
 			// multiplicative method
@@ -63,9 +63,9 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 
 	}
 
-	hm.tstate.smoothingLevel = st
-	hm.tstate.trendLevel = trnd
-	hm.tstate.seasonalComps = seasonals
+	hw.tstate.smoothingLevel = st
+	hw.tstate.trendLevel = trnd
+	hw.tstate.seasonalComps = seasonals
 
 	return nil
 }
