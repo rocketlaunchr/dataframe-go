@@ -33,6 +33,7 @@ func TestHW(t *testing.T) {
 		Beta:   beta,
 		Gamma:  gamma,
 		Period: period,
+		TsType: ADD,
 	}
 
 	hwModel := NewHoltWinters()

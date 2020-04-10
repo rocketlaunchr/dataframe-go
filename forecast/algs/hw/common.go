@@ -14,7 +14,7 @@ func initialTrend(y []float64, period int) float64 {
 }
 
 // See: http://www.itl.nist.gov/div898/handbook/pmc/section4/pmc435.htm
-func initialSeasonalComponents(y []float64, period int) []float64 {
+func initialSeasonalComponents(y []float64, period int, tsType TimeSeriesType) []float64 {
 
 	nSeasons := len(y) / period
 
@@ -33,11 +33,14 @@ func initialSeasonalComponents(y []float64, period int) []float64 {
 
 	for i := 0; i < period; i++ {
 		for j := 0; j < nSeasons; j++ {
-			// Multiplcative seasonal component
-			// seasonalIndices[i] += y[(j*period)+i] / seasonalAverage[j]
+			if tsType == MULTIPLY {
+				// Multiplcative seasonal component
+				seasonalIndices[i] += y[(j*period)+i] / seasonalAverage[j]
+			} else {
+				// Additive seasonal component
+				seasonalIndices[i] += y[(j*period)+i] - seasonalAverage[j]
+			}
 
-			// Additive seasonal component
-			seasonalIndices[i] += y[(j*period)+i] - seasonalAverage[j]
 		}
 		seasonalIndices[i] /= float64(nSeasons)
 	}

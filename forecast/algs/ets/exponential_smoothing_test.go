@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
-	evalFn "github.com/rocketlaunchr/dataframe-go/forecast/evaluation"
+	eval "github.com/rocketlaunchr/dataframe-go/forecast/evaluation"
 )
 
 func TestETS(t *testing.T) {
@@ -41,7 +41,9 @@ func TestETS(t *testing.T) {
 	}
 	fmt.Println(etsPredict.Table())
 
-	errVal, err := etsModel.Evaluate(ctx, etsPredict, evalFn.RootMeanSquaredError)
+	evalFn := eval.RootMeanSquaredError
+
+	errVal, err := etsModel.Evaluate(ctx, etsPredict, evalFn)
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}

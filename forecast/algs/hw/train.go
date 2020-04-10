@@ -26,9 +26,9 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 
 	y := hw.sf.Values[start : end+1]
 
-	seasonals := initialSeasonalComponents(y, period)
+	seasonals := initialSeasonalComponents(y, period, hw.cfg.TsType)
 
-	hw.tstate.initialSeasonalComps = initialSeasonalComponents(y, period)
+	hw.tstate.initialSeasonalComps = initialSeasonalComponents(y, period, hw.cfg.TsType)
 
 	trnd = initialTrend(y, period)
 	hw.tstate.initialTrend = trnd
@@ -48,17 +48,18 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 			hw.tstate.initialSmooth = xt
 
 		} else {
-			// multiplicative method
-			// prevSt, st = st, α * (xt / seasonals[i % period]) + (1 - α) * (st + trnd)
-			// prevTrnd, trnd = trnd, β * (st - prevSt) + (1 - β) * trnd
-			// seasonals[i % period] = γ * (xt / (prevSt + prevTrnd)) + (1 - γ) * seasonals[i % period]
+			if hw.cfg.TsType == MULTIPLY {
+				// multiplicative method
+				prevSt, st = st, α*(xt/seasonals[i%period])+(1-α)*(st+trnd)
+				prevTrnd, trnd = trnd, β*(st-prevSt)+(1-β)*trnd
+				seasonals[i%period] = γ*(xt/(prevSt+prevTrnd)) + (1-γ)*seasonals[i%period]
+			} else {
+				// additive method
+				prevSt, st = st, α*(xt-seasonals[i%period])+(1-α)*(st+trnd)
+				prevTrnd, trnd = trnd, β*(st-prevSt)+(1-β)*trnd
+				seasonals[i%period] = γ*(xt-prevSt-prevTrnd) + (1-γ)*seasonals[i%period]
+			}
 
-			// additive method
-			prevSt, st = st, α*(xt-seasonals[i%period])+(1-α)*(st+trnd)
-			prevTrnd, trnd = trnd, β*(st-prevSt)+(1-β)*trnd
-			seasonals[i%period] = γ*(xt-prevSt-prevTrnd) + (1-γ)*seasonals[i%period]
-			// _ = prevTrnd
-			// fmt.Println(st + trnd + seasonals[i % period])
 		}
 
 	}

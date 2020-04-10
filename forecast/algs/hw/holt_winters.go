@@ -10,6 +10,16 @@ import (
 	"github.com/rocketlaunchr/dataframe-go/forecast"
 )
 
+// TimeSeriesType is used to set the time series type
+type TimeSeriesType int
+
+const (
+	// ADD specifies additive method
+	ADD TimeSeriesType = 0
+	// MULTIPLY specifies additive method
+	MULTIPLY TimeSeriesType = 1
+)
+
 // HoltWintersConfig is used to configure the HW algorithm.
 // HW models the error, trend and seasonal elements of the data with holt winters.
 //
@@ -20,6 +30,10 @@ type HoltWintersConfig struct {
 	Alpha, Beta, Gamma float64
 	// Period
 	Period int
+	// TsType is optional parameter used to specify Time Series type
+	// Additive [Add] or Multiplicative [Multiply]
+	// Default method used is Add.
+	TsType TimeSeriesType
 }
 
 func (cfg *HoltWintersConfig) Validate() error {
