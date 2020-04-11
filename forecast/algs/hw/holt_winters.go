@@ -28,7 +28,8 @@ type HoltWintersConfig struct {
 
 	// Alpha, Beta and Gamma must be between 0 and 1.
 	Alpha, Beta, Gamma float64
-	// Period
+	// Period  is the length of the data season
+	// It must be at least 2
 	Period int
 	// TsType is optional parameter used to specify Time Series type
 	// Additive [Add] or Multiplicative [Multiply]
@@ -45,6 +46,9 @@ func (cfg *HoltWintersConfig) Validate() error {
 	}
 	if (cfg.Gamma < 0.0) || (cfg.Gamma > 1.0) {
 		return errors.New("Gamma must be between [0,1]")
+	}
+	if cfg.Period < 2 {
+		return errors.New("Period must be at least a length of 2")
 	}
 
 	return nil
@@ -76,6 +80,11 @@ func (hw *HoltWinters) Configure(config interface{}) error {
 }
 
 // Load loads historical data.
+//
+// sf is the series containing Historical Seasonal data.
+// it must be at least a full season,
+// for optimal results use at least two full seasons.
+//
 // r is used to limit which rows of sf are loaded. Prediction will always begin
 // from the row after that defined by r. r can be thought of as defining a "training set".
 //

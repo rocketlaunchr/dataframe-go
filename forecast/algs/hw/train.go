@@ -52,12 +52,12 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 				// multiplicative method
 				prevSt, st = st, α*(xt/seasonals[i%period])+(1-α)*(st+trnd)
 				prevTrnd, trnd = trnd, β*(st-prevSt)+(1-β)*trnd
-				seasonals[i%period] = γ*(xt/(prevSt+prevTrnd)) + (1-γ)*seasonals[i%period]
+				seasonals[i%period] = γ*(xt/st)) + (1-γ)*seasonals[i%period]
 			} else {
 				// additive method
 				prevSt, st = st, α*(xt-seasonals[i%period])+(1-α)*(st+trnd)
 				prevTrnd, trnd = trnd, β*(st-prevSt)+(1-β)*trnd
-				seasonals[i%period] = γ*(xt-prevSt-prevTrnd) + (1-γ)*seasonals[i%period]
+				seasonals[i%period] = γ*(xt-st) + (1-γ)*seasonals[i%period]
 			}
 
 		}
