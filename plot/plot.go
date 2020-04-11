@@ -71,7 +71,7 @@ type Plot struct {
 //  }
 //
 //  plt, _ := plot.Open("Linear", 150, 250)
-//  graph.Render(chart.PNG, plt)
+//  graph.Render(chart.SVG, plt)
 //  plt.Display()
 //  <-plt.Closed
 //
@@ -192,7 +192,7 @@ func (p *Plot) Display(mime ...MIME) error {
 
 	var prefix string
 	if len(mime) == 0 {
-		prefix = "data:image/png;base64, "
+		prefix = "data:image/svg+xml;base64, "
 	} else {
 		prefix = "data:image/" + string(mime[0]) + ";base64, "
 	}
