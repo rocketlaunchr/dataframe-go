@@ -3,17 +3,14 @@
 package plot
 
 import (
+	"bytes"
 	"encoding/base64"
 	"errors"
-	"io/ioutil"
 	"net/url"
-	"os"
 	"strings"
 	"text/template"
 
 	"github.com/zserge/lorca"
-
-	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
 var (
@@ -47,7 +44,7 @@ type Plot struct {
 	Closed chan struct{}
 
 	title    string
-	tempfile *os.File
+	tempData bytes.Buffer
 
 	ui lorca.UI
 }
@@ -83,18 +80,12 @@ func Open(title string, width, height int) (*Plot, error) {
 		return nil, ErrNoChromeInstalled
 	}
 
-	// Create a temporary file
-	tmpfile, err := ioutil.TempFile("", "")
-	if err != nil {
-		return nil, err
-	}
-
 	// Build html string
 	ij := injectData{Title: title}
 
 	builder := &strings.Builder{}
 
-	err = htmlTemplate.Execute(builder, ij)
+	err := htmlTemplate.Execute(builder, ij)
 	if err != nil {
 		return nil, err
 	}
@@ -105,10 +96,9 @@ func Open(title string, width, height int) (*Plot, error) {
 	}
 
 	plot := &Plot{
-		ui:       ui,
-		title:    title,
-		tempfile: tmpfile,
-		Closed:   make(chan struct{}, 1),
+		ui:     ui,
+		title:  title,
+		Closed: make(chan struct{}, 1),
 	}
 
 	go func() {
@@ -125,26 +115,11 @@ func (p *Plot) Close() error {
 		return nil
 	}
 
-	err := dataframe.NewErrorCollection()
-
-	errA := p.tempfile.Close()
-	if errA != nil {
-		err.AddError(errA, false)
-	}
-
-	errB := os.Remove(p.tempfile.Name()) // Delete out temporary file
-	if errB != nil {
-		err.AddError(errB, false)
-	}
-	p.tempfile = nil
+	p.tempData.Reset()
 	p.title = ""
 
-	errC := p.ui.Close()
-	if errC != nil {
-		err.AddError(errC, false)
-	}
-
-	if !err.IsNil(false) {
+	err := p.ui.Close()
+	if err != nil {
 		return err
 	}
 
@@ -163,7 +138,7 @@ func (p *Plot) Write(d []byte) (int, error) {
 		return 0, ErrClosed
 	}
 
-	return p.tempfile.Write(d)
+	return p.tempData.Write(d)
 }
 
 // MIME Type is used to help Chrome recognize the format of the image.
@@ -181,16 +156,12 @@ const (
 	SVG MIME = "svg+xml"
 )
 
-// Display will display the plot.
+// Display will display the plot. The default mime is SVG.
+// If the plotting package you are using supports saving as SVG, then use it.
 func (p *Plot) Display(mime ...MIME) error {
 
 	if p.ui == nil {
 		return ErrClosed
-	}
-
-	img, err := ioutil.ReadFile(p.tempfile.Name())
-	if err != nil {
-		return err
 	}
 
 	var prefix string
@@ -199,14 +170,14 @@ func (p *Plot) Display(mime ...MIME) error {
 	} else {
 		prefix = "data:image/" + string(mime[0]) + ";base64, "
 	}
-	b64Img := prefix + base64.StdEncoding.EncodeToString(img)
+	b64Img := prefix + base64.StdEncoding.EncodeToString(p.tempData.Bytes())
 
 	// Build html string
 	ij := injectData{Title: p.title, Src: b64Img}
 
 	builder := &strings.Builder{}
 
-	err = imgTemplate.Execute(builder, ij)
+	err := imgTemplate.Execute(builder, ij)
 	if err != nil {
 		return err
 	}
