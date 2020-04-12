@@ -62,7 +62,7 @@ func S(ctx context.Context, y *dataframe.SeriesFloat64, x interface{}, r ...data
 		yVals := []float64{}
 
 		// Remove nil values
-		for i, j := 0, start; j < end+1; i, j = i+1, j+1 {
+		for j := start; j < end+1; j++ {
 
 			if err := ctx.Err(); err != nil {
 				return nil, err
@@ -92,7 +92,7 @@ func S(ctx context.Context, y *dataframe.SeriesFloat64, x interface{}, r ...data
 		yVals := []float64{}
 
 		// Remove nil values
-		for i, j := 0, start; j < end+1; i, j = i+1, j+1 {
+		for j := start; j < end+1; j++ {
 
 			if err := ctx.Err(); err != nil {
 				return nil, err
