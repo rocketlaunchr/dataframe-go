@@ -26,6 +26,21 @@ func B(b bool) int {
 	return 0
 }
 
+// IsValidFloat64 returns true if f is neither Nan nor ±Inf.
+// Otherwise it returns false.
+func IsValidFloat64(f float64) bool {
+
+	if isNaN(f) {
+		return false
+	}
+
+	if isInf(f, 0) {
+		return false
+	}
+
+	return true
+}
+
 // BoolValueFormatter is used by SetValueToStringFormatter
 // to display an int as a bool. If the encountered value
 // is not a 0 or 1, it will panic.

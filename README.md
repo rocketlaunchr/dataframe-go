@@ -191,6 +191,32 @@ median, _ := stats.Median(sf.Values)
 std := stat.StdDev(sf.Values, nil)
 ```
 
+## Plotting (only Windows, macOS and Linux)
+
+```go
+import (
+	"github.com/rocketlaunchr/dataframe-go/plot"
+	c "github.com/rocketlaunchr/dataframe-go/plot/wcharczuk/go-chart"
+)
+
+sales := dataframe.NewSeriesFloat64("sales", nil, 50.3, nil, 23.4, 56.2, 89, 32, 84.2, 72, 89)
+cs, _ := c.S(ctx, sales, nil)
+
+graph := chart.Chart{Series: []chart.Series{cs}}
+
+plt, _ := plot.Open("Monthly sales", 450, 300)
+graph.Render(chart.SVG, plt)
+plt.Display(plot.SVG)
+<-plt.Closed
+
+```
+
+Output:
+
+<p align="center">
+<img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/plot.png" alt="plot" />
+</p>
+
 ## Importing Data
 
 The `imports` sub-package has support for importing csv, jsonl and directly from a SQL database. The `DictateDataType` option can be set to specify the true underlying data type. Alternatively, `InferDataTypes` option can be set.
