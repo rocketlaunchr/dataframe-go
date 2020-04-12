@@ -37,6 +37,11 @@ func S(ctx context.Context, y *dataframe.SeriesFloat64, x interface{}, r ...data
 
 		// Remove nil values
 		for i, j := 0, start; j < end+1; i, j = i+1, j+1 {
+
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+
 			yval := y.Values[j]
 
 			if dataframe.IsValidFloat64(yval) {
@@ -58,6 +63,11 @@ func S(ctx context.Context, y *dataframe.SeriesFloat64, x interface{}, r ...data
 
 		// Remove nil values
 		for i, j := 0, start; j < end+1; i, j = i+1, j+1 {
+
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+
 			yval := y.Values[j]
 			xval := xx.Values[j]
 
@@ -83,6 +93,11 @@ func S(ctx context.Context, y *dataframe.SeriesFloat64, x interface{}, r ...data
 
 		// Remove nil values
 		for i, j := 0, start; j < end+1; i, j = i+1, j+1 {
+
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+
 			yval := y.Values[j]
 			xval := xx.Values[j]
 

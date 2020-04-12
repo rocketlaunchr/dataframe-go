@@ -131,6 +131,7 @@ func (p *Plot) Close() error {
 	if errA != nil {
 		err.AddError(errA, false)
 	}
+
 	errB := os.Remove(p.tempfile.Name()) // Delete out temporary file
 	if errB != nil {
 		err.AddError(errB, false)
