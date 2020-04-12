@@ -13,6 +13,8 @@ import (
 
 // S converts a SeriesFloat64 to a chart.Series for usage with the "github.com/wcharczuk/go-chart" package.
 // Currently x can be nil, a SeriesFloat64 or a SeriesTime. nil values in the x and y Series are ignored.
+//
+// NOTE: To "unjoin" the lines, you can adjust the style to chart.Style{StrokeWidth: chart.Disabled, DotWidth: 2}.
 func S(ctx context.Context, y *dataframe.SeriesFloat64, x interface{}, r ...dataframe.Range) (chart.Series, error) {
 
 	var out chart.Series
