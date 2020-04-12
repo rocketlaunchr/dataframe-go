@@ -31,10 +31,15 @@ type HoltWintersConfig struct {
 	// Period  is the length of the data season
 	// It must be at least 2
 	Period int
-	// TsType is optional parameter used to specify Time Series type
+	// Seasonal is optional parameter used to specify the seasonality type
 	// Additive [Add] or Multiplicative [Multiply]
 	// Default method used is Add.
-	TsType TimeSeriesType
+	Seasonal TimeSeriesType
+
+	// Seasonal is optional parameter used to specify the seasonality type
+	// Additive [Add] or Multiplicative [Multiply]
+	// Default method used is Add.
+	Trend TimeSeriesType
 }
 
 func (cfg *HoltWintersConfig) Validate() error {

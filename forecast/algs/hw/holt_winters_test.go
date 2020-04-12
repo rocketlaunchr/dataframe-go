@@ -29,11 +29,12 @@ func TestHW(t *testing.T) {
 	gamma := 0.73
 
 	cfg := HoltWintersConfig{
-		Alpha:  alpha,
-		Beta:   beta,
-		Gamma:  gamma,
-		Period: period,
-		TsType: ADD,
+		Alpha:    alpha,
+		Beta:     beta,
+		Gamma:    gamma,
+		Period:   period,
+		Seasonal: ADD,
+		Trend:    ADD,
 	}
 
 	hwModel := NewHoltWinters()
