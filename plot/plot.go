@@ -1,5 +1,11 @@
 // Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
+// package plot implements basic plotting functionality that leverages Chrome/Chromium for cross-platform
+// capabilities. It works on Windows, macOS and Linux.
+//
+// Any plotting package that can write to an io.Writer can be used.
+//
+// See: github.com/wcharczuk/go-chart and https://github.com/gonum/plot/wiki/Drawing-to-an-Image-or-Writer:-How-to-save-a-plot-to-an-image.Image-or-an-io.Writer,-not-a-file.#writing-a-plot-to-an-iowriter
 package plot
 
 import (
@@ -128,7 +134,7 @@ func (p *Plot) Close() error {
 	return nil
 }
 
-// Write implements io.Writer interface. Do not use this method.
+// Write implements io.Writer interface. Do not use this method directly.
 // Any plotting package that writes to an io.Writer (such as to file) is compatible.
 //
 // See: https://godoc.org/github.com/wcharczuk/go-chart
