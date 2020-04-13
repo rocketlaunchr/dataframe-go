@@ -57,6 +57,7 @@ type Plot struct {
 
 // Open creates a new plot window.
 // Any plotting package that writes to an io.Writer (such as to file) is compatible.
+// Optional wrappers for various plotting packages are provided in the subpackages.
 //
 // Example:
 //
