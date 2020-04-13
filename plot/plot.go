@@ -3,7 +3,7 @@
 // package plot implements basic plotting functionality that leverages Chrome/Chromium for cross-platform
 // capabilities. It works on Windows, macOS and Linux.
 //
-// Any plotting package that can write to an io.Writer can be used.
+// Any plotting package that can write to an io.Writer is compatible.
 //
 // See: github.com/wcharczuk/go-chart and https://github.com/gonum/plot/wiki/Drawing-to-an-Image-or-Writer:-How-to-save-a-plot-to-an-image.Image-or-an-io.Writer,-not-a-file.#writing-a-plot-to-an-iowriter
 package plot
