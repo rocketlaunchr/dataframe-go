@@ -5,7 +5,7 @@
 //
 // Any plotting package that can write to an io.Writer is compatible.
 //
-// See: github.com/wcharczuk/go-chart and https://github.com/gonum/plot/wiki/Drawing-to-an-Image-or-Writer:-How-to-save-a-plot-to-an-image.Image-or-an-io.Writer,-not-a-file.#writing-a-plot-to-an-iowriter
+// See: https://github.com/wcharczuk/go-chart and https://github.com/gonum/plot/wiki/Drawing-to-an-Image-or-Writer:-How-to-save-a-plot-to-an-image.Image-or-an-io.Writer,-not-a-file.#writing-a-plot-to-an-iowriter
 package plot
 
 import (
@@ -134,7 +134,7 @@ func (p *Plot) Close() error {
 	return nil
 }
 
-// Write implements io.Writer interface. Do not use this method directly.
+// Write implements a io.Writer interface. Do not use this method directly.
 // Any plotting package that writes to an io.Writer (such as to file) is compatible.
 //
 // See: https://godoc.org/github.com/wcharczuk/go-chart

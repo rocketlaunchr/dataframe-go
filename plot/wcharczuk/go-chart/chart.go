@@ -11,7 +11,7 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
-// S converts a SeriesFloat64 to a chart.Series for usage with the "github.com/wcharczuk/go-chart" package.
+// S converts a SeriesFloat64 to a chart.Series for use with the "github.com/wcharczuk/go-chart" package.
 // Currently x can be nil, a SeriesFloat64 or a SeriesTime. nil values in the x and y Series are ignored.
 //
 // NOTE: To "unjoin" the lines, you can adjust the style to chart.Style{StrokeWidth: chart.Disabled, DotWidth: 2}.
