@@ -195,12 +195,13 @@ std := stat.StdDev(sf.Values, nil)
 
 ```go
 import (
+	chart "github.com/wcharczuk/go-chart"
 	"github.com/rocketlaunchr/dataframe-go/plot"
-	c "github.com/rocketlaunchr/dataframe-go/plot/wcharczuk/go-chart"
+	wc "github.com/rocketlaunchr/dataframe-go/plot/wcharczuk/go-chart"
 )
 
 sales := dataframe.NewSeriesFloat64("sales", nil, 50.3, nil, 23.4, 56.2, 89, 32, 84.2, 72, 89)
-cs, _ := c.S(ctx, sales, nil, nil)
+cs, _ := wc.S(ctx, sales, nil, nil)
 
 graph := chart.Chart{Series: []chart.Series{cs}}
 
