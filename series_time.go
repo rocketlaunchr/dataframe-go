@@ -26,7 +26,10 @@ type SeriesTime struct {
 
 	lock sync.RWMutex
 	name string
+
 	// Values is exported to better improve interoperability with various sub-packages.
+	//
+	// WARNING: Do not modify.
 	Values   []*time.Time
 	nilCount int
 }

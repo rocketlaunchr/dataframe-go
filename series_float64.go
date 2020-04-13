@@ -21,7 +21,10 @@ type SeriesFloat64 struct {
 	lock sync.RWMutex
 	name string
 	// Values is exported to better improve interoperability with the gonum package.
+	//
 	// See: https://godoc.org/gonum.org/v1/gonum
+	//
+	// WARNING: Do not modify.
 	Values   []float64
 	nilCount int
 }
