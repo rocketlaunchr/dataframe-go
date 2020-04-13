@@ -5,7 +5,7 @@ Dataframes for Go [![GoDoc](http://godoc.org/github.com/rocketlaunchr/dataframe-
 <img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/logo.png" alt="dataframe-go" />
 </p>
 
-Dataframes are used for statistics and data manipulation. You can think of a Dataframe as an excel spreadsheet.
+Dataframes are used for statistics and data manipulation/exploration. You can think of a Dataframe as an excel spreadsheet.
 This package is designed to be light-weight and intuitive.
 
 The package is production ready but the API is not stable yet. Once stability is reached, version `1.0.0` will be tagged.
