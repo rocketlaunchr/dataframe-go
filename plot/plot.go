@@ -1,6 +1,6 @@
 // Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
-// package plot implements basic plotting functionality that leverages Chrome/Chromium for cross-platform
+// Package plot implements basic plotting functionality that leverages Chrome/Chromium for cross-platform
 // capabilities. It works on Windows, macOS and Linux.
 //
 // Any plotting package that can write to an io.Writer is compatible.
