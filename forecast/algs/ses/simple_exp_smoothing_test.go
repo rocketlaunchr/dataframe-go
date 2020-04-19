@@ -53,10 +53,10 @@ func TestETS(t *testing.T) {
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
-	expectedRmse := 4.1633150753580965
+	expectedRMSE := 4.1633150753580965
 
-	if errVal != expectedRmse {
-		t.Errorf("expected error calc Value: %f is not same as actual errVal: %f", expectedRmse, errVal)
+	if errVal != expectedRMSE {
+		t.Errorf("expected error calc Value: %f is not same as actual errVal: %f", expectedRMSE, errVal)
 	}
 
 }
