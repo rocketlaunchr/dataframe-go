@@ -1,6 +1,6 @@
 // Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
-package ets
+package ses
 
 import (
 	"context"
@@ -15,17 +15,17 @@ import (
 //
 // NOTE: You can use the functions directly from the validation subpackage if you need to do something
 // other than that described above.
-func (es *ExponentialSmoothing) Evaluate(ctx context.Context, sf *dataframe.SeriesFloat64, evalFunc forecast.EvaluationFunc) (float64, error) {
+func (se *SimpleExpSmoothing) Evaluate(ctx context.Context, sf *dataframe.SeriesFloat64, evalFunc forecast.EvaluationFunc) (float64, error) {
 
 	if evalFunc == nil {
 		panic("evalFunc is nil")
 	}
 
 	// Determine outer range of loaded data
-	loadedSeries := es.sf
+	loadedSeries := se.sf
 	loadedRows := loadedSeries.NRows(dataframe.DontLock)
 
-	_, te, err := es.tRange.Limits(loadedRows)
+	_, te, err := se.tRange.Limits(loadedRows)
 	if err != nil {
 		return 0, err
 	}

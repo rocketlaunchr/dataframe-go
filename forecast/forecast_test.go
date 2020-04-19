@@ -6,7 +6,7 @@ package forecast
 // 	"testing"
 
 // 	dataframe "github.com/rocketlaunchr/dataframe-go"
-// 	alg "github.com/rocketlaunchr/dataframe-go/forecast/algs/ets"
+// 	alg "github.com/rocketlaunchr/dataframe-go/forecast/algs/ses"
 // 	eval "github.com/rocketlaunchr/dataframe-go/forecast/evaluation"
 // )
 
@@ -24,7 +24,7 @@ package forecast
 
 // 	// var evalFn EvaluationFunc = eval.RootMeanSquaredError
 
-// 	// res, evalErr, err := Forecast(ctx, data, &dataframe.Range{End: &[]int{5}[0]}, alg.ExponentialSmoothing, cfg, m, evalFn)
+// 	// res, evalErr, err := Forecast(ctx, data, &dataframe.Range{End: &[]int{5}[0]}, alg.SimpleExpSmoothing, cfg, m, evalFn)
 // 	// if err != nil {
 // 	// 	t.Errorf("error encountered: %s\n", err)
 // 	// }

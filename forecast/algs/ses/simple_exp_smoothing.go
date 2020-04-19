@@ -1,6 +1,6 @@
 // Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
-package ets
+package ses
 
 import (
 	"context"
@@ -10,10 +10,10 @@ import (
 	"github.com/rocketlaunchr/dataframe-go/forecast"
 )
 
-// ExponentialSmoothingConfig is used to configure the ETS algorithm.
-// ETS models the error, trend and seasonal elements of the data with exponential smoothing.
+// ExponentialSmoothingConfig is used to configure the SES algorithm.
+// SES models the error, trend and seasonal elements of the data with exponential smoothing.
 //
-// NOTE: ETS algorithm does not tolerate nil values. You may need to use the interpolation subpackage.
+// NOTE: SES algorithm does not tolerate nil values. You may need to use the interpolation subpackage.
 type ExponentialSmoothingConfig struct {
 
 	// Alpha must be between 0 and 1. The closer Alpha is to 1, the more the algorithm
@@ -29,28 +29,28 @@ func (cfg *ExponentialSmoothingConfig) Validate() error {
 	return nil
 }
 
-// ExponentialSmoothing represents the ETS algorithm for time-series forecasting.
-type ExponentialSmoothing struct {
+// SimpleExpSmoothing represents the SES algorithm for time-series forecasting.
+type SimpleExpSmoothing struct {
 	tstate trainingState
 	cfg    ExponentialSmoothingConfig
 	tRange dataframe.Range // training range
 	sf     *dataframe.SeriesFloat64
 }
 
-func NewExponentialSmoothing() *ExponentialSmoothing {
-	return &ExponentialSmoothing{}
+func NewExponentialSmoothing() *SimpleExpSmoothing {
+	return &SimpleExpSmoothing{}
 }
 
-// Configure sets the various parameters for the ETS algorithm.
+// Configure sets the various parameters for the SES algorithm.
 // config must be a ExponentialSmoothingConfig.
-func (es *ExponentialSmoothing) Configure(config interface{}) error {
+func (se *SimpleExpSmoothing) Configure(config interface{}) error {
 
 	cfg := config.(ExponentialSmoothingConfig)
 	if err := cfg.Validate(); err != nil {
 		return err
 	}
 
-	es.cfg = cfg
+	se.cfg = cfg
 	return nil
 }
 
@@ -58,8 +58,8 @@ func (es *ExponentialSmoothing) Configure(config interface{}) error {
 // r is used to limit which rows of sf are loaded. Prediction will always begin
 // from the row after that defined by r. r can be thought of as defining a "training set".
 //
-// NOTE: ETS algorithm does not tolerate nil values. You may need to use the interpolation subpackage.
-func (es *ExponentialSmoothing) Load(ctx context.Context, sf *dataframe.SeriesFloat64, r *dataframe.Range) error {
+// NOTE: SES algorithm does not tolerate nil values. You may need to use the interpolation subpackage.
+func (se *SimpleExpSmoothing) Load(ctx context.Context, sf *dataframe.SeriesFloat64, r *dataframe.Range) error {
 
 	if r == nil {
 		r = &dataframe.Range{}
@@ -97,10 +97,10 @@ func (es *ExponentialSmoothing) Load(ctx context.Context, sf *dataframe.SeriesFl
 	// 	return ErrNoRows
 	// }
 
-	es.tRange = *r
-	es.sf = sf
+	se.tRange = *r
+	se.sf = sf
 
-	err = es.trainSeries(ctx, s, e)
+	err = se.trainSeries(ctx, s, e)
 	if err != nil {
 		return err
 	}

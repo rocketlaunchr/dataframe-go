@@ -1,6 +1,6 @@
 // Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
-package ets
+package ses
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 )
 
 // Predict forecasts the next n values for the loaded data.
-func (es *ExponentialSmoothing) Predict(ctx context.Context, n uint) (*dataframe.SeriesFloat64, error) {
+func (se *SimpleExpSmoothing) Predict(ctx context.Context, n uint) (*dataframe.SeriesFloat64, error) {
 
-	name := es.sf.Name(dataframe.DontLock)
+	name := se.sf.Name(dataframe.DontLock)
 	nsf := dataframe.NewSeriesFloat64(name, &dataframe.SeriesInit{Capacity: int(n)})
 
 	if n <= 0 {
@@ -19,9 +19,9 @@ func (es *ExponentialSmoothing) Predict(ctx context.Context, n uint) (*dataframe
 	}
 
 	var (
-		α       float64 = es.cfg.Alpha
-		st      float64 = es.tstate.smoothingLevel
-		Yorigin float64 = es.tstate.originValue
+		α       float64 = se.cfg.Alpha
+		st      float64 = se.tstate.smoothingLevel
+		Yorigin float64 = se.tstate.originValue
 	)
 
 	for i := uint(0); i < n; i++ {
