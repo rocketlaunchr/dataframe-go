@@ -2,7 +2,6 @@ package ets
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
@@ -16,8 +15,6 @@ func TestETS(t *testing.T) {
 	var m uint = 10
 
 	var alpha float64 = 0.4
-
-	// fmt.Println(data.Table())
 
 	etsModel := NewExponentialSmoothing()
 
@@ -33,13 +30,22 @@ func TestETS(t *testing.T) {
 		t.Errorf("error encountered: %s\n", err)
 	}
 
-	// spew.Dump(etsModel)
-
 	etsPredict, err := etsModel.Predict(ctx, m)
 	if err != nil {
 		t.Errorf("error encountered: %s", err)
 	}
-	fmt.Println(etsPredict.Table())
+
+	expected := dataframe.NewSeriesFloat64("expected", nil,
+		4.646448, 4.646448, 4.646448, 4.646448, 4.646448,
+		4.646448, 4.646448, 4.646448, 4.646448, 4.646448)
+
+	eq, err := etsPredict.IsEqual(ctx, expected)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+	if !eq {
+		t.Errorf("prection: \n%s\n is not equal to expected: \n%s\n", etsPredict.Table(), expected.Table())
+	}
 
 	evalFn := eval.RootMeanSquaredError
 
@@ -47,5 +53,10 @@ func TestETS(t *testing.T) {
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
-	fmt.Println("Root Mean Squared Error", errVal)
+	expectedRmse := 4.1633150753580965
+
+	if errVal != expectedRmse {
+		t.Errorf("expected error calc Value: %f is not same as actual errVal: %f", expectedRmse, errVal)
+	}
+
 }
