@@ -16,7 +16,8 @@ func TestHW(t *testing.T) {
 	data := dataframe.NewSeriesFloat64("simple data", nil, 30, 21, 29, 31, 40, 48, 53, 47, 37, 39, 31, 29, 17, 9, 20, 24, 27, 35, 41, 38,
 		27, 31, 27, 26, 21, 13, 21, 18, 33, 35, 40, 36, 22, 24, 21, 20, 17, 14, 17, 19,
 		26, 29, 40, 31, 20, 24, 18, 26, 17, 9, 17, 21, 28, 32, 46, 33, 23, 28, 22, 27,
-		18, 8, 17, 21, 31, 34, 44, 38, 31, 30, 26, 32, 45, 34, 30, 27, 25, 22, 28, 33, 42, 32, 40, 52)
+		18, 8, 17, 21, 31, 34, 44, 38, 31, 30, 26, 32, 45, 34, 30, 27, 25, 22, 28, 33, 42, 32, 40, 52,
+	)
 
 	var (
 		period int  = 12
@@ -24,9 +25,9 @@ func TestHW(t *testing.T) {
 	)
 
 	// fmt.Println(data.Table())
-	alpha := 0.45
-	beta := 0.03
-	gamma := 0.73
+	alpha := 0.716
+	beta := 0.029
+	gamma := 0.993
 
 	cfg := HoltWintersConfig{
 		Alpha:    alpha,
@@ -34,7 +35,6 @@ func TestHW(t *testing.T) {
 		Gamma:    gamma,
 		Period:   period,
 		Seasonal: ADD,
-		Trend:    ADD,
 	}
 
 	hwModel := NewHoltWinters()

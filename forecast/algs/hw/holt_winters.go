@@ -35,11 +35,6 @@ type HoltWintersConfig struct {
 	// Additive [Add] or Multiplicative [Multiply]
 	// Default method used is Add.
 	Seasonal TimeSeriesType
-
-	// Seasonal is optional parameter used to specify the seasonality type
-	// Additive [Add] or Multiplicative [Multiply]
-	// Default method used is Add.
-	Trend TimeSeriesType
 }
 
 func (cfg *HoltWintersConfig) Validate() error {

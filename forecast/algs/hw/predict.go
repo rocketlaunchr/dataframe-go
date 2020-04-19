@@ -30,11 +30,13 @@ func (hw *HoltWinters) Predict(ctx context.Context, n uint) (*dataframe.SeriesFl
 			return nil, err
 		}
 
-		// multiplicative Method
-		// forecast = append(forecast, (st + float64(m)*trnd) * seasonals[(m-1) % period])
-
-		// additive method
-		forecast[pos] = (st + float64(m)*trnd) + seasonals[(m-1)%period]
+		if hw.cfg.Seasonal == MULTIPLY {
+			// multiplicative Method
+			forecast[pos] = (st + float64(m)*trnd) * seasonals[(m-1)%period]
+		} else {
+			// additive method
+			forecast[pos] = (st + float64(m)*trnd) + seasonals[(m-1)%period]
+		}
 
 		m++
 		pos++

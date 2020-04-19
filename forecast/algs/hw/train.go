@@ -18,10 +18,10 @@ type trainingState struct {
 func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 
 	var (
-		α, β, γ    float64 = hw.cfg.Alpha, hw.cfg.Beta, hw.cfg.Gamma
-		period     int     = hw.cfg.Period
-		trnd       float64 // trend
-		st, prevSt float64 // smooth
+		α, β, γ        float64 = hw.cfg.Alpha, hw.cfg.Beta, hw.cfg.Gamma
+		period         int     = hw.cfg.Period
+		trnd, prevTrnd float64 // trend
+		st, prevSt     float64 // smooth
 	)
 
 	y := hw.sf.Values[start : end+1]
@@ -48,7 +48,7 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 			hw.tstate.initialSmooth = xt
 
 		} else {
-			if hw.cfg.Trend == MULTIPLY {
+			if hw.cfg.Seasonal == MULTIPLY {
 				// multiplicative method
 				prevSt, st = st, α*(xt/seasonals[i%period])+(1-α)*(st+trnd)
 				trnd = β*(st-prevSt) + (1-β)*trnd
@@ -56,8 +56,8 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 			} else {
 				// additive method
 				prevSt, st = st, α*(xt-seasonals[i%period])+(1-α)*(st+trnd)
-				trnd = β*(st-prevSt) + (1-β)*trnd
-				seasonals[i%period] = γ*(xt-st) + (1-γ)*seasonals[i%period]
+				prevTrnd, trnd = trnd, β*(st-prevSt)+(1-β)*trnd
+				seasonals[i%period] = γ*(xt-prevSt-prevTrnd) + (1-γ)*seasonals[i%period]
 			}
 
 		}

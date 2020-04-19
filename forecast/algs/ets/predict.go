@@ -29,9 +29,9 @@ func (es *ExponentialSmoothing) Predict(ctx context.Context, n uint) (*dataframe
 			return nil, err
 		}
 
-		st = α*Yorigin + (1-α)*st
+		pred := α*Yorigin + (1-α)*st
 
-		nsf.Values = append(nsf.Values, st)
+		nsf.Values = append(nsf.Values, pred)
 	}
 
 	return nsf, nil
