@@ -4,6 +4,7 @@ package hw
 
 import (
 	"context"
+	"math"
 )
 
 type trainingState struct {
@@ -13,7 +14,7 @@ type trainingState struct {
 	smoothingLevel       float64
 	trendLevel           float64
 	seasonalComps        []float64
-	mse                  float64
+	rmse                 float64
 }
 
 func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
@@ -36,6 +37,7 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 	hw.tstate.initialTrend = trnd
 
 	count := 0
+
 	// Training smoothing Level
 	for i := start; i < end+1; i++ {
 
@@ -70,7 +72,7 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 	}
 	mse /= float64(count)
 
-	hw.tstate.mse = mse
+	hw.tstate.rmse = math.Sqrt(mse)
 	hw.tstate.smoothingLevel = st
 	hw.tstate.trendLevel = trnd
 	hw.tstate.seasonalComps = seasonals
