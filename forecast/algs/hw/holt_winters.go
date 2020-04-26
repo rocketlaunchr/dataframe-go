@@ -28,13 +28,21 @@ type HoltWintersConfig struct {
 
 	// Alpha, Beta and Gamma must be between 0 and 1.
 	Alpha, Beta, Gamma float64
+
 	// Period  is the length of the data season
 	// It must be at least 2
 	Period int
+
 	// Seasonal is optional parameter used to specify the seasonality type
 	// Additive [Add] or Multiplicative [Multiply]
 	// Default method used is Add.
 	Seasonal TimeSeriesType
+
+	// ConfidenceLevels are values between 0 and 1 (exclusive) that return the associated
+	// confidence intervals for each forecasted value.
+	//
+	// See: https://otexts.com/fpp2/prediction-intervals.html
+	ConfidenceLevels []float64
 }
 
 func (cfg *HoltWintersConfig) Validate() error {

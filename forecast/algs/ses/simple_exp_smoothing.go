@@ -19,6 +19,12 @@ type ExponentialSmoothingConfig struct {
 	// Alpha must be between 0 and 1. The closer Alpha is to 1, the more the algorithm
 	// prioritises recent values over past values.
 	Alpha float64
+
+	// ConfidenceLevels are values between 0 and 1 (exclusive) that return the associated
+	// confidence intervals for each forecasted value.
+	//
+	// See: https://otexts.com/fpp2/prediction-intervals.html
+	ConfidenceLevels []float64
 }
 
 func (cfg *ExponentialSmoothingConfig) Validate() error {

@@ -23,7 +23,7 @@ type ForecastingAlgorithm interface {
 	Load(ctx context.Context, sf *dataframe.SeriesFloat64, r *dataframe.Range) error
 
 	// Predict forecasts the next n values for the loaded data.
-	Predict(ctx context.Context, n uint) (*dataframe.SeriesFloat64, error)
+	Predict(ctx context.Context, n uint) (*dataframe.SeriesFloat64, []Confidence, error)
 
 	// Evaluate will measure the quality of the predicted values based on the evaluation calculation defined by evalFunc.
 	// It will compare the error between sf and the values from the end of the loaded data ("validation set").
