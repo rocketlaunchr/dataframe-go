@@ -17,7 +17,7 @@ type ConfidenceInterval struct {
 
 // Confidence contains the confidence intervals for various confidence levels.
 // The key must be between 0 and 1 (exclusive). A confidence level of 95%
-// is represented as 0.95.
+// is represented by 0.95.
 type Confidence map[float64]ConfidenceInterval
 
 var sqrt2 = math.Sqrt(2)
