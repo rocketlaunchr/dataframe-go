@@ -135,10 +135,8 @@ func (p *Plot) Close() error {
 	return nil
 }
 
-// Write implements a io.Writer interface. Do not use this method directly.
+// Write implements the io.Writer interface. Do not use this method directly.
 // Any plotting package that writes to an io.Writer (such as to file) is compatible.
-//
-// See: https://godoc.org/github.com/wcharczuk/go-chart
 func (p *Plot) Write(d []byte) (int, error) {
 
 	if p.ui == nil {
