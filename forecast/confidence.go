@@ -22,7 +22,7 @@ type Confidence map[float64]ConfidenceInterval
 
 var sqrt2 = math.Sqrt(2)
 
-// IntervalToZ returns the Z value for a given confidence level.
+// ConfidenceLevelToZ returns the Z value for a given confidence level.
 // level must be between 0 and 1 (exclusive).
 //
 // level: 0.75 (75%) => 1.15 (approx)
@@ -32,6 +32,6 @@ var sqrt2 = math.Sqrt(2)
 // level: 0.99 (99%) => 2.58 (approx)
 //
 // See: https://otexts.com/fpp2/prediction-intervals.html
-func IntervalToZ(level float64) float64 {
+func ConfidenceLevelToZ(level float64) float64 {
 	return sqrt2 * math.Erfinv(level)
 }
