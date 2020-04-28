@@ -4,6 +4,7 @@ package exports
 
 import (
 	"context"
+	"fmt"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 	"github.com/xitongsys/parquet-go-source/local"
@@ -14,14 +15,8 @@ import (
 // ParquetExportOptions contains options for ExportToParquet function.
 type ParquetExportOptions struct {
 
-	// NullString is used to set what nil values should be encoded to.
-	// Common options are NULL, \N, NaN, NA.
-	NullString *string
-
 	// Range is used to export a subset of rows from the dataframe.
 	Range dataframe.Range
-
-	Schema []string
 
 	PageSize        *int64
 	RowGroupSize    *int64
@@ -37,34 +32,30 @@ func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.D
 
 	var (
 		r      dataframe.Range
-		null   string = "null" // default is null
 		schema []string
-
-		pageSize        int64
-		rowGroupSize    int64
-		compressionType parquet.CompressionCodec
-		offset          int64
 	)
 
 	if len(options) > 0 {
 
 		r = options[0].Range
-		schema = options[0].Schema
 
-		if options[0].NullString != nil {
-			null = *options[0].NullString
-		}
-		if options[0].Offset != nil {
-			offset = *options[0].Offset
-		}
-		if options[0].RowGroupSize != nil {
-			rowGroupSize = *options[0].RowGroupSize
-		}
-		if options[0].PageSize != nil {
-			pageSize = *options[0].PageSize
-		}
-		if options[0].CompressionType != nil {
-			compressionType = options[0].CompressionType
+	}
+
+	// Create Schema
+	for _, aSeries := range df.Series {
+		name := aSeries.Name()
+
+		switch aSeries.(type) {
+		case *dataframe.SeriesFloat64:
+			schema = append(schema, fmt.Sprintf("name=%s, type=FLOAT", name))
+		case *dataframe.SeriesInt64:
+			schema = append(schema, fmt.Sprintf("name=%s, type=INT64", name))
+		case *dataframe.SeriesTime:
+			schema = append(schema, fmt.Sprintf("name=%s, type=TIME_MILLIS", name))
+		case *dataframe.SeriesString:
+			schema = append(schema, fmt.Sprintf("name=%s, type=UTF8, encoding=PLAIN_DICTIONARY", name))
+		default:
+			schema = append(schema, fmt.Sprintf("name=%s, type=UTF8, encoding=PLAIN_DICTIONARY", name))
 		}
 
 	}
@@ -80,12 +71,23 @@ func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.D
 		return err
 	}
 
+	// // pw.CompressionType = options[0].CompressionType
+	// if options[0].Offset != nil {
+	// 	pw.Offset = *options[0].Offset
+	// }
+	// if options[0].RowGroupSize != nil {
+	// 	pw.RowGroupSize = *options[0].RowGroupSize
+	// }
+	// if options[0].PageSize != nil {
+	// 	pw.PageSize = *options[0].PageSize
+	// }
+
 	nRows := df.NRows(dataframe.DontLock)
 	if nRows > 0 {
-		pw.Offset = offset
-		pw.RowGroupSize = rowGroupSize
-		pw.PageSize = pageSize
-		pw.CompressionType = compressionType
+		// pw.Offset = offset
+		// pw.RowGroupSize = rowGroupSize
+		// pw.PageSize = pageSize
+		// pw.CompressionType = compressionType
 
 		s, e, err := r.Limits(nRows)
 		if err != nil {
@@ -103,7 +105,7 @@ func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.D
 
 				val := aSeries.Value(row)
 				if val == nil {
-					rec = append(rec, &null)
+					rec = append(rec, nil)
 				} else {
 					v := aSeries.ValueString(row, dataframe.DontLock)
 					rec = append(rec, &v)

@@ -29,19 +29,17 @@ func TestParquetExport(t *testing.T) {
 
 	fmt.Print(df)
 
-	md := []string{
-		"name=age, type=INT32",
-		"name=name, type=UTF8, encoding=PLAIN_DICTIONARY",
-		"name=price, type=FLOAT",
-		"name=zzz, type=FLOAT",
-	}
+	// md := []string{
+	// 	"name=age, type=INT32",
+	// 	"name=name, type=UTF8, encoding=PLAIN_DICTIONARY",
+	// 	"name=price, type=FLOAT",
+	// 	"name=zzz, type=FLOAT",
+	// }
 
 	if err := ExportToParquet(
 		context.Background(),
 		"output.parquet", df,
 		ParquetExportOptions{
-			Schema:          md,
-			NullString:      &[]string{"NaN"}[0],
 			RowGroupSize:    &[]int64{128 * 1024 * 1024}[0], //128M
 			CompressionType: parquet.CompressionCodec_SNAPPY,
 		},
