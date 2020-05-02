@@ -4,6 +4,7 @@ package exports
 
 import (
 	"context"
+	"io"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 	"github.com/tealeg/xlsx"
@@ -25,7 +26,7 @@ type ExcelExportOptions struct {
 }
 
 // ExportToExcel exports a Dataframe to a excel file.
-func ExportToExcel(ctx context.Context, outputFilePath string, df *dataframe.DataFrame, options ...ExcelExportOptions) error {
+func ExportToExcel(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...ExcelExportOptions) error {
 
 	df.Lock()
 	defer df.Unlock()
@@ -101,7 +102,7 @@ func ExportToExcel(ctx context.Context, outputFilePath string, df *dataframe.Dat
 	}
 
 	// Save file
-	err = file.Save(outputFilePath)
+	err = file.Write(w)
 	if err != nil {
 		return err
 	}
