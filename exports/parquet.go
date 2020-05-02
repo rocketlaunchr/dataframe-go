@@ -5,7 +5,10 @@ package exports
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/davecgh/go-spew/spew"
+	dynamicstruct "github.com/ompluscator/dynamic-struct"
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 	"github.com/xitongsys/parquet-go-source/local"
 	"github.com/xitongsys/parquet-go/parquet"
@@ -30,34 +33,48 @@ func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.D
 	defer df.Unlock()
 
 	var (
-		r      dataframe.Range
-		schema []string
+		r dataframe.Range
 	)
 
 	if len(options) > 0 {
-
 		r = options[0].Range
-
 	}
 
 	// Create Schema
+	dataSchema := dynamicstruct.NewStruct()
 	for _, aSeries := range df.Series {
-		name := aSeries.Name()
+		name := strings.ToTitle(aSeries.Name())
 
 		switch aSeries.(type) {
 		case *dataframe.SeriesFloat64:
-			schema = append(schema, fmt.Sprintf("name=%s, type=DOUBLE", name))
+			tag := fmt.Sprintf(`parquet:"name=%s, type=DOUBLE"`, name)
+
+			dataSchema.AddField(name, 0.0, tag)
+
 		case *dataframe.SeriesInt64:
-			schema = append(schema, fmt.Sprintf("name=%s, type=INT64", name))
+			tag := fmt.Sprintf(`parquet:"name=%s, type=INT64"`, name)
+
+			dataSchema.AddField(name, 0, tag)
+
 		case *dataframe.SeriesTime:
-			schema = append(schema, fmt.Sprintf("name=%s, type=TIME_MILLIS", name))
+			tag := fmt.Sprintf(`parquet:"name=%s, type=TIME_MILLIS"`, name)
+
+			dataSchema.AddField(name, nil, tag)
+
 		case *dataframe.SeriesString:
-			schema = append(schema, fmt.Sprintf("name=%s, type=UTF8, encoding=PLAIN_DICTIONARY", name))
+			tag := fmt.Sprintf(`parquet:"name=%s, type=UTF8, encoding=PLAIN_DICTIONARY"`, name)
+
+			dataSchema.AddField(name, "", tag)
+
 		default:
-			schema = append(schema, fmt.Sprintf("name=%s, type=UTF8, encoding=PLAIN_DICTIONARY", name))
+			tag := fmt.Sprintf(`parquet:"name=name, type=UTF8, encoding=PLAIN_DICTIONARY"`)
+			dataSchema.AddField(name, "", tag)
 		}
 
 	}
+	schema := dataSchema.Build().New()
+
+	spew.Dump(schema)
 
 	fw, err := local.NewLocalFileWriter(outputFilePath)
 	if err != nil {
@@ -65,7 +82,7 @@ func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.D
 	}
 	defer fw.Close()
 
-	pw, err := writer.NewCSVWriter(schema, fw, 4)
+	pw, err := writer.NewParquetWriter(fw, schema, 4)
 	if err != nil {
 		return err
 	}
@@ -92,6 +109,7 @@ func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.D
 				return err
 			}
 
+			// Next issue: How to add values into a struct
 			rec := []interface{}{}
 			for _, aSeries := range df.Series {
 
