@@ -19,7 +19,6 @@ type ParquetExportOptions struct {
 	Range dataframe.Range
 
 	PageSize        *int64
-	RowGroupSize    *int64
 	CompressionType parquet.CompressionCodec
 	Offset          *int64
 }
@@ -47,7 +46,7 @@ func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.D
 
 		switch aSeries.(type) {
 		case *dataframe.SeriesFloat64:
-			schema = append(schema, fmt.Sprintf("name=%s, type=FLOAT", name))
+			schema = append(schema, fmt.Sprintf("name=%s, type=DOUBLE", name))
 		case *dataframe.SeriesInt64:
 			schema = append(schema, fmt.Sprintf("name=%s, type=INT64", name))
 		case *dataframe.SeriesTime:
@@ -71,23 +70,16 @@ func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.D
 		return err
 	}
 
-	// // pw.CompressionType = options[0].CompressionType
-	// if options[0].Offset != nil {
-	// 	pw.Offset = *options[0].Offset
-	// }
-	// if options[0].RowGroupSize != nil {
-	// 	pw.RowGroupSize = *options[0].RowGroupSize
-	// }
+	pw.CompressionType = options[0].CompressionType
+	if options[0].Offset != nil {
+		pw.Offset = *options[0].Offset
+	}
 	// if options[0].PageSize != nil {
 	// 	pw.PageSize = *options[0].PageSize
 	// }
 
 	nRows := df.NRows(dataframe.DontLock)
 	if nRows > 0 {
-		// pw.Offset = offset
-		// pw.RowGroupSize = rowGroupSize
-		// pw.PageSize = pageSize
-		// pw.CompressionType = compressionType
 
 		s, e, err := r.Limits(nRows)
 		if err != nil {
@@ -100,19 +92,19 @@ func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.D
 				return err
 			}
 
-			rec := []*string{}
+			rec := []interface{}{}
 			for _, aSeries := range df.Series {
 
 				val := aSeries.Value(row)
 				if val == nil {
 					rec = append(rec, nil)
 				} else {
-					v := aSeries.ValueString(row, dataframe.DontLock)
-					rec = append(rec, &v)
+					v := val
+					rec = append(rec, v)
 				}
 			}
 
-			if err := pw.WriteString(rec); err != nil {
+			if err := pw.Write(rec); err != nil {
 				return err
 			}
 

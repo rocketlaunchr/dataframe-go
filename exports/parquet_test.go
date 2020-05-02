@@ -40,7 +40,8 @@ func TestParquetExport(t *testing.T) {
 		context.Background(),
 		"output.parquet", df,
 		ParquetExportOptions{
-			RowGroupSize:    &[]int64{128 * 1024 * 1024}[0], //128M
+			// NullString:      &[]string{"NaN"}[0],
+			// RowGroupSize:    &[]int64{128 * 1024 * 1024}[0], //128M
 			CompressionType: parquet.CompressionCodec_SNAPPY,
 		},
 	); err != nil {
