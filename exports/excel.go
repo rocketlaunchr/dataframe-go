@@ -7,7 +7,7 @@ import (
 	"io"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
-	"github.com/tealeg/xlsx"
+	"github.com/tealeg/xlsx/v3"
 )
 
 // ExcelExportOptions contains options for ExportToExcel function.

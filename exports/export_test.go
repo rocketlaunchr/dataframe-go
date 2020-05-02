@@ -74,7 +74,11 @@ func TestExcelExport(t *testing.T) {
 
 	fmt.Print(df)
 
-	file, err := os.OpenFile("excelOutput.xlsx", os.O_RDONLY, 0777)
+	file, err := os.OpenFile("excelOutput.xlsx", os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		t.Errorf("error encountered: %s\n", err)
+	}
+
 	defer file.Close()
 
 	err = ExportToExcel(context.Background(),
