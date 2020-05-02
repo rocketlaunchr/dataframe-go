@@ -37,9 +37,15 @@ func TestParquetExport(t *testing.T) {
 	// 	"name=zzz, type=DOUBLE",
 	// }
 
+	file, err := os.OpenFile("output.parquet", os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer file.Close()
+
 	if err := ExportToParquet(
 		context.Background(),
-		"output.parquet", df,
+		file, df,
 		ParquetExportOptions{
 			// NullString:      &[]string{"NaN"}[0],
 			// RowGroupSize:    &[]int64{128 * 1024 * 1024}[0], //128M

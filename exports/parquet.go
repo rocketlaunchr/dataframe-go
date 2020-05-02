@@ -5,13 +5,14 @@ package exports
 import (
 	"context"
 	"fmt"
+	"io"
 	"reflect"
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
 	dynamicstruct "github.com/ompluscator/dynamic-struct"
 	dataframe "github.com/rocketlaunchr/dataframe-go"
-	"github.com/xitongsys/parquet-go-source/local"
+	"github.com/xitongsys/parquet-go-source/writerfile"
 	"github.com/xitongsys/parquet-go/parquet"
 	"github.com/xitongsys/parquet-go/writer"
 )
@@ -28,7 +29,7 @@ type ParquetExportOptions struct {
 }
 
 // ExportToParquet exports a Dataframe to a CSV file.
-func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.DataFrame, options ...ParquetExportOptions) error {
+func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...ParquetExportOptions) error {
 
 	df.Lock()
 	defer df.Unlock()
@@ -79,10 +80,7 @@ func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.D
 
 	spew.Dump(dataSchema.Build().New())
 
-	fw, err := local.NewLocalFileWriter(outputFilePath)
-	if err != nil {
-		return err
-	}
+	fw := writerfile.NewWriterFile(w)
 	defer fw.Close()
 
 	pw, err := writer.NewParquetWriter(fw, dataSchema.Build().New(), 4)
