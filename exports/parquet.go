@@ -5,6 +5,7 @@ package exports
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/davecgh/go-spew/spew"
@@ -43,38 +44,40 @@ func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.D
 	// Create Schema
 	dataSchema := dynamicstruct.NewStruct()
 	for _, aSeries := range df.Series {
-		name := strings.ToTitle(aSeries.Name())
+		name := strings.ToLower(aSeries.Name())
+		title := strings.Join([]string{strings.ToUpper(string(name[0])), name[1:]}, "")
+
+		fmt.Println("name:", name, "\ntitle:", title)
 
 		switch aSeries.(type) {
 		case *dataframe.SeriesFloat64:
 			tag := fmt.Sprintf(`parquet:"name=%s, type=DOUBLE"`, name)
 
-			dataSchema.AddField(name, 0.0, tag)
+			dataSchema.AddField(title, 0.0, tag)
 
 		case *dataframe.SeriesInt64:
 			tag := fmt.Sprintf(`parquet:"name=%s, type=INT64"`, name)
 
-			dataSchema.AddField(name, 0, tag)
+			dataSchema.AddField(title, int64(0), tag)
 
 		case *dataframe.SeriesTime:
 			tag := fmt.Sprintf(`parquet:"name=%s, type=TIME_MILLIS"`, name)
 
-			dataSchema.AddField(name, nil, tag)
+			dataSchema.AddField(title, nil, tag)
 
 		case *dataframe.SeriesString:
 			tag := fmt.Sprintf(`parquet:"name=%s, type=UTF8, encoding=PLAIN_DICTIONARY"`, name)
 
-			dataSchema.AddField(name, "", tag)
+			dataSchema.AddField(title, "", tag)
 
 		default:
 			tag := fmt.Sprintf(`parquet:"name=name, type=UTF8, encoding=PLAIN_DICTIONARY"`)
-			dataSchema.AddField(name, "", tag)
+			dataSchema.AddField(title, "", tag)
 		}
 
 	}
-	schema := dataSchema.Build().New()
 
-	spew.Dump(schema)
+	spew.Dump(dataSchema.Build().New())
 
 	fw, err := local.NewLocalFileWriter(outputFilePath)
 	if err != nil {
@@ -82,7 +85,7 @@ func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.D
 	}
 	defer fw.Close()
 
-	pw, err := writer.NewParquetWriter(fw, schema, 4)
+	pw, err := writer.NewParquetWriter(fw, dataSchema.Build().New(), 4)
 	if err != nil {
 		return err
 	}
@@ -110,16 +113,19 @@ func ExportToParquet(ctx context.Context, outputFilePath string, df *dataframe.D
 			}
 
 			// Next issue: How to add values into a struct
-			rec := []interface{}{}
+			rec := dataSchema.Build().New()
 			for _, aSeries := range df.Series {
 
-				val := aSeries.Value(row)
-				if val == nil {
-					rec = append(rec, nil)
-				} else {
-					v := val
-					rec = append(rec, v)
+				sName := strings.ToLower(aSeries.Name())
+
+				v := reflect.ValueOf(rec).Elem().FieldByName(sName)
+
+				if v.IsValid() {
+					val := aSeries.Value(row)
+
+					v.Set(reflect.ValueOf(val))
 				}
+
 			}
 
 			if err := pw.Write(rec); err != nil {
