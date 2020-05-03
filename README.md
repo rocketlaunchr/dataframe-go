@@ -16,7 +16,7 @@ It is recommended your package manager locks to a commit id instead of the maste
 # Features
 
 1. Importing from CSV, JSONL, MySQL & PostgreSQL
-2. Exporting to CSV, JSONL, Excel, MySQL & PostgreSQL
+2. Exporting to CSV, JSONL, Excel, Parquet, MySQL & PostgreSQL
 3. Developer Friendly
 4. Flexible - Create custom Series (custom data types)
 5. Performant

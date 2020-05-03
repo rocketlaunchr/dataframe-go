@@ -25,7 +25,7 @@ type ExcelExportOptions struct {
 	WriteSheet *string
 }
 
-// ExportToExcel exports a Dataframe to a excel file.
+// ExportToExcel exports a Dataframe to an excel file.
 func ExportToExcel(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...ExcelExportOptions) error {
 
 	df.Lock()
