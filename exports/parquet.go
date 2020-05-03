@@ -8,7 +8,7 @@ import (
 	"io"
 	"reflect"
 	"strings"
-	"unsafe"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
 	dynamicstruct "github.com/ompluscator/dynamic-struct"
@@ -75,7 +75,7 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 			tag := fmt.Sprintf(`parquet:"name=%s, type=INT64"`, aSeries.Name())
 			dataSchema.AddField(fieldName, (*int64)(nil), tag)
 		case *dataframe.SeriesTime:
-			tag := fmt.Sprintf(`parquet:"name=%s, type=TIME_MILLIS"`, aSeries.Name())
+			tag := fmt.Sprintf(`parquet:"name=%s, type=TIME_MICROS"`, aSeries.Name())
 			dataSchema.AddField(fieldName, (*int64)(nil), tag)
 		case *dataframe.SeriesString:
 			tag := fmt.Sprintf(`parquet:"name=%s, type=UTF8, encoding=PLAIN_DICTIONARY"`, aSeries.Name())
@@ -130,24 +130,24 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 
 				v := reflect.ValueOf(rec).Elem().FieldByName(fieldName)
 				if v.IsValid() {
-
 					val := aSeries.Value(row) // returns an interface{}
 					if val != nil {
-
-						// Somehow convert pointer of val into a relect.Value
-						// and then save it to v.
-
-						ptr := reflect.ValueOf(&val).Pointer()
-						// typ := reflect.PtrTo(reflect.TypeOf(val))
-						// np := reflect.NewAt(typ, unsafe.Pointer(ptr))
-						// v.Set(np)
-
-						v.SetPointer(unsafe.Pointer(ptr))
-
-						// fmt.Printf("val %v %T\n", np, np)
+						switch vl := val.(type) {
+						case float64:
+							v.Set(reflect.ValueOf(&vl))
+						case int64:
+							v.Set(reflect.ValueOf(&vl))
+						case string:
+							v.Set(reflect.ValueOf(&vl))
+						case time.Time:
+							t := vl.UnixNano() / int64(time.Microsecond)
+							v.Set(reflect.ValueOf(&t))
+						default: // interface{}
+							str := aSeries.ValueString(row)
+							v.Set(reflect.ValueOf(&str))
+						}
 					}
 				}
-
 			}
 			if err := pw.Write(rec); err != nil {
 				return err

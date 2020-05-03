@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/rocketlaunchr/dataframe-go/imports"
-	"github.com/xitongsys/parquet-go/parquet"
+	// "github.com/xitongsys/parquet-go/parquet"
 )
 
 func TestParquetExport(t *testing.T) {
@@ -49,7 +49,7 @@ func TestParquetExport(t *testing.T) {
 		ParquetExportOptions{
 			// NullString:      &[]string{"NaN"}[0],
 			// RowGroupSize:    &[]int64{128 * 1024 * 1024}[0], //128M
-			CompressionType: parquet.CompressionCodec_SNAPPY,
+			// CompressionType: parquet.CompressionCodec_SNAPPY,
 		},
 	); err != nil {
 		t.Errorf("error encountered: %s\n", err)
