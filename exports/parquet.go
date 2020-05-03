@@ -134,6 +134,9 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 					val := aSeries.Value(row) // returns an interface{}
 					if val != nil {
 
+						// Somehow convert pointer of val into a relect.Value
+						// and then save it to v.
+
 						ptr := reflect.ValueOf(&val).Pointer()
 						// typ := reflect.PtrTo(reflect.TypeOf(val))
 						// np := reflect.NewAt(typ, unsafe.Pointer(ptr))
