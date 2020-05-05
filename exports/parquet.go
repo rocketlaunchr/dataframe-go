@@ -70,19 +70,19 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 		switch aSeries.(type) {
 		case *dataframe.SeriesFloat64:
 			tag := fmt.Sprintf(`parquet:"name=%s, type=DOUBLE"`, aSeries.Name())
-			dataSchema.AddField(fieldName, (float64)(0.0), tag)
+			dataSchema.AddField(fieldName, (*float64)(nil), tag)
 		case *dataframe.SeriesInt64:
 			tag := fmt.Sprintf(`parquet:"name=%s, type=INT64"`, aSeries.Name())
-			dataSchema.AddField(fieldName, (int64)(0), tag)
+			dataSchema.AddField(fieldName, (*int64)(nil), tag)
 		case *dataframe.SeriesTime:
 			tag := fmt.Sprintf(`parquet:"name=%s, type=TIME_MICROS"`, aSeries.Name())
 			dataSchema.AddField(fieldName, (*int64)(nil), tag)
 		case *dataframe.SeriesString:
 			tag := fmt.Sprintf(`parquet:"name=%s, type=UTF8, encoding=PLAIN_DICTIONARY"`, aSeries.Name())
-			dataSchema.AddField(fieldName, (string)(""), tag)
+			dataSchema.AddField(fieldName, (*string)(nil), tag)
 		default:
 			tag := fmt.Sprintf(`parquet:"name=%s, type=UTF8, encoding=PLAIN_DICTIONARY"`, aSeries.Name())
-			dataSchema.AddField(fieldName, (string)(""), tag)
+			dataSchema.AddField(fieldName, (*string)(nil), tag)
 		}
 
 	}
@@ -134,17 +134,17 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 					if val != nil {
 						switch vl := val.(type) {
 						case float64:
-							v.Set(reflect.ValueOf(vl))
+							v.Set(reflect.ValueOf(&vl))
 						case int64:
-							v.Set(reflect.ValueOf(vl))
+							v.Set(reflect.ValueOf(&vl))
 						case string:
-							v.Set(reflect.ValueOf(vl))
+							v.Set(reflect.ValueOf(&vl))
 						case time.Time:
 							t := vl.UnixNano() / int64(time.Microsecond)
 							v.Set(reflect.ValueOf(&t))
 						default: // interface{}
 							str := aSeries.ValueString(row)
-							v.Set(reflect.ValueOf(str))
+							v.Set(reflect.ValueOf(&str))
 						}
 					}
 				}
