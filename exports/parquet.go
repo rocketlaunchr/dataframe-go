@@ -69,19 +69,19 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 
 		switch aSeries.(type) {
 		case *dataframe.SeriesFloat64:
-			tag := fmt.Sprintf(`parquet:"name=%s, type=DOUBLE"`, aSeries.Name())
+			tag := fmt.Sprintf(`parquet:"name=%s, type=DOUBLE, repetitiontype=OPTIONAL"`, aSeries.Name())
 			dataSchema.AddField(fieldName, (*float64)(nil), tag)
 		case *dataframe.SeriesInt64:
-			tag := fmt.Sprintf(`parquet:"name=%s, type=INT64"`, aSeries.Name())
+			tag := fmt.Sprintf(`parquet:"name=%s, type=INT64, repetitiontype=OPTIONAL"`, aSeries.Name())
 			dataSchema.AddField(fieldName, (*int64)(nil), tag)
 		case *dataframe.SeriesTime:
-			tag := fmt.Sprintf(`parquet:"name=%s, type=TIME_MICROS"`, aSeries.Name())
+			tag := fmt.Sprintf(`parquet:"name=%s, type=TIME_MICROS, repetitiontype=OPTIONAL"`, aSeries.Name())
 			dataSchema.AddField(fieldName, (*int64)(nil), tag)
 		case *dataframe.SeriesString:
-			tag := fmt.Sprintf(`parquet:"name=%s, type=UTF8, encoding=PLAIN_DICTIONARY"`, aSeries.Name())
+			tag := fmt.Sprintf(`parquet:"name=%s, type=UTF8, encoding=PLAIN_DICTIONARY, repetitiontype=OPTIONAL"`, aSeries.Name())
 			dataSchema.AddField(fieldName, (*string)(nil), tag)
 		default:
-			tag := fmt.Sprintf(`parquet:"name=%s, type=UTF8, encoding=PLAIN_DICTIONARY"`, aSeries.Name())
+			tag := fmt.Sprintf(`parquet:"name=%s, type=UTF8, encoding=PLAIN_DICTIONARY, repetitiontype=OPTIONAL"`, aSeries.Name())
 			dataSchema.AddField(fieldName, (*string)(nil), tag)
 		}
 
