@@ -1,6 +1,10 @@
-package dataframe
+package matrix
 
-import "strconv"
+import (
+	"strconv"
+
+	dataframe "github.com/rocketlaunchr/dataframe-go"
+)
 
 // Matrix replicates gonum/mat Matrix interface.
 type Matrix interface {
@@ -21,19 +25,19 @@ type Matrix interface {
 // MatrixWrap is used to wrap a dataframe so that it can satisfy the Matrix interface.
 // All Series contained by DataFrame must be of type SeriesFloat64.
 type MatrixWrap struct {
-	*DataFrame
+	*dataframe.DataFrame
 }
 
 // Dims returns the dimensions of a Matrix.
 func (m MatrixWrap) Dims() (r, c int) {
-	return m.NRows(dontLock), len(m.Series)
+	return m.NRows(dataframe.DontLock), len(m.Series)
 }
 
 // At returns the value of a matrix element at row i, column j.
 // It will panic if i or j are out of bounds for the matrix.
 func (m MatrixWrap) At(i, j int) float64 {
 	col := m.Series[j]
-	return col.Value(i, dontLock).(float64)
+	return col.Value(i, dataframe.DontLock).(float64)
 }
 
 // T returns the transpose of the MatrixWrap. It returns a copy instead of performing
@@ -44,20 +48,20 @@ func (m MatrixWrap) T() Matrix {
 	mm, nn := m.Dims()
 
 	// Create new dataframe
-	ss := []Series{}
-	init := &SeriesInit{Size: nn}
+	ss := []dataframe.Series{}
+	init := &dataframe.SeriesInit{Size: nn}
 
 	for i := 0; i < mm; i++ {
-		ss = append(ss, NewSeriesFloat64(strconv.Itoa(i), init))
+		ss = append(ss, dataframe.NewSeriesFloat64(strconv.Itoa(i), init))
 	}
 
-	df := NewDataFrame(ss...)
+	df := dataframe.NewDataFrame(ss...)
 
 	// Copy values into df
 	for i := 0; i < mm; i++ {
-		vals := m.Row(i, true, SeriesIdx)
+		vals := m.Row(i, true, dataframe.SeriesIdx)
 		for k, v := range vals {
-			df.Series[i].Update(k.(int), v, dontLock)
+			df.Series[i].Update(k.(int), v, dataframe.DontLock)
 		}
 	}
 
@@ -67,5 +71,5 @@ func (m MatrixWrap) T() Matrix {
 // Set alters the matrix element at row i, column j to v.
 // It will panic if i or j are out of bounds for the matrix.
 func (m MatrixWrap) Set(i, j int, v float64) {
-	m.Update(i, j, v, dontLock)
+	m.Update(i, j, v, dataframe.DontLock)
 }
