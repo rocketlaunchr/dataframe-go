@@ -80,7 +80,7 @@ const (
 //
 // Example:
 //
-//  df.Row(5, dataframe.SeriesIdx|dataframe.SeriesName)
+//  df.Row(5, false, dataframe.SeriesIdx|dataframe.SeriesName)
 //
 func (df *DataFrame) Row(row int, dontReadLock bool, retOpt ...SeriesReturnOpt) map[interface{}]interface{} {
 	if !dontReadLock {
