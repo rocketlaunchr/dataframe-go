@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	dynamicstruct "github.com/ompluscator/dynamic-struct"
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 	"github.com/xitongsys/parquet-go-source/writerfile"
@@ -88,8 +87,6 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 	}
 
 	schemaStruct := dataSchema.Build()
-
-	spew.Dump(schemaStruct.New())
 
 	fw := writerfile.NewWriterFile(w)
 	defer fw.Close()
