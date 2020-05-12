@@ -40,6 +40,8 @@ type ParquetExportOptions struct {
 }
 
 // ExportToParquet exports a Dataframe as a Parquet file.
+// Series names are escaped by replacing spaces with underscores and removing ",;{}()=" (excluding quotes)
+// and then lower-casing for maximum cross-compatability.
 func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...ParquetExportOptions) error {
 
 	df.Lock()
@@ -65,22 +67,23 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 	dataSchema := dynamicstruct.NewStruct()
 	for _, aSeries := range df.Series {
 		fieldName := strings.Title(strings.ToLower(aSeries.Name()))
+		seriesName := santizeColumnName(aSeries.Name())
 
 		switch aSeries.(type) {
 		case *dataframe.SeriesFloat64:
-			tag := fmt.Sprintf(`parquet:"name=%s, type=DOUBLE, repetitiontype=OPTIONAL"`, aSeries.Name())
+			tag := fmt.Sprintf(`parquet:"name=%s, type=DOUBLE, repetitiontype=OPTIONAL"`, seriesName)
 			dataSchema.AddField(fieldName, (*float64)(nil), tag)
 		case *dataframe.SeriesInt64:
-			tag := fmt.Sprintf(`parquet:"name=%s, type=INT64, repetitiontype=OPTIONAL"`, aSeries.Name())
+			tag := fmt.Sprintf(`parquet:"name=%s, type=INT64, repetitiontype=OPTIONAL"`, seriesName)
 			dataSchema.AddField(fieldName, (*int64)(nil), tag)
 		case *dataframe.SeriesTime:
-			tag := fmt.Sprintf(`parquet:"name=%s, type=TIME_MICROS, repetitiontype=OPTIONAL"`, aSeries.Name())
+			tag := fmt.Sprintf(`parquet:"name=%s, type=TIME_MICROS, repetitiontype=OPTIONAL"`, seriesName)
 			dataSchema.AddField(fieldName, (*int64)(nil), tag)
 		case *dataframe.SeriesString:
-			tag := fmt.Sprintf(`parquet:"name=%s, type=UTF8, encoding=PLAIN_DICTIONARY, repetitiontype=OPTIONAL"`, aSeries.Name())
+			tag := fmt.Sprintf(`parquet:"name=%s, type=UTF8, encoding=PLAIN_DICTIONARY, repetitiontype=OPTIONAL"`, seriesName)
 			dataSchema.AddField(fieldName, (*string)(nil), tag)
 		default:
-			tag := fmt.Sprintf(`parquet:"name=%s, type=UTF8, encoding=PLAIN_DICTIONARY, repetitiontype=OPTIONAL"`, aSeries.Name())
+			tag := fmt.Sprintf(`parquet:"name=%s, type=UTF8, encoding=PLAIN_DICTIONARY, repetitiontype=OPTIONAL"`, seriesName)
 			dataSchema.AddField(fieldName, (*string)(nil), tag)
 		}
 
@@ -150,10 +153,16 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 				return err
 			}
 		}
-		if err := pw.WriteStop(); err != nil {
-			return err
-		}
+	}
+	if err := pw.WriteStop(); err != nil {
+		return err
 	}
 
 	return nil
+}
+
+// See: https://html.developreference.com/article/11087043/Spark+dataframe+column+naming+conventions+++restrictions
+func santizeColumnName(s string) string {
+	r := strings.NewReplacer(" ", "_", ",", "", ";", "", "{", "", "}", "", "(", "", ")", "", "=", "")
+	return strings.ToLower(r.Replace(s))
 }
