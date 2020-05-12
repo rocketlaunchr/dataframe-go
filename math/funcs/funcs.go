@@ -3,24 +3,61 @@ package funcs
 import (
 	"context"
 	"errors"
+	"golang.org/x/xerrors"
 	"math"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 	"github.com/sandertv/go-formula/v2"
 )
 
-type ApplyFunctionOptions struct {
+type PiecewiseFuncOptions struct {
 
-	// CustomFns adds custom functions to be used by fn.
+	// CustomFns adds custom functions to be used by Fn.
 	// See: https://godoc.org/github.com/Sandertv/go-formula/v2#Formula.Func
 	CustomFns map[string]func(args ...float64) float64
 
-	// DontLock can be set to true if the Series should not be locked.
+	// DontLock can be set to true if the DataFrame should not be locked.
 	DontLock bool
+
+	// Range is used to limit which rows the PiecewiseFuncDefn gets applied to.
+	Range *dataframe.Range
 }
 
-type Func struct {
-	Fn     string
+// ErrUndefined indicates that the PiecewiseFuncDefn's domain is not defined for a given row.
+var ErrUndefined = errors.New("undefined")
+
+// PiecewiseFuncDefn represents a piecewise function.
+// A piecewise function is a function that is defined on a sequence of intervals.
+//
+// See: https://mathworld.wolfram.com/PiecewiseFunction.html
+//
+// Example:
+//
+//  fn := []funcs.SubFunc{
+//     {
+//        Fn:     "sin(x)+2*y",
+//        Domain: &[]dataframe.Range{dataframe.RangeFinite(0, 2)}[0],
+//     },
+//     {
+//        Fn:     "0",
+//        Domain: nil,
+//     },
+//  }
+//
+type PiecewiseFuncDefn []SubFunc
+
+// SubFunc represents a function that makes up a subset of the piecewise function.
+type SubFunc struct {
+
+	// Fn is a string representing the function. It must be accepted by https://godoc.org/github.com/Sandertv/go-formula/v2#New.
+	// The variables used in Fn must correspond to the Series' names in the DataFrame. Custom functions can be defined and added
+	// using the options.
+	//
+	// Example: "sin(x)+2*y"
+	//
+	Fn string
+
+	// Domain of Fn based on DataFrame's rows.
 	Domain *dataframe.Range
 }
 
@@ -38,32 +75,41 @@ func (p pfs) pf(row int) (*formula.Formula, error) {
 			return v.f, nil
 		}
 	}
-	return nil, &dataframe.RowError{row, errors.New("undefined")}
+	return nil, &dataframe.RowError{row, ErrUndefined}
 }
 
-func ApplyFunction(ctx context.Context, sdf interface{}, fn []Func, opts ...ApplyFunctionOptions) error {
-	switch typ := sdf.(type) {
-	case dataframe.Series:
+// PiecewiseFunc applies a PiecewiseFuncDefn to a particular series in a DataFrame.
+// Consult funcs_test.go for usage.
+func PiecewiseFunc(ctx context.Context, df *dataframe.DataFrame, fn PiecewiseFuncDefn, col interface{}, opts ...PiecewiseFuncOptions) error {
 
-	case *dataframe.DataFrame:
-		err := applyFunctionDataFrame(ctx, typ, fn, opts...)
-		return err
-	default:
-		panic("sdf must be a Series or DataFrame")
+	var ss dataframe.Series
+
+	switch C := col.(type) {
+	case dataframe.Series:
+		ss = C
+	case int:
+		ss = df.Series[C]
+	case string:
+		ss = df.Series[df.MustNameToColumn(C, dataframe.DontLock)]
 	}
 
-	return nil
-}
-
-func applyFunctionDataFrame(ctx context.Context, df *dataframe.DataFrame, fn []Func, opts ...ApplyFunctionOptions) error {
+	var r dataframe.Range
 	if len(opts) > 0 {
 		if !opts[0].DontLock {
 			df.Lock()
 			defer df.Unlock()
 		}
+
+		if opts[0].Range != nil {
+			r = *opts[0].Range
+		}
 	}
 
 	n := df.NRows(dataframe.DontLock)
+	s, e, err := r.Limits(n)
+	if err != nil {
+		return err
+	}
 
 	// Parse fn
 	formulas := pfs{}
@@ -71,7 +117,16 @@ func applyFunctionDataFrame(ctx context.Context, df *dataframe.DataFrame, fn []F
 	for _, v := range fn {
 		x, err := formula.New(v.Fn)
 		if err != nil {
-			return err
+			switch serr := err.(type) {
+			case xerrors.Wrapper:
+				xerr := serr.Unwrap()
+				if xerr != nil {
+					return xerrors.Errorf("error parsing Fn: \"%s\" err: %w", v.Fn, xerr)
+				}
+				return xerrors.Errorf("error parsing Fn: \"%s\" err: %w", v.Fn, err)
+			default:
+				return xerrors.Errorf("error parsing Fn: \"%s\" err: %w", v.Fn, err)
+			}
 		}
 
 		// Add custom functions
@@ -93,7 +148,11 @@ func applyFunctionDataFrame(ctx context.Context, df *dataframe.DataFrame, fn []F
 	}
 
 	// Iterate over each row
-	for row := 0; row < n; row++ {
+	for row := s; row <= e; row++ {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
 		f, err := formulas.pf(row)
 		if err != nil {
 			return err
@@ -102,15 +161,16 @@ func applyFunctionDataFrame(ctx context.Context, df *dataframe.DataFrame, fn []F
 		variables := []formula.Variable{}
 		vals := df.Row(row, true, dataframe.SeriesName)
 		for k, v := range vals {
-			if v == nil {
+			switch v.(type) {
+			case nil:
 				variables = append(variables, formula.Var(k.(string), math.NaN()))
-			} else {
+			case float64:
 				variables = append(variables, formula.Var(k.(string), v.(float64)))
 			}
 		}
 
 		rval := f.Eval(variables...)
-		df.Update(row, 2, rval, dataframe.DontLock)
+		ss.Update(row, rval, dataframe.DontLock)
 	}
 
 	return nil

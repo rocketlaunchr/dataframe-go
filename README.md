@@ -25,6 +25,7 @@ It is recommended your package manager locks to a commit id instead of the maste
 8. Fake data generation
 9. Interpolation (ForwardFill, BackwardFill, Linear, Spline, Lagrange)
 10. Plotting (cross-platform)
+11. Math functions
 
 # DataFrames
 
@@ -216,6 +217,33 @@ Output:
 
 <p align="center">
 <img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/plot.png" alt="plot" />
+</p>
+
+## Math Functions
+
+```go
+res := 24
+sx := dataframe.NewSeriesFloat64("x", nil, dataframe.Float64Range(1, float64(res), 1))
+sy := dataframe.NewSeriesFloat64("y", &dataframe.SeriesInit{Size: res})
+df := dataframe.NewDataFrame(sx, sy)
+
+fn := []SubFunc{{Fn: fmt.Sprintf("sin((2*π*x)/%v)", res)}}
+PiecewiseFunc(ctx, df, fn, 1)
+
+fmt.Println(df.Table())
+
+cs, _ := wc.S(ctx, sy, nil, nil)
+graph := chart.Chart{Series: []chart.Series{cs}}
+plt, _ := plot.Open("sine wave", 450, 300)
+graph.Render(chart.SVG, plt)
+plt.Display()
+<-plt.Closed
+```
+
+Output:
+
+<p align="center">
+<img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/sine.png" alt="sine wave" />
 </p>
 
 ## Importing Data
