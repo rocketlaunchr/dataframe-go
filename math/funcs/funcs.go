@@ -10,6 +10,7 @@ import (
 	"github.com/sandertv/go-formula/v2"
 )
 
+// PiecewiseFuncOptions modifies the behaviour of the PiecewiseFunc function.
 type PiecewiseFuncOptions struct {
 
 	// CustomFns adds custom functions to be used by Fn.
