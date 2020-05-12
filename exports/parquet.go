@@ -41,7 +41,7 @@ type ParquetExportOptions struct {
 
 // ExportToParquet exports a Dataframe as a Parquet file.
 // Series names are escaped by replacing spaces with underscores and removing ",;{}()=" (excluding quotes)
-// and then lower-casing for maximum cross-compatability.
+// and then lower-casing for maximum cross-compatibility.
 func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, options ...ParquetExportOptions) error {
 
 	df.Lock()
