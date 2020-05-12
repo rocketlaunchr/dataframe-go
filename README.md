@@ -287,7 +287,7 @@ OUTPUT:
 
 ## Exporting Data
 
-The `exports` sub-package has support for exporting to csv, jsonl, Excel and directly to a SQL database.
+The `exports` sub-package has support for exporting to csv, jsonl, parquet, Excel and directly to a SQL database.
 
 
 ## Optimizations

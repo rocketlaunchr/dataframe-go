@@ -50,12 +50,14 @@ type PiecewiseFuncDefn []SubFunc
 // SubFunc represents a function that makes up a subset of the piecewise function.
 type SubFunc struct {
 
-	// Fn is a string representing the function. It must be accepted by https://godoc.org/github.com/Sandertv/go-formula/v2#New.
+	// Fn is a string representing the function. Most functions from the math package that return a single float64 are supported.
+	// The equivalent function name is all lower-cased. Therefore RoundToEven becomes roundtoeven. See https://golang.org/pkg/math/.
 	// The variables used in Fn must correspond to the Series' names in the DataFrame. Custom functions can be defined and added
 	// using the options.
 	//
 	// Example: "sin(x)+2*y"
 	//
+	// NOTE: The package: github.com/Sandertv/go-formula/v2 is used to parse and evaluate symbolic functions.
 	Fn string
 
 	// Domain of Fn based on DataFrame's rows.
@@ -83,17 +85,6 @@ func (p pfs) pf(row int) (*formula.Formula, error) {
 // Consult funcs_test.go for usage.
 func PiecewiseFunc(ctx context.Context, df *dataframe.DataFrame, fn PiecewiseFuncDefn, col interface{}, opts ...PiecewiseFuncOptions) error {
 
-	var ss dataframe.Series
-
-	switch C := col.(type) {
-	case dataframe.Series:
-		ss = C
-	case int:
-		ss = df.Series[C]
-	case string:
-		ss = df.Series[df.MustNameToColumn(C, dataframe.DontLock)]
-	}
-
 	var r dataframe.Range
 	if len(opts) > 0 {
 		if !opts[0].DontLock {
@@ -104,6 +95,17 @@ func PiecewiseFunc(ctx context.Context, df *dataframe.DataFrame, fn PiecewiseFun
 		if opts[0].Range != nil {
 			r = *opts[0].Range
 		}
+	}
+
+	var ss dataframe.Series
+
+	switch C := col.(type) {
+	case dataframe.Series:
+		ss = C
+	case int:
+		ss = df.Series[C]
+	case string:
+		ss = df.Series[df.MustNameToColumn(C, dataframe.DontLock)]
 	}
 
 	n := df.NRows(dataframe.DontLock)
