@@ -5,7 +5,7 @@ package forecast
 import "math"
 
 // ConfidenceInterval represents an estimated range of values that includes
-// the forecasted value within it's bounds.
+// the forecasted value within its bounds.
 type ConfidenceInterval struct {
 
 	// Upper bounds
