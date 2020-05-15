@@ -29,7 +29,7 @@ func Forecast(ctx context.Context, sdf interface{}, r *dataframe.Range, alg Fore
 			return nil, 0, err
 		}
 
-		pred, err := alg.Predict(ctx, n)
+		pred, confidence, err := alg.Predict(ctx, n)
 		if err != nil {
 			return nil, 0, err
 		}

@@ -32,6 +32,10 @@ func (se *SimpleExpSmoothing) Predict(ctx context.Context, n uint) (*dataframe.S
 		pred := α*Yorigin + (1-α)*st
 
 		nsf.Values = append(nsf.Values, pred)
+
+		// TODO: calculate Confidence interval
+		//
+
 	}
 
 	return nsf, nil

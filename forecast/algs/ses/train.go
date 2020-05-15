@@ -4,12 +4,15 @@ package ses
 
 import (
 	"context"
+	"math"
 )
 
 type trainingState struct {
 	initialLevel   float64
 	originValue    float64
 	smoothingLevel float64
+	rmse           float64
+	zValues        map[float64]float64
 }
 
 func (se *SimpleExpSmoothing) trainSeries(ctx context.Context, start, end int) error {
@@ -18,8 +21,10 @@ func (se *SimpleExpSmoothing) trainSeries(ctx context.Context, start, end int) e
 		α       float64 = se.cfg.Alpha
 		st      float64
 		Yorigin float64
+		mse     float64 // mean squared error
 	)
 
+	count := 0
 	// Training smoothing Level
 	for i := start; i < end+1; i++ {
 
@@ -35,10 +40,21 @@ func (se *SimpleExpSmoothing) trainSeries(ctx context.Context, start, end int) e
 		} else if i == end { // Setting the last value in traindata as Yorigin value for bootstrapping
 			Yorigin = xt
 			se.tstate.originValue = Yorigin
+
 		} else {
 			st = α*xt + (1-α)*st
+
+			mse += (xt - st) * (xt - st)
+			count++
 		}
+
 	}
+	mse /= float64(count)
+
+	// TODO: calculate ZValues
+	//
+
+	se.tstate.rmse = math.Sqrt(mse)
 	se.tstate.smoothingLevel = st
 
 	return nil

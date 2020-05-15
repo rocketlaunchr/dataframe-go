@@ -15,6 +15,7 @@ type trainingState struct {
 	trendLevel           float64
 	seasonalComps        []float64
 	rmse                 float64
+	zValues              map[float64]float64
 }
 
 func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
@@ -71,6 +72,9 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 
 	}
 	mse /= float64(count)
+
+	// TODO: calculate ZValues
+	//
 
 	hw.tstate.rmse = math.Sqrt(mse)
 	hw.tstate.smoothingLevel = st
