@@ -32,6 +32,12 @@ func (cfg *ExponentialSmoothingConfig) Validate() error {
 		return errors.New("Alpha must be between [0,1]")
 	}
 
+	for _, c := range cfg.ConfidenceLevels {
+		if c < 0.0 || c > 1.0 {
+			return errors.New("ConfidenceLevel value must be between [0,1]")
+		}
+	}
+
 	return nil
 }
 

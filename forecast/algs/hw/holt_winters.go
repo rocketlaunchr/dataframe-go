@@ -59,6 +59,12 @@ func (cfg *HoltWintersConfig) Validate() error {
 		return errors.New("Period must be at least a length of 2")
 	}
 
+	for _, c := range cfg.ConfidenceLevels {
+		if c < 0.0 || c > 1.0 {
+			return errors.New("ConfidenceLevel value must be between [0,1]")
+		}
+	}
+
 	return nil
 }
 
