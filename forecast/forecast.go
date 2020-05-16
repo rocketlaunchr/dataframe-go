@@ -14,35 +14,35 @@ import (
 // quality of the predictions. sdf can be a SeriesFloat64 or a DataFrame. DataFrame input is not yet implemented.
 //
 // NOTE: You can find basic forecasting algorithms in forecast/algs subpackage.
-func Forecast(ctx context.Context, sdf interface{}, r *dataframe.Range, alg ForecastingAlgorithm, cfg interface{}, n uint, evalFunc EvaluationFunc) (interface{}, float64, error) {
+func Forecast(ctx context.Context, sdf interface{}, r *dataframe.Range, alg ForecastingAlgorithm, cfg interface{}, n uint, evalFunc EvaluationFunc) (interface{}, []Confidence, float64, error) {
 
 	switch sdf := sdf.(type) {
 	case *dataframe.SeriesFloat64:
 
 		err := alg.Configure(cfg)
 		if err != nil {
-			return nil, 0, err
+			return nil, nil, 0, err
 		}
 
 		err = alg.Load(ctx, sdf, r)
 		if err != nil {
-			return nil, 0, err
+			return nil, nil, 0, err
 		}
 
-		pred, confidence, err := alg.Predict(ctx, n)
+		pred, cnfdnce, err := alg.Predict(ctx, n)
 		if err != nil {
-			return nil, 0, err
+			return nil, nil, 0, err
 		}
 
 		var errVal float64
 		if evalFunc != nil {
 			errVal, err = alg.Evaluate(ctx, sdf, evalFunc)
 			if err != nil {
-				return nil, 0, err
+				return nil, nil, 0, err
 			}
 		}
 
-		return pred, errVal, nil
+		return pred, cnfdnce, errVal, nil
 
 	case *dataframe.DataFrame:
 		panic("sdf as a DataFrame is not yet implemented")
