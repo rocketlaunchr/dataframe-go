@@ -5,6 +5,8 @@ package hw
 import (
 	"context"
 	"math"
+
+	"github.com/rocketlaunchr/dataframe-go/forecast"
 )
 
 type trainingState struct {
@@ -73,10 +75,15 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 	}
 	mse /= float64(count)
 
-	// TODO: calculate ZValues
-	//
+	// calculate ZValues from confidence levels
+	zVals := make(map[float64]float64, len(hw.cfg.ConfidenceLevels))
+	for _, l := range hw.cfg.ConfidenceLevels {
+		zVals[l] = forecast.ConfidenceLevelToZ(l)
+	}
 
 	hw.tstate.rmse = math.Sqrt(mse)
+	hw.tstate.zValues = zVals
+
 	hw.tstate.smoothingLevel = st
 	hw.tstate.trendLevel = trnd
 	hw.tstate.seasonalComps = seasonals

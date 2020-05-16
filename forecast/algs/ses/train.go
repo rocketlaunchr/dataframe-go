@@ -5,6 +5,8 @@ package ses
 import (
 	"context"
 	"math"
+
+	"github.com/rocketlaunchr/dataframe-go/forecast"
 )
 
 type trainingState struct {
@@ -51,10 +53,14 @@ func (se *SimpleExpSmoothing) trainSeries(ctx context.Context, start, end int) e
 	}
 	mse /= float64(count)
 
-	// TODO: calculate ZValues
-	//
+	// calculate ZValues from confidence levels
+	zVals := make(map[float64]float64, len(se.cfg.ConfidenceLevels))
+	for _, l := range se.cfg.ConfidenceLevels {
+		zVals[l] = forecast.ConfidenceLevelToZ(l)
+	}
 
 	se.tstate.rmse = math.Sqrt(mse)
+	se.tstate.zValues = zVals
 	se.tstate.smoothingLevel = st
 
 	return nil
