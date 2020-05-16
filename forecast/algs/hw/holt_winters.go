@@ -89,6 +89,11 @@ func (hw *HoltWinters) Configure(config interface{}) error {
 		return err
 	}
 
+	// set default for confidence levels
+	if len(cfg.ConfidenceLevels) == 0 {
+		cfg.ConfidenceLevels = []float64{0.75, 0.95}
+	}
+
 	hw.cfg = cfg
 	return nil
 }

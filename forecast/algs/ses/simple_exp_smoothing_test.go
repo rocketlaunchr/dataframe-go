@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 	eval "github.com/rocketlaunchr/dataframe-go/forecast/evaluation"
 )
@@ -30,10 +31,11 @@ func TestETS(t *testing.T) {
 		t.Errorf("error encountered: %s\n", err)
 	}
 
-	etsPredict, err := etsModel.Predict(ctx, m)
+	etsPredict, cnfdnce, err := etsModel.Predict(ctx, m)
 	if err != nil {
 		t.Errorf("error encountered: %s", err)
 	}
+	spew.Dump(cnfdnce)
 
 	expected := dataframe.NewSeriesFloat64("expected", nil,
 		4.646448, 4.646448, 4.646448, 4.646448, 4.646448,
