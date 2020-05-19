@@ -14,14 +14,37 @@ import (
 type PiecewiseFuncOptions struct {
 
 	// CustomFns adds custom functions to be used by Fn.
-	// See: https://godoc.org/github.com/Sandertv/go-formula/v2#Formula.Func
+	//
+	// Example:
+	//
+	//  CustomFns: map[string]func(args ...float64) float64{
+	//     // Add sinc function: https://en.wikipedia.org/wiki/Sinc_function
+	//     "sinc": func(args ...float64) float64 {
+	//        if args[0] == 0 {
+	//           return 1
+	//        }
+	//        return math.Sin(args[0]) / args[0]
+	//     }
+	//  }
+	//
 	CustomFns map[string]func(args ...float64) float64
+
+	// CustomConstants adds custom constants to be used by Fn.
+	// NOTE: π, 𝜋, pi, Φ, phi, e, E are already provided unless over-ridden here.
+	//
+	// Example:
+	//
+	//  CustomConstants: map[string]float64{"ħ":  6.62607015E-34/(2*math.Pi)}
+	CustomConstants map[string]float64
 
 	// DontLock can be set to true if the DataFrame should not be locked.
 	DontLock bool
 
 	// Range is used to limit which rows the PiecewiseFuncDefn gets applied to.
 	Range *dataframe.Range
+
+	// NoConcurrency is not yet implemented.
+	NoConcurrency bool
 }
 
 // ErrUndefined indicates that the PiecewiseFuncDefn's domain is not defined for a given row.
@@ -52,16 +75,20 @@ type SubFunc struct {
 
 	// Fn is a string representing the function. Most functions from the math package that return a single float64 are supported.
 	// The equivalent function name is all lower-cased. Therefore RoundToEven becomes roundtoeven. See https://golang.org/pkg/math/.
-	// The variables used in Fn must correspond to the Series' names in the DataFrame. Custom functions can be defined and added
-	// using the options.
+	// The variables used in Fn must correspond to the Series' names in the DataFrame. Custom functions and constants can be defined
+	// and added using the options.
 	//
 	// Example: "sin(x)+2*y"
 	//
-	// NOTE: The package: github.com/Sandertv/go-formula/v2 is used to parse and evaluate symbolic functions.
 	Fn string
 
 	// Domain of Fn based on DataFrame's rows.
 	Domain *dataframe.Range
+}
+
+// RegularFunc represents a non-piecewise function that is not constrained by a domain.
+func RegularFunc(fn string) []SubFunc {
+	return []SubFunc{{Fn: fn}}
 }
 
 type parsedF struct {
@@ -162,6 +189,11 @@ func PiecewiseFunc(ctx context.Context, df *dataframe.DataFrame, fn PiecewiseFun
 		}
 
 		variables := []formula.Variable{}
+		if len(opts) > 0 && len(opts[0].CustomConstants) > 0 {
+			for k, v := range opts[0].CustomConstants {
+				variables = append(variables, formula.Var(k, v))
+			}
+		}
 		vals := df.Row(row, true, dataframe.SeriesName)
 		for k, v := range vals {
 			switch v.(type) {
