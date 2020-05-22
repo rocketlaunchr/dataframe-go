@@ -233,13 +233,6 @@ fn := RegularFunc(fmt.Sprintf("sin((2*𝜋*x)/%v)", res))
 funcs.PiecewiseFunc(ctx, df, fn, 1)
 
 fmt.Println(df.Table())
-
-cs, _ := wc.S(ctx, sy, nil, nil)
-graph := chart.Chart{Series: []chart.Series{cs}}
-plt, _ := plot.Open("sine wave", 450, 300)
-graph.Render(chart.SVG, plt)
-plt.Display()
-<-plt.Closed
 ```
 
 Output:
