@@ -162,7 +162,7 @@ func PiecewiseFunc(ctx context.Context, df *dataframe.DataFrame, fn PiecewiseFun
 		// Add custom functions
 		if len(opts) > 0 {
 			for k, v := range opts[0].CustomFns {
-				x.Func(k, 0, v)
+				x.RegisterFunc(k, 0, v)
 			}
 		}
 
@@ -204,7 +204,10 @@ func PiecewiseFunc(ctx context.Context, df *dataframe.DataFrame, fn PiecewiseFun
 			}
 		}
 
-		rval := f.Eval(variables...)
+		rval, err := f.Eval(variables...)
+		if err != nil {
+			return errors.New(err.Error())
+		}
 		ss.Update(row, rval, dataframe.DontLock)
 	}
 
