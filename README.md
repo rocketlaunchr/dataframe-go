@@ -229,10 +229,8 @@ sx := dataframe.NewSeriesFloat64("x", nil, dataframe.Float64Range(1, float64(res
 sy := dataframe.NewSeriesFloat64("y", &dataframe.SeriesInit{Size: res})
 df := dataframe.NewDataFrame(sx, sy)
 
-fn := RegularFunc(fmt.Sprintf("sin((2*𝜋*x)/%v)", res))
+fn := funcs.RegularFunc(fmt.Sprintf("sin((2*𝜋*x)/%v)", res))
 funcs.PiecewiseFunc(ctx, df, fn, 1)
-
-fmt.Println(df.Table())
 ```
 
 Output:

@@ -14,8 +14,8 @@ type ErrorCollection struct {
 }
 
 // NewErrorCollection returns a new ErrorCollection.
-// From Go 1.13, ErrorCollection is compatible with
-// errors.Is and errors.As functions.
+// ErrorCollection is compatible with errors.Is and
+// errors.As functions.
 func NewErrorCollection() *ErrorCollection {
 	return &ErrorCollection{}
 }
@@ -49,23 +49,12 @@ func (ec *ErrorCollection) Error() string {
 	ec.Lock()
 	defer ec.Unlock()
 	var out string
-	for _, err := range ec.errors {
-		out = out + fmt.Sprintf("%v\n", err)
-	}
-	return out
-}
-
-// Is returns true if ErrorCollection contains err.
-func (ec *ErrorCollection) Is(err error) bool {
-	ec.Lock()
-	defer ec.Unlock()
-	if err == nil && ec.IsNil(false) {
-		return true
-	}
-	for _, v := range ec.errors {
-		if v == err {
-			return true
+	for i, err := range ec.errors {
+		if i != len(ec.errors)-1 {
+			out = out + fmt.Sprintf("%v\n", err)
+		} else {
+			out = out + fmt.Sprintf("%v", err)
 		}
 	}
-	return false
+	return out
 }
