@@ -104,7 +104,7 @@ func (df *DataFrame) Row(row int, dontReadLock bool, retOpt ...SeriesReturnOpt) 
 	return out
 }
 
-// ValuesOptions is used to modify the behaviour of Values().
+// ValuesOptions is used to modify the behavior of Values().
 type ValuesOptions struct {
 
 	// InitialRow represents the starting value for iterating.

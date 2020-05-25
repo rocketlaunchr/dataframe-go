@@ -34,7 +34,7 @@ func (ec *ErrorCollection) AddError(err error, lock ...bool) {
 	ec.errors = append(ec.errors, err)
 }
 
-// IsNil return whether the ErrorCollection contains any errors.
+// IsNil returns whether the ErrorCollection contains any errors.
 func (ec *ErrorCollection) IsNil(lock ...bool) bool {
 	if len(lock) == 0 || lock[0] == true {
 		// default

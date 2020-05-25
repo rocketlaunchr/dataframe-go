@@ -10,10 +10,10 @@ import (
 	"github.com/sandertv/go-formula/v2"
 )
 
-// PiecewiseFuncOptions modifies the behaviour of the PiecewiseFunc function.
+// PiecewiseFuncOptions modifies the behavior of the PiecewiseFunc function.
 type PiecewiseFuncOptions struct {
 
-	// CustomFns adds custom functions to be used by Fn.
+	// CustomFns adds custom functions to be used within fn.
 	//
 	// Example:
 	//
@@ -29,7 +29,7 @@ type PiecewiseFuncOptions struct {
 	//
 	CustomFns map[string]func(args ...float64) float64
 
-	// CustomConstants adds custom constants to be used by Fn.
+	// CustomConstants adds custom constants to be used within fn.
 	// NOTE: π, 𝜋, pi, Φ, phi, e, E are already provided unless over-ridden here.
 	//
 	// Example:
@@ -68,10 +68,11 @@ var ErrUndefined = errors.New("undefined")
 //     },
 //  }
 //
-type PiecewiseFuncDefn []SubFunc
+type PiecewiseFuncDefn []SubFuncDefn
 
-// SubFunc represents a function that makes up a subset of the piecewise function.
-type SubFunc struct {
+// SubFuncDefn represents a subset of the piecewise function. PiecewiseFuncDefn consists of potentially numerous
+// SubFuncDefn's over its relevant domain. The domain is defined based on the DataFrame's rows.
+type SubFuncDefn struct {
 
 	// Fn is a string representing the function. Most functions from the math package that return a single float64 are supported.
 	// The equivalent function name is all lower-cased. Therefore RoundToEven becomes roundtoeven. See https://golang.org/pkg/math/.
@@ -87,8 +88,8 @@ type SubFunc struct {
 }
 
 // RegularFunc represents a non-piecewise function that is not constrained by a domain.
-func RegularFunc(fn string) []SubFunc {
-	return []SubFunc{{Fn: fn}}
+func RegularFunc(fn string) []SubFuncDefn {
+	return []SubFuncDefn{{Fn: fn}}
 }
 
 type parsedF struct {
@@ -109,7 +110,12 @@ func (p pfs) pf(row int) (*formula.Formula, error) {
 }
 
 // PiecewiseFunc applies a PiecewiseFuncDefn to a particular series in a DataFrame.
-// Consult funcs_test.go for usage.
+//
+// Example:
+//
+//  fn := funcs.RegularFunc("sin((2*𝜋*x)/24)")
+//  funcs.PiecewiseFunc(ctx, df, fn, 1)
+//
 func PiecewiseFunc(ctx context.Context, df *dataframe.DataFrame, fn PiecewiseFuncDefn, col interface{}, opts ...PiecewiseFuncOptions) error {
 
 	var r dataframe.Range

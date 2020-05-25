@@ -20,7 +20,7 @@ const (
 	CHOOSE FilterAction = 1
 )
 
-// FilterOptions modifies the behaviour of the Filter function.
+// FilterOptions modifies the behavior of the Filter function.
 type FilterOptions struct {
 
 	// InPlace will perform the filter operation on the current Series or DataFrame.

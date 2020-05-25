@@ -18,7 +18,7 @@ func TestPiecewiseFunc(t *testing.T) {
 	s4 := dataframe.NewSeriesFloat64("z", nil, nil, nil, nil, nil, nil, nil)
 	df := dataframe.NewDataFrame(s1, s2, s3, s4)
 
-	fn := []SubFunc{
+	fn := []SubFuncDefn{
 		{
 			Fn:     "sin(x)+2*y+add1()",
 			Domain: &[]dataframe.Range{dataframe.RangeFinite(0, 2)}[0],
