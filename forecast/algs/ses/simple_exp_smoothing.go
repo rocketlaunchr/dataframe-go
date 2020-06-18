@@ -33,7 +33,7 @@ func (cfg *ExponentialSmoothingConfig) Validate() error {
 	}
 
 	for _, c := range cfg.ConfidenceLevels {
-		if c < 0.0 || c > 1.0 {
+		if c <= 0.0 || c >= 1.0 {
 			return errors.New("ConfidenceLevel value must be between [0,1]")
 		}
 	}
@@ -64,7 +64,7 @@ func (se *SimpleExpSmoothing) Configure(config interface{}) error {
 
 	// set default for confidence levels
 	if len(cfg.ConfidenceLevels) == 0 {
-		cfg.ConfidenceLevels = []float64{0.75, 0.95}
+		cfg.ConfidenceLevels = []float64{0.80, 0.95}
 	}
 
 	se.cfg = cfg
@@ -108,11 +108,10 @@ func (se *SimpleExpSmoothing) Load(ctx context.Context, sf *dataframe.SeriesFloa
 		return forecast.ErrInsufficientDataPoints
 	}
 
-	// How many minimum rows should we accept
-	// TODO: return ErrInsufficientDataPoints
-	// if e-s < 0 {
-	// 	return ErrNoRows
-	// }
+	// A minimum of 5 data rows should be expected
+	if e-s < 5 {
+		return forecast.ErrInsufficientDataPoints
+	}
 
 	se.tRange = *r
 	se.sf = sf

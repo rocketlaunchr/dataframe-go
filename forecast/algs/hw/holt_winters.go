@@ -60,7 +60,7 @@ func (cfg *HoltWintersConfig) Validate() error {
 	}
 
 	for _, c := range cfg.ConfidenceLevels {
-		if c < 0.0 || c > 1.0 {
+		if c <= 0.0 || c >= 1.0 {
 			return errors.New("ConfidenceLevel value must be between [0,1]")
 		}
 	}
@@ -91,7 +91,7 @@ func (hw *HoltWinters) Configure(config interface{}) error {
 
 	// set default for confidence levels
 	if len(cfg.ConfidenceLevels) == 0 {
-		cfg.ConfidenceLevels = []float64{0.75, 0.95}
+		cfg.ConfidenceLevels = []float64{0.80, 0.95}
 	}
 
 	hw.cfg = cfg
@@ -140,11 +140,10 @@ func (hw *HoltWinters) Load(ctx context.Context, sf *dataframe.SeriesFloat64, r 
 		return forecast.ErrInsufficientDataPoints
 	}
 
-	// How many minimum rows should we accept
-	// TODO: return ErrInsufficientDataPoints
-	// if e-s < 0 {
-	// 	return ErrNoRows
-	// }
+	// minimum of 7 data points, representing weekly season at the least
+	if e-s < 7 {
+		return forecast.ErrInsufficientDataPoints
+	}
 
 	hw.tRange = *r
 	hw.sf = sf
