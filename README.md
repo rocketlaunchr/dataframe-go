@@ -1,5 +1,8 @@
-Dataframes for Go [![GoDoc](http://godoc.org/github.com/rocketlaunchr/dataframe-go?status.svg)](http://godoc.org/github.com/rocketlaunchr/dataframe-go) [![gocover.io](http://gocover.io/_badge/github.com/rocketlaunchr/dataframe-go)](https://gocover.io/github.com/rocketlaunchr/dataframe-go) [![Go Report Card](https://goreportcard.com/badge/github.com/rocketlaunchr/dataframe-go)](https://goreportcard.com/report/github.com/rocketlaunchr/dataframe-go)
-===============
+<p align="right">
+  <a href="http://godoc.org/github.com/rocketlaunchr/dataframe-go"><img src="http://godoc.org/github.com/rocketlaunchr/dataframe-go?status.svg" /></a>
+  <a href="https://goreportcard.com/report/github.com/rocketlaunchr/dataframe-go"><img src="https://goreportcard.com/badge/github.com/rocketlaunchr/dataframe-go" /></a>
+  <a href="https://gocover.io/github.com/rocketlaunchr/dataframe-go"><img src="http://gocover.io/_badge/github.com/rocketlaunchr/dataframe-go" /></a>
+</p>
 
 <p align="center">
 <img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/logo.png" alt="dataframe-go" />
