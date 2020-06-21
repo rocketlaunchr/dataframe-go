@@ -211,7 +211,7 @@ graph := chart.Chart{Series: []chart.Series{cs}}
 
 plt, _ := plot.Open("Monthly sales", 450, 300)
 graph.Render(chart.SVG, plt)
-plt.Display()
+plt.Display(plot.None)
 <-plt.Closed
 
 ```

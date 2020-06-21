@@ -54,8 +54,6 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 		pageSize        *int64
 	)
 
-	//include the createdBy to avoid
-
 	if len(options) > 0 {
 		r = options[0].Range
 		compressionType = options[0].CompressionType
