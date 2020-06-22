@@ -1,11 +1,14 @@
-Dataframes for Go [![GoDoc](http://godoc.org/github.com/rocketlaunchr/dataframe-go?status.svg)](http://godoc.org/github.com/rocketlaunchr/dataframe-go) [![gocover.io](http://gocover.io/_badge/github.com/rocketlaunchr/dataframe-go)](https://gocover.io/github.com/rocketlaunchr/dataframe-go) [![Go Report Card](https://goreportcard.com/badge/github.com/rocketlaunchr/dataframe-go)](https://goreportcard.com/report/github.com/rocketlaunchr/dataframe-go)
-===============
+<p align="right">
+  <a href="http://godoc.org/github.com/rocketlaunchr/dataframe-go"><img src="http://godoc.org/github.com/rocketlaunchr/dataframe-go?status.svg" /></a>
+  <a href="https://goreportcard.com/report/github.com/rocketlaunchr/dataframe-go"><img src="https://goreportcard.com/badge/github.com/rocketlaunchr/dataframe-go" /></a>
+  <a href="https://gocover.io/github.com/rocketlaunchr/dataframe-go"><img src="http://gocover.io/_badge/github.com/rocketlaunchr/dataframe-go" /></a>
+</p>
 
 <p align="center">
 <img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/logo.png" alt="dataframe-go" />
 </p>
 
-Dataframes are used for statistics and data manipulation. You can think of a Dataframe as an excel spreadsheet.
+Dataframes are used for statistics and data manipulation/exploration. You can think of a Dataframe as an excel spreadsheet.
 This package is designed to be light-weight and intuitive.
 
 The package is production ready but the API is not stable yet. Once stability is reached, version `1.0.0` will be tagged.
@@ -16,7 +19,7 @@ It is recommended your package manager locks to a commit id instead of the maste
 # Features
 
 1. Importing from CSV, JSONL, MySQL & PostgreSQL
-2. Exporting to CSV, JSONL, Excel, MySQL & PostgreSQL
+2. Exporting to CSV, JSONL, Excel, Parquet, MySQL & PostgreSQL
 3. Developer Friendly
 4. Flexible - Create custom Series (custom data types)
 5. Performant
@@ -25,7 +28,8 @@ It is recommended your package manager locks to a commit id instead of the maste
 8. Fake data generation
 9. Interpolation (ForwardFill, BackwardFill, Linear, Spline, Lagrange)
 10. Time-series Forecasting
-11. Plotting (cross-platform)
+11. Math functions
+12. Plotting (cross-platform)
 
 # DataFrames
 
@@ -196,18 +200,19 @@ std := stat.StdDev(sf.Values, nil)
 
 ```go
 import (
+	chart "github.com/wcharczuk/go-chart"
 	"github.com/rocketlaunchr/dataframe-go/plot"
-	c "github.com/rocketlaunchr/dataframe-go/plot/wcharczuk/go-chart"
+	wc "github.com/rocketlaunchr/dataframe-go/plot/wcharczuk/go-chart"
 )
 
 sales := dataframe.NewSeriesFloat64("sales", nil, 50.3, nil, 23.4, 56.2, 89, 32, 84.2, 72, 89)
-cs, _ := c.S(ctx, sales, nil)
+cs, _ := wc.S(ctx, sales, nil, nil)
 
 graph := chart.Chart{Series: []chart.Series{cs}}
 
 plt, _ := plot.Open("Monthly sales", 450, 300)
 graph.Render(chart.SVG, plt)
-plt.Display(plot.SVG)
+plt.Display(plot.None)
 <-plt.Closed
 
 ```
@@ -216,6 +221,26 @@ Output:
 
 <p align="center">
 <img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/plot.png" alt="plot" />
+</p>
+
+## Math Functions
+
+```go
+import "github.com/rocketlaunchr/dataframe-go/math/funcs"
+
+res := 24
+sx := dataframe.NewSeriesFloat64("x", nil, dataframe.Float64Range(1, float64(res), 1))
+sy := dataframe.NewSeriesFloat64("y", &dataframe.SeriesInit{Size: res})
+df := dataframe.NewDataFrame(sx, sy)
+
+fn := funcs.RegularFunc("sin((2*𝜋*x)/24)")
+funcs.PiecewiseFunc(ctx, df, fn, 1)
+```
+
+Output:
+
+<p align="center">
+<img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/sine.png" alt="sine wave" />
 </p>
 
 ## Importing Data
@@ -257,7 +282,7 @@ OUTPUT:
 
 ## Exporting Data
 
-The `exports` sub-package has support for exporting to csv, jsonl, Excel and directly to a SQL database.
+The `exports` sub-package has support for exporting to csv, jsonl, parquet, Excel and directly to a SQL database.
 
 
 ## Optimizations

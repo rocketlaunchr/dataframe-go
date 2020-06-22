@@ -80,7 +80,7 @@ const (
 //
 // Example:
 //
-//  df.Row(5, dataframe.SeriesIdx|dataframe.SeriesName)
+//  df.Row(5, false, dataframe.SeriesIdx|dataframe.SeriesName)
 //
 func (df *DataFrame) Row(row int, dontReadLock bool, retOpt ...SeriesReturnOpt) map[interface{}]interface{} {
 	if !dontReadLock {
@@ -104,7 +104,7 @@ func (df *DataFrame) Row(row int, dontReadLock bool, retOpt ...SeriesReturnOpt) 
 	return out
 }
 
-// ValuesOptions is used to modify the behaviour of Values().
+// ValuesOptions is used to modify the behavior of Values().
 type ValuesOptions struct {
 
 	// InitialRow represents the starting value for iterating.

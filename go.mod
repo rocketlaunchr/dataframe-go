@@ -3,19 +3,22 @@ module github.com/rocketlaunchr/dataframe-go
 go 1.12
 
 require (
-	cloud.google.com/go v0.53.0
+	cloud.google.com/go v0.57.0
 	github.com/DzananGanic/numericalgo v0.0.0-20170804125527-2b389385baf0
-	github.com/bradfitz/iter v0.0.0-20191230175014-e8f45d346db8
-	github.com/brianvoe/gofakeit/v4 v4.2.3
+	github.com/brianvoe/gofakeit/v4 v4.3.0
 	github.com/cnkei/gospline v0.0.0-20191204072713-842a72f86331
-	github.com/davecgh/go-spew v1.1.0
 	github.com/google/go-cmp v0.4.0
-	github.com/icza/gox v0.0.0-20200117090206-f8d4f2061c23
+	github.com/icza/gox v0.0.0-20200320174535-a6ff52ab3d90
 	github.com/olekukonko/tablewriter v0.0.4
+	github.com/ompluscator/dynamic-struct v1.2.0
 	github.com/rocketlaunchr/mysql-go v1.1.3
-	github.com/tealeg/xlsx v1.0.5
-	golang.org/x/exp v0.0.0-20200213203834-85f925bdd4d0
-	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	github.com/tealeg/xlsx/v3 v3.0.0
+	github.com/wcharczuk/go-chart v2.0.1+incompatible
+	github.com/xitongsys/parquet-go v1.5.2
+	github.com/xitongsys/parquet-go-source v0.0.0-20200509081216-8db33acb0acf
+	github.com/zserge/lorca v0.1.9
+	golang.org/x/exp v0.0.0-20200331195152-e8c3332aa8e5
+	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
-	gonum.org/v1/gonum v0.6.2
+	gonum.org/v1/gonum v0.7.0
 )
