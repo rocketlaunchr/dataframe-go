@@ -15,10 +15,21 @@ type ConfidenceInterval struct {
 
 	// Lower bounds
 	Lower float64
+
+	// Normal can be set to signify that errors are normally distributed with a mean of zero.
+	Normal bool
+}
+
+// NormalError returns the error, assuming it is normally distributed with a mean of zero.
+func (c ConfidenceInterval) NormalError() float64 {
+	return (c.Upper - c.Lower) / 2.0
 }
 
 // String implements fmt.Stringer interface.
 func (c ConfidenceInterval) String() string {
+	if c.Normal {
+		return fmt.Sprintf("±%f", c.NormalError())
+	}
 	return fmt.Sprintf("[%+f, %+f]", c.Lower, c.Upper)
 }
 
@@ -26,8 +37,9 @@ func (c ConfidenceInterval) String() string {
 func MeanConfidenceInterval(pred, level, sigma_hat, T float64) ConfidenceInterval {
 	x := ConfidenceLevelToZ(level) * sigma_hat * math.Sqrt(1+1/T)
 	c := ConfidenceInterval{
-		Lower: pred - x,
-		Upper: pred + x,
+		Lower:  pred - x,
+		Upper:  pred + x,
+		Normal: true,
 	}
 	return c
 }
@@ -36,8 +48,9 @@ func MeanConfidenceInterval(pred, level, sigma_hat, T float64) ConfidenceInterva
 func NaïveConfidenceInterval(pred, level, sigma_hat, h float64) ConfidenceInterval {
 	x := ConfidenceLevelToZ(level) * sigma_hat * math.Sqrt(h)
 	c := ConfidenceInterval{
-		Lower: pred - x,
-		Upper: pred + x,
+		Lower:  pred - x,
+		Upper:  pred + x,
+		Normal: true,
 	}
 	return c
 }
@@ -47,8 +60,9 @@ func SeasonalNaïveConfidenceInterval(pred, level, sigma_hat, h, seasonalPeriod 
 	k := float64(int64((h - 1) / seasonalPeriod))
 	x := ConfidenceLevelToZ(level) * sigma_hat * math.Sqrt(k+1)
 	c := ConfidenceInterval{
-		Lower: pred - x,
-		Upper: pred + x,
+		Lower:  pred - x,
+		Upper:  pred + x,
+		Normal: true,
 	}
 	return c
 }
@@ -57,8 +71,9 @@ func SeasonalNaïveConfidenceInterval(pred, level, sigma_hat, h, seasonalPeriod 
 func DriftConfidenceInterval(pred, level, sigma_hat, T, h float64) ConfidenceInterval {
 	x := ConfidenceLevelToZ(level) * sigma_hat * math.Sqrt(h*(1+h/T))
 	c := ConfidenceInterval{
-		Lower: pred - x,
-		Upper: pred + x,
+		Lower:  pred - x,
+		Upper:  pred + x,
+		Normal: true,
 	}
 	return c
 }
