@@ -20,7 +20,18 @@ type ConfidenceInterval struct {
 // is represented by 0.95.
 type Confidence map[float64]ConfidenceInterval
 
-var sqrt2 = math.Sqrt(2)
+var (
+	sqrt2 = math.Sqrt(2)
+	z5    = 0.6744897501960818
+	z68   = 0.9944578832097534
+	z75   = 1.1503493803760083
+	z80   = 1.2815515655446008
+	z85   = 1.439531470938456
+	z90   = 1.6448536269514724
+	z95   = 1.9599639845400534
+	z98   = 2.32634787404084
+	z99   = 2.5758293035489
+)
 
 // ConfidenceLevelToZ returns the Z value for a given confidence level.
 // level must be between 0 and 1 (exclusive).
@@ -33,5 +44,26 @@ var sqrt2 = math.Sqrt(2)
 //
 // See: https://otexts.com/fpp2/prediction-intervals.html
 func ConfidenceLevelToZ(level float64) float64 {
-	return sqrt2 * math.Erfinv(level)
+	switch level {
+	case 0.5:
+		return z5
+	case 0.68:
+		return z68
+	case 0.75:
+		return z75
+	case 0.80:
+		return z80
+	case 0.85:
+		return z85
+	case 0.90:
+		return z90
+	case 0.95:
+		return z95
+	case 0.98:
+		return z98
+	case 0.99:
+		return z99
+	default:
+		return sqrt2 * math.Erfinv(level)
+	}
 }
