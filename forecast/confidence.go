@@ -20,17 +20,16 @@ type ConfidenceInterval struct {
 // is represented by 0.95.
 type Confidence map[float64]ConfidenceInterval
 
-var (
-	sqrt2 = math.Sqrt(2)
-	z5    = 0.6744897501960818
-	z68   = 0.9944578832097534
-	z75   = 1.1503493803760083
-	z80   = 1.2815515655446008
-	z85   = 1.439531470938456
-	z90   = 1.6448536269514724
-	z95   = 1.9599639845400534
-	z98   = 2.32634787404084
-	z99   = 2.5758293035489
+const (
+	z5  = 0.6744897501960818
+	z68 = 0.9944578832097534
+	z75 = 1.1503493803760083
+	z80 = 1.2815515655446008
+	z85 = 1.439531470938456
+	z90 = 1.6448536269514724
+	z95 = 1.9599639845400534
+	z98 = 2.32634787404084
+	z99 = 2.5758293035489
 )
 
 // ConfidenceLevelToZ returns the Z value for a given confidence level.
@@ -64,6 +63,6 @@ func ConfidenceLevelToZ(level float64) float64 {
 	case 0.99:
 		return z99
 	default:
-		return sqrt2 * math.Erfinv(level)
+		return math.Sqrt2 * math.Erfinv(level)
 	}
 }
