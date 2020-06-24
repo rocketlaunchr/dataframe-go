@@ -12,9 +12,8 @@ import (
 // Predict forecasts the next n values for the loaded data.
 func (se *SimpleExpSmoothing) Predict(ctx context.Context, n uint) (*dataframe.SeriesFloat64, []forecast.Confidence, error) {
 
-	iN := int(n)
 	name := se.sf.Name(dataframe.DontLock)
-	nsf := dataframe.NewSeriesFloat64(name, &dataframe.SeriesInit{Capacity: iN})
+	nsf := dataframe.NewSeriesFloat64(name, &dataframe.SeriesInit{Capacity: int(n)})
 
 	if n <= 0 {
 		if len(se.cfg.ConfidenceLevels) == 0 {
@@ -25,7 +24,11 @@ func (se *SimpleExpSmoothing) Predict(ctx context.Context, n uint) (*dataframe.S
 
 	cnfdnce := []forecast.Confidence{}
 
-	for i := 0; i < iN; i++ {
+	for i := uint(0); i < n; i++ {
+		if err := ctx.Err(); err != nil {
+			return nil, nil, err
+		}
+
 		StplusOne := se.cfg.Alpha*se.tstate.yOrigin + (1-se.cfg.Alpha)**se.tstate.finalSmoothed
 		se.tstate.finalSmoothed = &StplusOne
 		nsf.Append(StplusOne, dataframe.DontLock)
