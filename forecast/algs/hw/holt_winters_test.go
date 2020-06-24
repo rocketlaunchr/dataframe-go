@@ -4,7 +4,6 @@ import (
 	"context"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 	evalFn "github.com/rocketlaunchr/dataframe-go/forecast/evaluation"
 )
@@ -30,11 +29,11 @@ func TestHW(t *testing.T) {
 	gamma := 0.993
 
 	cfg := HoltWintersConfig{
-		Alpha:    alpha,
-		Beta:     beta,
-		Gamma:    gamma,
-		Period:   period,
-		Seasonal: ADD,
+		Alpha:          alpha,
+		Beta:           beta,
+		Gamma:          gamma,
+		Period:         period,
+		SeasonalMethod: Add,
 	}
 
 	hwModel := NewHoltWinters()
@@ -47,11 +46,10 @@ func TestHW(t *testing.T) {
 		t.Errorf("error encountered: %s\n", err)
 	}
 
-	hwPredict, cnfdnce, err := hwModel.Predict(ctx, h)
+	hwPredict, _, err := hwModel.Predict(ctx, h)
 	if err != nil {
 		t.Errorf("error encountered: %s\n", err)
 	}
-	spew.Dump(cnfdnce)
 
 	expected := dataframe.NewSeriesFloat64("expected", nil,
 		26.27699081580312, 12.48133856351768, 22.077813893501844, 26.839391481818982, 31.600180075780813, 30.48212275836478,

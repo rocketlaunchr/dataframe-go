@@ -112,6 +112,7 @@ func (se *SimpleExpSmoothing) Load(ctx context.Context, sf *dataframe.SeriesFloa
 
 	se.tRange = *r
 	se.sf = sf
+	se.tstate = trainingState{}
 
 	err = se.trainSeries(ctx, uint(s), uint(e))
 	if err != nil {

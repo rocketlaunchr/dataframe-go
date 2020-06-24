@@ -4,7 +4,6 @@ package hw
 
 import (
 	"context"
-	"math"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 	"github.com/rocketlaunchr/dataframe-go/forecast"
@@ -16,50 +15,47 @@ func (hw *HoltWinters) Predict(ctx context.Context, n uint) (*dataframe.SeriesFl
 	name := hw.sf.Name(dataframe.DontLock)
 	nsf := dataframe.NewSeriesFloat64(name, &dataframe.SeriesInit{Capacity: int(n)})
 
+	if n <= 0 {
+		if len(hw.cfg.ConfidenceLevels) == 0 {
+			return nsf, nil, nil
+		}
+		return nsf, []forecast.Confidence{}, nil
+	}
+
+	cnfdnce := []forecast.Confidence{}
+
 	var (
 		st        float64   = hw.tstate.smoothingLevel
 		seasonals []float64 = hw.tstate.seasonalComps
 		trnd      float64   = hw.tstate.trendLevel
 		period    int       = hw.cfg.Period
-		cnfdnce   []forecast.Confidence
 	)
 
-	fcast := make([]float64, n)
-
-	m := 1
-	pos := 0
 	for i := uint(0); i < n; i++ {
 		if err := ctx.Err(); err != nil {
 			return nil, nil, err
 		}
 
-		if hw.cfg.Seasonal == MULTIPLY {
-			// multiplicative Method
-			fcast[pos] = (st + float64(m)*trnd) * seasonals[(m-1)%period]
+		m := int(i + 1)
+
+		var fval float64
+		if hw.cfg.SeasonalMethod == Multiply {
+			fval = (st + float64(m)*trnd) * seasonals[(m-1)%period]
 		} else {
-			// additive method
-			fcast[pos] = (st + float64(m)*trnd) + seasonals[(m-1)%period]
+			fval = (st + float64(m)*trnd) + seasonals[(m-1)%period]
 		}
+		nsf.Append(fval, dataframe.DontLock)
 
-		// calculate Confidence interval
-		cnfInt := map[float64]forecast.ConfidenceInterval{}
-
-		for l, zVal := range hw.tstate.zValues {
-			// formular(Naive mthd): pred +/- (zVal*rmse) * sqrt(i+1)
-			lowerInt := fcast[pos] - (zVal*hw.tstate.rmse)*math.Sqrt(float64(i)+1.0)
-			upperInt := fcast[pos] + (zVal*hw.tstate.rmse)*math.Sqrt(float64(i)+1.0)
-			cnfInt[l] = forecast.ConfidenceInterval{
-				Upper: upperInt,
-				Lower: lowerInt,
-			}
+		cis := map[float64]forecast.ConfidenceInterval{}
+		for _, level := range hw.cfg.ConfidenceLevels {
+			cis[level] = forecast.DriftConfidenceInterval(fval, level, hw.tstate.rmse, hw.tstate.T, n)
 		}
-		cnfdnce = append(cnfdnce, cnfInt)
-
-		m++
-		pos++
+		cnfdnce = append(cnfdnce, cis)
 	}
 
-	nsf.Values = fcast
-
-	return nsf, cnfdnce, nil
+	if len(hw.cfg.ConfidenceLevels) == 0 {
+		return nsf, nil, nil
+	} else {
+		return nsf, cnfdnce, nil
+	}
 }

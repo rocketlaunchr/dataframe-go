@@ -5,8 +5,6 @@ package hw
 import (
 	"context"
 	"math"
-
-	"github.com/rocketlaunchr/dataframe-go/forecast"
 )
 
 type trainingState struct {
@@ -17,7 +15,7 @@ type trainingState struct {
 	trendLevel           float64
 	seasonalComps        []float64
 	rmse                 float64
-	zValues              map[float64]float64
+	T                    uint // how many observed values used in the forcasting process
 }
 
 func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
@@ -27,23 +25,21 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 		period         int     = hw.cfg.Period
 		trnd, prevTrnd float64 // trend
 		st, prevSt     float64 // smooth
-		mse            float64 // mean squared error
 	)
 
 	y := hw.sf.Values[start : end+1]
 
-	seasonals := initialSeasonalComponents(y, period, hw.cfg.Seasonal)
+	seasonals := initialSeasonalComponents(y, period, hw.cfg.SeasonalMethod)
 
-	hw.tstate.initialSeasonalComps = initialSeasonalComponents(y, period, hw.cfg.Seasonal)
+	hw.tstate.initialSeasonalComps = initialSeasonalComponents(y, period, hw.cfg.SeasonalMethod)
 
 	trnd = initialTrend(y, period)
 	hw.tstate.initialTrend = trnd
 
-	count := 0
+	var mse float64 // mean squared error
 
 	// Training smoothing Level
 	for i := start; i < end+1; i++ {
-
 		if err := ctx.Err(); err != nil {
 			return err
 		}
@@ -52,11 +48,9 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 
 		if i == start { // Set initial smooth
 			st = xt
-
 			hw.tstate.initialSmooth = xt
-
 		} else {
-			if hw.cfg.Seasonal == MULTIPLY {
+			if hw.cfg.SeasonalMethod == Multiply {
 				// multiplicative method
 				prevSt, st = st, α*(xt/seasonals[i%period])+(1-α)*(st+trnd)
 				trnd = β*(st-prevSt) + (1-β)*trnd
@@ -68,21 +62,13 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 				seasonals[i%period] = γ*(xt-prevSt-prevTrnd) + (1-γ)*seasonals[i%period]
 			}
 
-			mse += (xt - seasonals[i%period]) * (xt - seasonals[i%period])
-			count++
+			err := (xt - seasonals[i%period]) // actual value - smoothened value
+			mse = mse + err*err
 		}
 
 	}
-	mse /= float64(count)
-
-	// calculate ZValues from confidence levels
-	zVals := make(map[float64]float64, len(hw.cfg.ConfidenceLevels))
-	for _, l := range hw.cfg.ConfidenceLevels {
-		zVals[l] = forecast.ConfidenceLevelToZ(l)
-	}
-
-	hw.tstate.rmse = math.Sqrt(mse)
-	hw.tstate.zValues = zVals
+	hw.tstate.T = uint(end - start + 1)
+	hw.tstate.rmse = math.Sqrt(mse / float64(end-start))
 
 	hw.tstate.smoothingLevel = st
 	hw.tstate.trendLevel = trnd

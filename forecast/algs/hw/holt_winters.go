@@ -10,20 +10,22 @@ import (
 	"github.com/rocketlaunchr/dataframe-go/forecast"
 )
 
-// TimeSeriesType is used to set the time series type
-type TimeSeriesType int
+// Method specifies if the model type is additive or multiplicative.
+type Method int
 
 const (
-	// ADD specifies additive method
-	ADD TimeSeriesType = 0
-	// MULTIPLY specifies additive method
-	MULTIPLY TimeSeriesType = 1
+	// Add sets the model type to additive.
+	Add Method = 0
+
+	// Multiply sets the model type to multiplicative.
+	Multiply Method = 1
 )
 
-// HoltWintersConfig is used to configure the HW algorithm.
-// HW models the error, trend and seasonal elements of the data with holt winters.
+// HoltWintersConfig is used to configure the Holt-Winters algorithm.
 //
-// NOTE: HW algorithm does not tolerate nil values. You may need to use the interpolation subpackage.
+// NOTE: Holt-Winters algorithm does not tolerate nil values. You may need to use the interpolation subpackage.
+//
+// See: https://otexts.com/fpp2/holt-winters.html
 type HoltWintersConfig struct {
 
 	// Alpha, Beta and Gamma must be between 0 and 1.
@@ -33,10 +35,9 @@ type HoltWintersConfig struct {
 	// It must be at least 2
 	Period int
 
-	// Seasonal is optional parameter used to specify the seasonality type
-	// Additive [Add] or Multiplicative [Multiply]
-	// Default method used is Add.
-	Seasonal TimeSeriesType
+	// SeasonalMethod sets whether the model is additive or multiplicative.
+	// The default is additive.
+	SeasonalMethod Method
 
 	// ConfidenceLevels are values between 0 and 1 (exclusive) that return the associated
 	// confidence intervals for each forecasted value.
@@ -61,7 +62,7 @@ func (cfg *HoltWintersConfig) Validate() error {
 
 	for _, c := range cfg.ConfidenceLevels {
 		if c <= 0.0 || c >= 1.0 {
-			return errors.New("ConfidenceLevel value must be between [0,1]")
+			return errors.New("ConfidenceLevel value must be between (0,1)")
 		}
 	}
 
@@ -76,6 +77,7 @@ type HoltWinters struct {
 	sf     *dataframe.SeriesFloat64
 }
 
+// NewHoltWinters creates a new HoltWinters object.
 func NewHoltWinters() *HoltWinters {
 	return &HoltWinters{}
 }
@@ -87,11 +89,6 @@ func (hw *HoltWinters) Configure(config interface{}) error {
 	cfg := config.(HoltWintersConfig)
 	if err := cfg.Validate(); err != nil {
 		return err
-	}
-
-	// set default for confidence levels
-	if len(cfg.ConfidenceLevels) == 0 {
-		cfg.ConfidenceLevels = []float64{0.80, 0.95}
 	}
 
 	hw.cfg = cfg
@@ -147,9 +144,12 @@ func (hw *HoltWinters) Load(ctx context.Context, sf *dataframe.SeriesFloat64, r 
 
 	hw.tRange = *r
 	hw.sf = sf
+	hw.tstate = trainingState{}
 
 	err = hw.trainSeries(ctx, s, e)
 	if err != nil {
+		hw.tRange = dataframe.Range{}
+		hw.sf = nil
 		return err
 	}
 
