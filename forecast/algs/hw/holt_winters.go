@@ -46,6 +46,7 @@ type HoltWintersConfig struct {
 	ConfidenceLevels []float64
 }
 
+// Validate checks if the config is valid.
 func (cfg *HoltWintersConfig) Validate() error {
 	if (cfg.Alpha < 0.0) || (cfg.Alpha > 1.0) {
 		return errors.New("Alpha must be between [0,1]")
