@@ -42,7 +42,6 @@ func (se *SimpleExpSmoothing) Predict(ctx context.Context, n uint) (*dataframe.S
 
 	if len(se.cfg.ConfidenceLevels) == 0 {
 		return nsf, nil, nil
-	} else {
-		return nsf, cnfdnce, nil
 	}
+	return nsf, cnfdnce, nil
 }
