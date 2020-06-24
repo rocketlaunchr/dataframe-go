@@ -36,7 +36,7 @@ func Forecast(ctx context.Context, sdf interface{}, r *dataframe.Range, alg Fore
 
 		var errVal float64
 		if evalFunc != nil {
-			errVal, err = alg.Evaluate(ctx, sdf, evalFunc)
+			errVal, err = alg.Evaluate(ctx, pred, evalFunc)
 			if err != nil {
 				return nil, nil, 0, err
 			}

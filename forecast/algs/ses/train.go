@@ -5,63 +5,46 @@ package ses
 import (
 	"context"
 	"math"
-
-	"github.com/rocketlaunchr/dataframe-go/forecast"
 )
 
 type trainingState struct {
-	initialLevel   float64
-	originValue    float64
-	smoothingLevel float64
-	rmse           float64
-	zValues        map[float64]float64
+	finalSmoothed *float64 // stores the smoothed value of the final observation point
+	yOrigin       float64
+	rmse          float64
+	T             uint // how many observed values used in the forcasting process
 }
 
-func (se *SimpleExpSmoothing) trainSeries(ctx context.Context, start, end int) error {
+func (se *SimpleExpSmoothing) trainSeries(ctx context.Context, start, end uint) error {
 
-	var (
-		α       float64 = se.cfg.Alpha
-		st      float64
-		Yorigin float64
-		mse     float64 // mean squared error
-	)
+	var α float64 = se.cfg.Alpha
 
-	count := 0
-	// Training smoothing Level
-	for i := start; i < end+1; i++ {
+	var mse float64
 
+	// Step 1: Calculate Smoothed values for existing observations
+	for i, j := start, 1; i < end+1; i, j = i+1, j+1 {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
 
-		xt := se.sf.Values[i]
-
-		if i == start {
-			st = xt
-			se.tstate.initialLevel = xt
-		} else if i == end { // Setting the last value in traindata as Yorigin value for bootstrapping
-			Yorigin = xt
-			se.tstate.originValue = Yorigin
-
+		if j == 1 {
+			// not applicable
+		} else if j == 2 {
+			se.tstate.finalSmoothed = &se.sf.Values[start]
 		} else {
-			st = α*xt + (1-α)*st
+			St := α*se.sf.Values[i-1] + (1-α)**se.tstate.finalSmoothed
+			se.tstate.finalSmoothed = &St
 
-			mse += (xt - st) * (xt - st)
-			count++
+			err := se.sf.Values[i] - St // actual value - smoothened value
+			mse = mse + err*err
 		}
-
 	}
-	mse /= float64(count)
+	se.tstate.T = end - start + 1
 
-	// calculate ZValues from confidence levels
-	zVals := make(map[float64]float64, len(se.cfg.ConfidenceLevels))
-	for _, l := range se.cfg.ConfidenceLevels {
-		zVals[l] = forecast.ConfidenceLevelToZ(l)
-	}
+	// Step 2: Store the y origin
+	se.tstate.yOrigin = se.sf.Values[end]
 
-	se.tstate.rmse = math.Sqrt(mse)
-	se.tstate.zValues = zVals
-	se.tstate.smoothingLevel = st
+	// Step 3: Calculate rmse
+	se.tstate.rmse = math.Sqrt(mse / float64(end-start-1))
 
 	return nil
 }

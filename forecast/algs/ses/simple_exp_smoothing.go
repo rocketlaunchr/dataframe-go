@@ -34,7 +34,7 @@ func (cfg *ExponentialSmoothingConfig) Validate() error {
 
 	for _, c := range cfg.ConfidenceLevels {
 		if c <= 0.0 || c >= 1.0 {
-			return errors.New("ConfidenceLevel value must be between [0,1]")
+			return errors.New("ConfidenceLevel value must be between (0,1)")
 		}
 	}
 
@@ -42,6 +42,7 @@ func (cfg *ExponentialSmoothingConfig) Validate() error {
 }
 
 // SimpleExpSmoothing represents the SES algorithm for time-series forecasting.
+// It uses the bootstrapping method found here: https://www.itl.nist.gov/div898/handbook/pmc/section4/pmc432.htm
 type SimpleExpSmoothing struct {
 	tstate trainingState
 	cfg    ExponentialSmoothingConfig
@@ -49,6 +50,7 @@ type SimpleExpSmoothing struct {
 	sf     *dataframe.SeriesFloat64
 }
 
+// NewExponentialSmoothing creates a new SimpleExpSmoothing object.
 func NewExponentialSmoothing() *SimpleExpSmoothing {
 	return &SimpleExpSmoothing{}
 }
@@ -60,11 +62,6 @@ func (se *SimpleExpSmoothing) Configure(config interface{}) error {
 	cfg := config.(ExponentialSmoothingConfig)
 	if err := cfg.Validate(); err != nil {
 		return err
-	}
-
-	// set default for confidence levels
-	if len(cfg.ConfidenceLevels) == 0 {
-		cfg.ConfidenceLevels = []float64{0.80, 0.95}
 	}
 
 	se.cfg = cfg
@@ -94,6 +91,11 @@ func (se *SimpleExpSmoothing) Load(ctx context.Context, sf *dataframe.SeriesFloa
 		return err
 	}
 
+	// at least 3 observations required for SES.
+	if e-s < 2 {
+		return forecast.ErrInsufficientDataPoints
+	}
+
 	// Check if there are any nil values
 	nils, err := sf.NilCount(dataframe.NilCountOptions{
 		Ctx:          ctx,
@@ -108,16 +110,13 @@ func (se *SimpleExpSmoothing) Load(ctx context.Context, sf *dataframe.SeriesFloa
 		return forecast.ErrInsufficientDataPoints
 	}
 
-	// A minimum of 5 data rows should be expected
-	if e-s < 5 {
-		return forecast.ErrInsufficientDataPoints
-	}
-
 	se.tRange = *r
 	se.sf = sf
 
-	err = se.trainSeries(ctx, s, e)
+	err = se.trainSeries(ctx, uint(s), uint(e))
 	if err != nil {
+		se.tRange = dataframe.Range{}
+		se.sf = nil
 		return err
 	}
 

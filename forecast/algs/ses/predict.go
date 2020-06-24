@@ -4,7 +4,6 @@ package ses
 
 import (
 	"context"
-	"math"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 	"github.com/rocketlaunchr/dataframe-go/forecast"
@@ -13,43 +12,34 @@ import (
 // Predict forecasts the next n values for the loaded data.
 func (se *SimpleExpSmoothing) Predict(ctx context.Context, n uint) (*dataframe.SeriesFloat64, []forecast.Confidence, error) {
 
+	iN := int(n)
 	name := se.sf.Name(dataframe.DontLock)
-	nsf := dataframe.NewSeriesFloat64(name, &dataframe.SeriesInit{Capacity: int(n)})
+	nsf := dataframe.NewSeriesFloat64(name, &dataframe.SeriesInit{Capacity: iN})
 
 	if n <= 0 {
+		if len(se.cfg.ConfidenceLevels) == 0 {
+			return nsf, nil, nil
+		}
+		return nsf, []forecast.Confidence{}, nil
+	}
+
+	cnfdnce := []forecast.Confidence{}
+
+	for i := 0; i < iN; i++ {
+		StplusOne := se.cfg.Alpha*se.tstate.yOrigin + (1-se.cfg.Alpha)**se.tstate.finalSmoothed
+		se.tstate.finalSmoothed = &StplusOne
+		nsf.Append(StplusOne, dataframe.DontLock)
+
+		cis := map[float64]forecast.ConfidenceInterval{}
+		for _, level := range se.cfg.ConfidenceLevels {
+			cis[level] = forecast.DriftConfidenceInterval(StplusOne, level, se.tstate.rmse, se.tstate.T, n)
+		}
+		cnfdnce = append(cnfdnce, cis)
+	}
+
+	if len(se.cfg.ConfidenceLevels) == 0 {
 		return nsf, nil, nil
+	} else {
+		return nsf, cnfdnce, nil
 	}
-
-	var (
-		α       float64 = se.cfg.Alpha
-		st      float64 = se.tstate.smoothingLevel
-		Yorigin float64 = se.tstate.originValue
-		cnfdnce []forecast.Confidence
-	)
-
-	for i := uint(0); i < n; i++ {
-		if err := ctx.Err(); err != nil {
-			return nil, nil, err
-		}
-
-		pred := α*Yorigin + (1-α)*st
-
-		nsf.Values = append(nsf.Values, pred)
-
-		// calculate Confidence interval
-		cnfInt := map[float64]forecast.ConfidenceInterval{}
-
-		for l, zVal := range se.tstate.zValues {
-			// formular(Naive mthd): pred +/- (zVal*rmse) * sqrt(i+1)
-			lowerInt := pred - (zVal*se.tstate.rmse)*math.Sqrt(float64(i)+1.0)
-			upperInt := pred + (zVal*se.tstate.rmse)*math.Sqrt(float64(i)+1.0)
-			cnfInt[l] = forecast.ConfidenceInterval{
-				Upper: upperInt,
-				Lower: lowerInt,
-			}
-		}
-		cnfdnce = append(cnfdnce, cnfInt)
-	}
-
-	return nsf, cnfdnce, nil
 }

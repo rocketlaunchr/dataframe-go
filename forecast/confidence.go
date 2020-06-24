@@ -34,8 +34,8 @@ func (c ConfidenceInterval) String() string {
 }
 
 // MeanConfidenceInterval - see https://otexts.com/fpp2/prediction-intervals.html
-func MeanConfidenceInterval(pred, level, sigma_hat, T float64) ConfidenceInterval {
-	x := ConfidenceLevelToZ(level) * sigma_hat * math.Sqrt(1+1/T)
+func MeanConfidenceInterval(pred, level, sigma_hat float64, T uint) ConfidenceInterval {
+	x := ConfidenceLevelToZ(level) * sigma_hat * math.Sqrt(float64(1+1/T))
 	c := ConfidenceInterval{
 		Lower:  pred - x,
 		Upper:  pred + x,
@@ -45,8 +45,8 @@ func MeanConfidenceInterval(pred, level, sigma_hat, T float64) ConfidenceInterva
 }
 
 // NaïveConfidenceInterval - see https://otexts.com/fpp2/prediction-intervals.html
-func NaïveConfidenceInterval(pred, level, sigma_hat, h float64) ConfidenceInterval {
-	x := ConfidenceLevelToZ(level) * sigma_hat * math.Sqrt(h)
+func NaïveConfidenceInterval(pred, level, sigma_hat float64, h uint) ConfidenceInterval {
+	x := ConfidenceLevelToZ(level) * sigma_hat * math.Sqrt(float64(h))
 	c := ConfidenceInterval{
 		Lower:  pred - x,
 		Upper:  pred + x,
@@ -56,7 +56,7 @@ func NaïveConfidenceInterval(pred, level, sigma_hat, h float64) ConfidenceInter
 }
 
 // SeasonalNaïveConfidenceInterval - see https://otexts.com/fpp2/prediction-intervals.html
-func SeasonalNaïveConfidenceInterval(pred, level, sigma_hat, h, seasonalPeriod float64) ConfidenceInterval {
+func SeasonalNaïveConfidenceInterval(pred, level, sigma_hat float64, h, seasonalPeriod uint) ConfidenceInterval {
 	k := float64(int64((h - 1) / seasonalPeriod))
 	x := ConfidenceLevelToZ(level) * sigma_hat * math.Sqrt(k+1)
 	c := ConfidenceInterval{
@@ -68,8 +68,8 @@ func SeasonalNaïveConfidenceInterval(pred, level, sigma_hat, h, seasonalPeriod 
 }
 
 // DriftConfidenceInterval - see https://otexts.com/fpp2/prediction-intervals.html
-func DriftConfidenceInterval(pred, level, sigma_hat, T, h float64) ConfidenceInterval {
-	x := ConfidenceLevelToZ(level) * sigma_hat * math.Sqrt(h*(1+h/T))
+func DriftConfidenceInterval(pred, level, sigma_hat float64, T, h uint) ConfidenceInterval {
+	x := ConfidenceLevelToZ(level) * sigma_hat * math.Sqrt(float64(h*(1+h/T)))
 	c := ConfidenceInterval{
 		Lower:  pred - x,
 		Upper:  pred + x,

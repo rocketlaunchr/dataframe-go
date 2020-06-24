@@ -1,64 +1,54 @@
-package ses
+package ses_test
 
 import (
 	"context"
+	"math"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	dataframe "github.com/rocketlaunchr/dataframe-go"
-	eval "github.com/rocketlaunchr/dataframe-go/forecast/evaluation"
+	. "github.com/rocketlaunchr/dataframe-go/forecast/algs/ses"
 )
 
-func TestETS(t *testing.T) {
-	ctx := context.Background()
+var ctx = context.Background()
 
-	data := dataframe.NewSeriesFloat64("unit increase", nil, 1.05, 2.5, 3, 4, 5, 6, 7.25, 8, 9.36, 10.04)
-	var m uint = 10
+func TestSES(t *testing.T) {
 
-	var alpha float64 = 0.4
+	// Test data from https://www.itl.nist.gov/div898/handbook/pmc/section4/pmc431.htm
+	data12 := dataframe.NewSeriesFloat64("data", nil, 71, 70, 69, 68, 64, 65, 72, 78, 75, 75, 75, 70)
 
-	etsModel := NewExponentialSmoothing()
+	alg := NewExponentialSmoothing()
+	cfg := ExponentialSmoothingConfig{Alpha: 0.1}
 
-	cfg := ExponentialSmoothingConfig{
-		Alpha: alpha,
-	}
-
-	if err := etsModel.Configure(cfg); err != nil {
-		t.Errorf("error encountered: %s\n", err)
-	}
-
-	if err := etsModel.Load(ctx, data, &dataframe.Range{End: &[]int{5}[0]}); err != nil {
-		t.Errorf("error encountered: %s\n", err)
-	}
-
-	etsPredict, cnfdnce, err := etsModel.Predict(ctx, m)
+	err := alg.Configure(cfg)
 	if err != nil {
-		t.Errorf("error encountered: %s", err)
+		t.Fatalf("configure error: %v", err)
 	}
-	spew.Dump(cnfdnce)
 
-	expected := dataframe.NewSeriesFloat64("expected", nil,
-		4.646448, 4.646448, 4.646448, 4.646448, 4.646448,
-		4.646448, 4.646448, 4.646448, 4.646448, 4.646448)
-
-	eq, err := etsPredict.IsEqual(ctx, expected)
+	err = alg.Load(ctx, data12, nil)
 	if err != nil {
-		t.Errorf("error encountered: %s\n", err)
-	}
-	if !eq {
-		t.Errorf("prection: \n%s\n is not equal to expected: \n%s\n", etsPredict.Table(), expected.Table())
+		t.Fatalf("load error: %v", err)
 	}
 
-	evalFn := eval.RootMeanSquaredError
-
-	errVal, err := etsModel.Evaluate(ctx, etsPredict, evalFn)
+	pred, _, err := alg.Predict(ctx, 5)
 	if err != nil {
-		t.Errorf("error encountered: %s\n", err)
-	}
-	expectedRMSE := 4.1633150753580965
-
-	if errVal != expectedRMSE {
-		t.Errorf("expected error calc Value: %f is not same as actual errVal: %f", expectedRMSE, errVal)
+		t.Fatalf("pred error: %v", err)
 	}
 
+	// Expected values from https://www.itl.nist.gov/div898/handbook/pmc/section4/pmc432.htm
+	expPred := dataframe.NewSeriesFloat64("expected", nil, 71.50, 71.35, 71.21, 71.09, 70.98)
+
+	// compared expPred with pred
+	iterator := pred.ValuesIterator(dataframe.ValuesOptions{Step: 1, DontReadLock: true}) // func() (*int, interface{}, int)
+
+	for {
+		row, val, _ := iterator()
+		if row == nil {
+			break
+		}
+
+		roundedPred := math.Round(val.(float64)*100) / 100
+		if roundedPred != expPred.Values[*row] {
+			t.Fatalf("forecasting error. expected = %v, actual = %v (rounded: %v)", expPred.Values[*row], val.(float64), roundedPred)
+		}
+	}
 }
