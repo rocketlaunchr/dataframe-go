@@ -104,7 +104,7 @@ type Plot struct {
 //
 //  plt, _ := plot.Open("Linear", 150, 250)
 //  graph.Render(chart.SVG, plt)
-//  plt.Display()
+//  plt.Display(plot.None)
 //  <-plt.Closed
 //
 func Open(title string, width, height int) (*Plot, error) {
