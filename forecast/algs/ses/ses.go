@@ -17,7 +17,7 @@ import (
 type ExponentialSmoothingConfig struct {
 
 	// Alpha must be between 0 and 1. The closer Alpha is to 1, the more the algorithm
-	// prioritises recent values over past values.
+	// prioritizes recent values over past values.
 	Alpha float64
 
 	// ConfidenceLevels are values between 0 and 1 (exclusive) that return the associated
