@@ -22,7 +22,7 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 
 	var (
 		α, β, γ        float64 = hw.cfg.Alpha, hw.cfg.Beta, hw.cfg.Gamma
-		period         int     = hw.cfg.Period
+		period         int     = int(hw.cfg.Period)
 		trnd, prevTrnd float64 // trend
 		st, prevSt     float64 // smooth
 	)
@@ -50,7 +50,7 @@ func (hw *HoltWinters) trainSeries(ctx context.Context, start, end int) error {
 			st = xt
 			hw.tstate.initialSmooth = xt
 		} else {
-			if hw.cfg.SeasonalMethod == Multiply {
+			if hw.cfg.SeasonalMethod == Multiplicative {
 				// multiplicative method
 				prevSt, st = st, α*(xt/seasonals[i%period])+(1-α)*(st+trnd)
 				trnd = β*(st-prevSt) + (1-β)*trnd

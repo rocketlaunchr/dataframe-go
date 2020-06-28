@@ -28,7 +28,7 @@ func (hw *HoltWinters) Predict(ctx context.Context, n uint) (*dataframe.SeriesFl
 		st        float64   = hw.tstate.smoothingLevel
 		seasonals []float64 = hw.tstate.seasonalComps
 		trnd      float64   = hw.tstate.trendLevel
-		period    int       = hw.cfg.Period
+		period    int       = int(hw.cfg.Period)
 	)
 
 	for i := uint(0); i < n; i++ {
@@ -39,7 +39,7 @@ func (hw *HoltWinters) Predict(ctx context.Context, n uint) (*dataframe.SeriesFl
 		m := int(i + 1)
 
 		var fval float64
-		if hw.cfg.SeasonalMethod == Multiply {
+		if hw.cfg.SeasonalMethod == Multiplicative {
 			fval = (st + float64(m)*trnd) * seasonals[(m-1)%period]
 		} else {
 			fval = (st + float64(m)*trnd) + seasonals[(m-1)%period]

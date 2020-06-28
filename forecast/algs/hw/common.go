@@ -33,7 +33,7 @@ func initialSeasonalComponents(y []float64, period int, tsType Method) []float64
 
 	for i := 0; i < period; i++ {
 		for j := 0; j < nSeasons; j++ {
-			if tsType == Multiply {
+			if tsType == Multiplicative {
 				// Multiplcative seasonal component
 				seasonalIndices[i] += y[(j*period)+i] / seasonalAverage[j]
 			} else {

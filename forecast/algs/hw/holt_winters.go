@@ -14,11 +14,11 @@ import (
 type Method int
 
 const (
-	// Add sets the model type to additive.
-	Add Method = 0
+	// Additive sets the model type to additive.
+	Additive Method = 0
 
-	// Multiply sets the model type to multiplicative.
-	Multiply Method = 1
+	// Multiplicative sets the model type to multiplicative.
+	Multiplicative Method = 1
 )
 
 // HoltWintersConfig is used to configure the Holt-Winters algorithm.
@@ -28,12 +28,26 @@ const (
 // See: https://otexts.com/fpp2/holt-winters.html
 type HoltWintersConfig struct {
 
-	// Alpha, Beta and Gamma must be between 0 and 1.
-	Alpha, Beta, Gamma float64
+	// Alpha must be between 0 and 1. The closer Alpha is to 1, the more the algorithm
+	// prioritizes recent values over past values.
+	Alpha float64
 
-	// Period  is the length of the data season
-	// It must be at least 2
-	Period int
+	// Beta must be between 0 and 1. The closer Beta is to 1, the trend component will prioritize
+	// recent values over past values.
+	Beta float64
+
+	// Gamma must be between 0 and 1. The closer Gamma is to 1, the more recent seasonal pattern is prioritized.
+	Gamma float64
+
+	// Period can be understood as follows:
+	//
+	// A season is a fixed length of time that contains the full repetition.
+	// You might think your data repeats daily (there’s a peak at 2pm every day), but if the weekend has different behavior (there’s no peak at 2pm on Sunday) then your season is really a week, not a day.
+	// Within the season, there are periods, which is the granularity of prediction.
+	// If you want to model a value for every hour of every day within a week, your season is 168 hours long and your period is 1 hour.
+	//
+	// Therefore, a complete season's data consists of L periods. In the above example, L is 168. L is what you set for the Period config value.
+	Period uint
 
 	// SeasonalMethod sets whether the model is additive or multiplicative.
 	// The default is additive.
@@ -57,7 +71,7 @@ func (cfg *HoltWintersConfig) Validate() error {
 	if (cfg.Gamma < 0.0) || (cfg.Gamma > 1.0) {
 		return errors.New("Gamma must be between [0,1]")
 	}
-	if cfg.Period < 2 {
+	if cfg.Period <= 2 {
 		return errors.New("Period must be at least a length of 2")
 	}
 
@@ -138,8 +152,9 @@ func (hw *HoltWinters) Load(ctx context.Context, sf *dataframe.SeriesFloat64, r 
 		return forecast.ErrInsufficientDataPoints
 	}
 
-	// minimum of 7 data points, representing weekly season at the least
-	if e-s < 7 {
+	// For data with m seasons per year, m+5 observations is theoretical minimum.
+	// See: https://robjhyndman.com/papers/shortseasonal.pdf
+	if e-s < int(hw.cfg.Period+5) {
 		return forecast.ErrInsufficientDataPoints
 	}
 

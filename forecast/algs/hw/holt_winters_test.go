@@ -19,7 +19,7 @@ func TestHW(t *testing.T) {
 	)
 
 	var (
-		period int  = 12
+		period uint = 12
 		h      uint = 24
 	)
 
@@ -33,7 +33,7 @@ func TestHW(t *testing.T) {
 		Beta:           beta,
 		Gamma:          gamma,
 		Period:         period,
-		SeasonalMethod: Add,
+		SeasonalMethod: Additive,
 	}
 
 	hwModel := NewHoltWinters()
