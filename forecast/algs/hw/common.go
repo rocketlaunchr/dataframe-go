@@ -1,3 +1,5 @@
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+
 package hw
 
 // See: http://www.itl.nist.gov/div898/handbook/pmc/section4/pmc435.htm
