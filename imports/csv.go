@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
@@ -60,6 +61,13 @@ type CSVLoadOptions struct {
 	// DictateDataType always takes precedence when determining the type.
 	// If the data type could not be detected, NewSeriesString is used.
 	InferDataTypes bool
+
+	// Merge multiple columns into one, values are joined by spaces.
+	// eg. Join date and time columns into one datetime column.
+	MergeColumns map[string][]string
+
+	// Format that should be used to parse time string. Default uses time.RFC3339.
+	TimeFormat string
 }
 
 // LoadFromCSV will load data from a csv file.
@@ -104,6 +112,18 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 	var row int
 	var df *dataframe.DataFrame
 
+	// key: new column name
+	// value: indices of the columns that are going to be merged
+	mergingColumn := map[string][]int{}
+	// this is used to guarantee the order of the merged columns
+	var mergedColumns []string
+
+	// check for custom time format
+	timeFormat := time.RFC3339
+	if len(options) > 0 && options[0].TimeFormat != "" {
+		timeFormat = options[0].TimeFormat
+	}
+
 	for {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -122,8 +142,38 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 
 			seriess := []dataframe.Series{}
 
-			// Create the series
-			for _, name := range rec {
+			// check to see if the column is going to be merged
+			isToBeMerged := func(clmIndex int, name string) bool {
+				if clmIndex < 0 {
+					return false
+				}
+				if len(options) > 0 && len(options[0].MergeColumns) > 0 {
+					for merged, columnsToMerge := range options[0].MergeColumns {
+						if _, found := mergingColumn[merged]; !found {
+							mergingColumn[merged] = make([]int, len(columnsToMerge))
+							mergedColumns = append(mergedColumns, merged)
+							for i := range mergingColumn[merged] {
+								// assign default value for later verification
+								mergingColumn[merged][i] = -1
+							}
+						}
+						for orderIndex, column := range columnsToMerge {
+							if column == name {
+								// insert the column index in the order of configuration
+								mergingColumn[merged][orderIndex] = clmIndex
+								return true
+							}
+						}
+					}
+				}
+				return false
+			}
+
+			prepareSeries := func(index int, name string) {
+
+				if isToBeMerged(index, name) {
+					return
+				}
 
 				// Check if the datatype is dictated
 				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
@@ -154,7 +204,7 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 						seriess = append(seriess, dataframe.NewSeriesGeneric(name, typ, init))
 					}
 
-					continue
+					return
 				}
 
 			INFER1:
@@ -172,25 +222,69 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 				}
 			}
 
+			// Create the series
+			for index, name := range rec {
+				prepareSeries(index, name)
+			}
+
+			for _, column := range mergedColumns {
+				// Create the merged columns
+				prepareSeries(-1, column)
+			}
+
+			for mergedColumn, indices := range mergingColumn {
+				for _, index := range indices {
+					if index < 0 {
+						return nil, fmt.Errorf("some of the columns don't exist for merging into column %s", mergedColumn)
+					}
+				}
+			}
+
 			// Create the dataframe
 			df = dataframe.NewDataFrame(seriess...)
 		} else {
 
 			insertVals := []interface{}{}
-			for idx, v := range rec {
+			// key: merged column name
+			// value: merged values
+			stringsToMerge := map[string][]string{}
+
+			isToBeMerged := func(index int, value string) bool {
+				itIs := false
+				for _, merged := range mergedColumns {
+					if _, found := stringsToMerge[merged]; !found {
+						stringsToMerge[merged] = make([]string, len(mergingColumn[merged]))
+					}
+					for order, i := range mergingColumn[merged] {
+						if i == index {
+							// insert the value in the order of configuration
+							stringsToMerge[merged][order] = value
+							itIs = true
+						}
+					}
+				}
+				return itIs
+			}
+
+			columnIndex := -1
+			processValue := func(index int, v string) error {
+				if isToBeMerged(index, v) {
+					return nil
+				}
+				columnIndex++
 
 				// Check if v represents a nil value
 				if len(options) > 0 && options[0].NilValue != nil {
 					if v == *options[0].NilValue {
 						insertVals = append(insertVals, nil)
-						continue
+						return nil
 					}
 				}
 
 				// Check if the datatype is dictated
 				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
 
-					name := df.Names(dataframe.DontLock)[idx]
+					name := df.Names(dataframe.DontLock)[columnIndex]
 
 					// Check if a datatype is dictated
 					typ, exists := options[0].DictateDataType[name]
@@ -207,27 +301,27 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 						} else if v == "FALSE" || v == "false" || v == "False" || v == "0" {
 							insertVals = append(insertVals, int64(0))
 						} else {
-							return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", v, row-1, name)
+							return fmt.Errorf("can't force string: %s to bool. row: %d field: %s", v, row-1, name)
 						}
 					case int64:
 						i, err := strconv.ParseInt(v, 10, 64)
 						if err != nil {
-							return nil, fmt.Errorf("can't force string: %s to int64. row: %d field: %s", v, row-1, name)
+							return fmt.Errorf("can't force string: %s to int64. row: %d field: %s", v, row-1, name)
 						}
 						insertVals = append(insertVals, i)
 					case float64:
 						f, err := strconv.ParseFloat(v, 64)
 						if err != nil {
-							return nil, fmt.Errorf("can't force string: %s to float64. row: %d field: %s", v, row-1, name)
+							return fmt.Errorf("can't force string: %s to float64. row: %d field: %s", v, row-1, name)
 						}
 						insertVals = append(insertVals, f)
 					case time.Time:
-						t, err := time.Parse(time.RFC3339, v)
+						t, err := time.Parse(timeFormat, v)
 						if err != nil {
 							// Assume unix timestamp
 							sec, err := strconv.ParseInt(v, 10, 64)
 							if err != nil {
-								return nil, fmt.Errorf("can't force string: %s to time.Time (%s). row: %d field: %s", v, time.RFC3339, row-1, name)
+								return fmt.Errorf("can't force string: %s to time.Time (%s). row: %d field: %s", v, time.RFC3339, row-1, name)
 							}
 							insertVals = append(insertVals, time.Unix(sec, 0))
 						} else {
@@ -238,20 +332,36 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 					case Converter:
 						cv, err := T.ConverterFunc(v)
 						if err != nil {
-							return nil, fmt.Errorf("can't force string: %s to generic data type. row: %d field: %s", v, row-1, name)
+							return fmt.Errorf("can't force string: %s to generic data type. row: %d field: %s", v, row-1, name)
 						}
 						insertVals = append(insertVals, cv)
 					default:
 						insertVals = append(insertVals, v)
 					}
 
-					continue
+					return nil
 				}
 
 			INFER2:
 
 				// Datatype is either inferred or assumed to be a string
 				insertVals = append(insertVals, v)
+				return nil
+			}
+
+			for idx, v := range rec {
+				err := processValue(idx, v)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			// append merged column values
+			for _, column := range mergedColumns {
+				err := processValue(-1, strings.Join(stringsToMerge[column], " "))
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			df.Append(&dataframe.DontLock, insertVals...)
