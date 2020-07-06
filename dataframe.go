@@ -156,6 +156,8 @@ func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...Ser
 		}
 	}
 
+	initial := row
+
 	return func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int) {
 		// Should this be on the outside?
 		if !dontReadLock {
@@ -163,9 +165,16 @@ func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...Ser
 			defer df.lock.RUnlock()
 		}
 
+		var t int
+		if step > 0 {
+			t = (df.n-initial-1)/step + 1
+		} else {
+			t = -(initial)/step + 1
+		}
+
 		if row > df.n-1 || row < 0 {
 			// Don't iterate further
-			return nil, nil, 0
+			return nil, nil, t
 		}
 
 		out := map[interface{}]interface{}{}
@@ -183,7 +192,7 @@ func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...Ser
 
 		row = row + step
 
-		return &[]int{row - step}[0], out, df.n
+		return &[]int{row - step}[0], out, t
 	}
 }
 

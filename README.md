@@ -12,7 +12,7 @@ Dataframes are used for statistics, machine-learning, and data manipulation/expl
 This package is designed to be light-weight and intuitive.
 
 ⚠️ The package is production ready but the API is not stable yet. Once stability is reached, version `1.0.0` will be tagged.
-It is recommended your package manager locks to a commit id instead of the master branch directly.
+It is recommended your package manager locks to a commit id instead of the master branch directly. ⚠️
 
 ⭐ **the project to show your appreciation.**
 

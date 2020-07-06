@@ -288,6 +288,8 @@ func (s *SeriesGeneric) ValuesIterator(opts ...ValuesOptions) func() (*int, inte
 		}
 	}
 
+	initial := row
+
 	return func() (*int, interface{}, int) {
 		// Should this be on the outside?
 		if !dontReadLock {
@@ -295,9 +297,16 @@ func (s *SeriesGeneric) ValuesIterator(opts ...ValuesOptions) func() (*int, inte
 			defer s.lock.RUnlock()
 		}
 
+		var t int
+		if step > 0 {
+			t = (len(s.values)-initial-1)/step + 1
+		} else {
+			t = -(initial)/step + 1
+		}
+
 		if row > len(s.values)-1 || row < 0 {
 			// Don't iterate further
-			return nil, nil, 0
+			return nil, nil, t
 		}
 
 		out := s.values[row]
@@ -305,7 +314,7 @@ func (s *SeriesGeneric) ValuesIterator(opts ...ValuesOptions) func() (*int, inte
 			out = nil
 		}
 		row = row + step
-		return &[]int{row - step}[0], out, len(s.values)
+		return &[]int{row - step}[0], out, t
 	}
 }
 

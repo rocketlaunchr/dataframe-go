@@ -320,6 +320,8 @@ func (s *SeriesComplex128) ValuesIterator(opts ...dataframe.ValuesOptions) func(
 		}
 	}
 
+	initial := row
+
 	return func() (*int, interface{}, int) {
 		// Should this be on the outside?
 		if !dontReadLock {
@@ -327,9 +329,16 @@ func (s *SeriesComplex128) ValuesIterator(opts ...dataframe.ValuesOptions) func(
 			defer s.lock.RUnlock()
 		}
 
+		var t int
+		if step > 0 {
+			t = (len(s.Values)-initial-1)/step + 1
+		} else {
+			t = -(initial)/step + 1
+		}
+
 		if row > len(s.Values)-1 || row < 0 {
 			// Don't iterate further
-			return nil, nil, 0
+			return nil, nil, t
 		}
 
 		var out interface{} = s.Values[row]
@@ -337,7 +346,7 @@ func (s *SeriesComplex128) ValuesIterator(opts ...dataframe.ValuesOptions) func(
 			out = nil
 		}
 		row = row + step
-		return &[]int{row - step}[0], out, len(s.Values)
+		return &[]int{row - step}[0], out, t
 	}
 }
 

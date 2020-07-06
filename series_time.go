@@ -317,6 +317,8 @@ func (s *SeriesTime) ValuesIterator(opts ...ValuesOptions) func() (*int, interfa
 		}
 	}
 
+	initial := row
+
 	return func() (*int, interface{}, int) {
 		// Should this be on the outside?
 		if !dontReadLock {
@@ -324,9 +326,16 @@ func (s *SeriesTime) ValuesIterator(opts ...ValuesOptions) func() (*int, interfa
 			defer s.lock.RUnlock()
 		}
 
+		var t int
+		if step > 0 {
+			t = (len(s.Values)-initial-1)/step + 1
+		} else {
+			t = -(initial)/step + 1
+		}
+
 		if row > len(s.Values)-1 || row < 0 {
 			// Don't iterate further
-			return nil, nil, 0
+			return nil, nil, t
 		}
 
 		val := s.Values[row]
@@ -337,7 +346,7 @@ func (s *SeriesTime) ValuesIterator(opts ...ValuesOptions) func() (*int, interfa
 			out = *val
 		}
 		row = row + step
-		return &[]int{row - step}[0], out, len(s.Values)
+		return &[]int{row - step}[0], out, t
 	}
 }
 
