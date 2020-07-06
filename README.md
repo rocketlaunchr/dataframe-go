@@ -31,6 +31,16 @@ It is recommended your package manager locks to a commit id instead of the maste
 11. Math functions
 12. Plotting (cross-platform)
 
+## Installation
+
+```
+go get -u github.com/rocketlaunchr/dataframe-go
+```
+
+```go
+import dataframe "github.com/rocketlaunchr/dataframe-go"
+```
+
 # DataFrames
 
 ## Creating a DataFrame

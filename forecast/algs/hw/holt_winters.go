@@ -84,7 +84,9 @@ func (cfg *HoltWintersConfig) Validate() error {
 	return nil
 }
 
-// HoltWinters represents the HW algorithm for time-series forecasting.
+// HoltWinters represents the Holt-Winters algorithm for time-series forecasting.
+//
+// See: https://otexts.com/fpp2/holt-winters.html
 type HoltWinters struct {
 	tstate trainingState
 	cfg    HoltWintersConfig
@@ -112,14 +114,13 @@ func (hw *HoltWinters) Configure(config interface{}) error {
 
 // Load loads historical data.
 //
-// sf is the series containing Historical Seasonal data.
-// it must be at least a full season,
-// for optimal results use at least two full seasons.
+// sf is the series containing historical seasonal data.
+// It must be at least a full season. For optimal results use at least two full seasons.
 //
 // r is used to limit which rows of sf are loaded. Prediction will always begin
 // from the row after that defined by r. r can be thought of as defining a "training set".
 //
-// NOTE: HW algorithm does not tolerate nil values. You may need to use the interpolation subpackage.
+// NOTE: Holt-Winters algorithm does not tolerate nil values. You may need to use the interpolation subpackage.
 func (hw *HoltWinters) Load(ctx context.Context, sf *dataframe.SeriesFloat64, r *dataframe.Range) error {
 
 	if r == nil {

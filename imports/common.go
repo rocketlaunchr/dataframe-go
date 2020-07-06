@@ -12,7 +12,7 @@ import (
 )
 
 // GenericDataConverter is used to convert input data into a generic data type.
-// This is required when importing data for a Generic Series ("NewSeriesGeneric").
+// This is required when importing data for a Generic Series ("SeriesGeneric").
 type GenericDataConverter func(in interface{}) (interface{}, error)
 
 // Converter is used to convert input data into a generic data type.
