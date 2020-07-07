@@ -308,11 +308,8 @@ There may be times that you want to use your own custom data types. You can eith
 ## civil.Date
 
 ```go
-
-import (
-  "time"
-  "cloud.google.com/go/civil"
-)
+import "time"
+import "cloud.google.com/go/civil"
 
 sg := dataframe.NewSeriesGeneric("date", civil.Date{}, nil, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03})
 s2 := dataframe.NewSeriesFloat64("sales", nil, 50.3, 23.4, 56.2)
