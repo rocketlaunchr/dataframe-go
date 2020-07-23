@@ -41,8 +41,10 @@ type FilterSeriesFn func(val interface{}, row, nRows int) (FilterAction, error)
 type FilterDataFrameFn func(vals map[interface{}]interface{}, row, nRows int) (FilterAction, error)
 
 // Filter is used to filter particular rows in a Series or DataFrame.
-// If the InPlace option is set, the function returns nil. Instead the Series or DataFrame is modified "in place".
+// If the InPlace option is set, the Series or DataFrame is modified "in place" and the function returns nil.
 // Alternatively, a new Series or DataFrame is returned.
+//
+// When sdf is a DataFrame, fn must be of type FilterDataFrameFn. When sdf is a Series, fn must be of type FilterSeriesFn.
 func Filter(ctx context.Context, sdf interface{}, fn interface{}, opts ...FilterOptions) (interface{}, error) {
 
 	switch typ := sdf.(type) {
