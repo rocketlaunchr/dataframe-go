@@ -169,7 +169,7 @@ func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...Ser
 		if step > 0 {
 			t = (df.n-initial-1)/step + 1
 		} else {
-			t = -(initial)/step + 1
+			t = -initial/step + 1
 		}
 
 		if row > df.n-1 || row < 0 {

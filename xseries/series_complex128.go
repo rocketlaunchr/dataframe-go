@@ -333,7 +333,7 @@ func (s *SeriesComplex128) ValuesIterator(opts ...dataframe.ValuesOptions) func(
 		if step > 0 {
 			t = (len(s.Values)-initial-1)/step + 1
 		} else {
-			t = -(initial)/step + 1
+			t = -initial/step + 1
 		}
 
 		if row > len(s.Values)-1 || row < 0 {

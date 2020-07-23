@@ -319,7 +319,7 @@ func (s *SeriesInt64) ValuesIterator(opts ...ValuesOptions) func() (*int, interf
 		if step > 0 {
 			t = (len(s.values)-initial-1)/step + 1
 		} else {
-			t = -(initial)/step + 1
+			t = -initial/step + 1
 		}
 
 		if row > len(s.values)-1 || row < 0 {
