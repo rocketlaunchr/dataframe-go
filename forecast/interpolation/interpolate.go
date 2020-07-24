@@ -8,33 +8,33 @@ import (
 	dataframe "github.com/rocketlaunchr/dataframe-go"
 )
 
-// InterpolationFillDirection is used to set the direction that nil values are filled.
-type InterpolationFillDirection uint8
+// FillDirection is used to set the direction that nil values are filled.
+type FillDirection uint8
 
-func (opt InterpolationFillDirection) has(x InterpolationFillDirection) bool {
+func (opt FillDirection) has(x FillDirection) bool {
 	return opt&x != 0
 }
 
 const (
 
 	// Forward interpolates nil values from left to right.
-	Forward InterpolationFillDirection = 1 << iota
+	Forward FillDirection = 1 << iota
 
 	// Backward interpolates nil values from right to left.
 	Backward
 )
 
-// InterpolationFillRegion is used to set the fill region.
-type InterpolationFillRegion uint8
+// FillRegion is used to set the fill region.
+type FillRegion uint8
 
-func (opt InterpolationFillRegion) has(x InterpolationFillRegion) bool {
+func (opt FillRegion) has(x FillRegion) bool {
 	return opt&x != 0
 }
 
 const (
 
 	// Interpolation estimates values between two known values.
-	Interpolation InterpolationFillRegion = 1 << iota
+	Interpolation FillRegion = 1 << iota
 
 	// Extrapolation estimates values by extending a known sequence of values beyond
 	// what is certainly known.
@@ -54,11 +54,11 @@ type InterpolateOptions struct {
 
 	// FillDirection sets the direction that nil values are interpolated.
 	// The default is Forward.
-	FillDirection InterpolationFillDirection
+	FillDirection FillDirection
 
 	// FillRegion sets whether the interpolation function should fill nil values by interpolating and/or extrapolating.
 	// The default is both.
-	FillRegion *InterpolationFillRegion
+	FillRegion *FillRegion
 
 	// InPlace will perform the interpolation operation on the current SeriesFloat64 or DataFrame.
 	// If InPlace is not set, an OrderedMapIntFloat64 will be returned. The original Series or DataFrame will be unmodified.

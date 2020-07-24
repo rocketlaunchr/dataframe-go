@@ -234,7 +234,7 @@ func TestInterpolateSeriesLinearFillBoth(t *testing.T) {
 	opts := InterpolateOptions{
 		Method:        Linear{},
 		FillDirection: Forward | Backward,
-		FillRegion:    &[]InterpolationFillRegion{Interpolation}[0],
+		FillRegion:    &[]FillRegion{Interpolation}[0],
 		InPlace:       true,
 	}
 	expected := dataframe.NewSeriesFloat64("expected", nil, nil, 29.33, 27.4225, 23.6075, 25.515, 21.7, 35.14, 40.31333333333333, 45.486666666666665, 50.66, nil)
