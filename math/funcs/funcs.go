@@ -87,8 +87,8 @@ type SubFuncDefn struct {
 	Domain *dataframe.Range
 }
 
-// RegularFunc represents a non-piecewise function that is not constrained by a domain.
-func RegularFunc(fn string) []SubFuncDefn {
+// RegFunc represents a regular function not split into different domain segments.
+func RegFunc(fn string) []SubFuncDefn {
 	return []SubFuncDefn{{Fn: fn}}
 }
 
@@ -113,7 +113,7 @@ func (p pfs) pf(row int) (*formula.Formula, error) {
 //
 // Example:
 //
-//  fn := funcs.RegularFunc("sin((2*𝜋*x)/24)")
+//  fn := funcs.RegFunc("sin((2*𝜋*x)/24)")
 //  funcs.PiecewiseFunc(ctx, df, fn, 1)
 //
 func PiecewiseFunc(ctx context.Context, df *dataframe.DataFrame, fn PiecewiseFuncDefn, col interface{}, opts ...PiecewiseFuncOptions) error {
