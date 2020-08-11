@@ -111,11 +111,14 @@ func (r *Range) Limits(length int) (s int, e int, _ error) {
 }
 
 // RangeFinite returns a Range that has a finite span.
-func RangeFinite(start, end int) Range {
-	return Range{
+func RangeFinite(start int, end ...int) Range {
+	r := Range{
 		Start: &start,
-		End:   &end,
 	}
+	if len(end) > 0 {
+		r.End = &end[0]
+	}
+	return r
 }
 
 // IntsToRanges will convert an already (ascending) ordered list of ints to a slice of Ranges.
