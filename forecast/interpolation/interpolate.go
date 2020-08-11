@@ -45,7 +45,7 @@ const (
 type InterpolateOptions struct {
 
 	// Method sets the algorithm used to interpolate.
-	// The default is to ForwardFill{}.
+	// Current options are: ForwardFill{} (default), BackwardFill{}, Linear{}, Spline{} and Lagrange{}.
 	Method interpolateMethod
 
 	// Limit sets the maximum number of consecutive nil values to fill.
