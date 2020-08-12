@@ -146,6 +146,8 @@ OUTPUT:
 You can change the step and starting row. It may be wise to lock the DataFrame before iterating.
 
 The returned values are a map containing the name of the series (`string`) and the order of the series (`int`).
+You can control the behavior of this by passing a return option into the `iterator` function.
+The returned `iterator` has the following signature: `func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int)`
 
 ```go
 
@@ -153,7 +155,7 @@ iterator := df.ValuesIterator(dataframe.ValuesOptions{0, 1, true}) // Don't appl
 
 df.Lock()
 for {
-	row, vals, _ := iterator()
+	row, vals, _ := iterator(dataframe.SeriesName) // Only returns values containing the name of the series.
 	if row == nil {
 		break
 	}
