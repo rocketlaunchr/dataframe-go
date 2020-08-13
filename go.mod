@@ -2,6 +2,8 @@ module github.com/rocketlaunchr/dataframe-go
 
 go 1.12
 
+replace github.com/gotestyourself/gotestyourself => gotest.tools v2.2.0+incompatible
+
 require (
 	cloud.google.com/go v0.57.0
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
