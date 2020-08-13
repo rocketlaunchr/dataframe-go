@@ -206,7 +206,7 @@ median, _ := stats.Median(sf.Values)
 std := stat.StdDev(sf.Values, nil)
 ```
 
-## Plotting (only Windows, macOS and Linux)
+## Plotting (cross-platform)
 
 ```go
 import (
