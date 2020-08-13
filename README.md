@@ -239,7 +239,7 @@ Output:
 import "github.com/rocketlaunchr/dataframe-go/math/funcs"
 
 res := 24
-sx := dataframe.NewSeriesFloat64("x", nil, dataframe.Float64Range(1, float64(res), 1))
+sx := dataframe.NewSeriesFloat64("x", nil, utils.Float64Range(1, float64(res), 1))
 sy := dataframe.NewSeriesFloat64("y", &dataframe.SeriesInit{Size: res})
 df := dataframe.NewDataFrame(sx, sy)
 

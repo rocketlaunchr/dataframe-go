@@ -61,33 +61,6 @@ func BoolValueFormatter(v interface{}) string {
 	}
 }
 
-// Float64Range will return a sequence of float64 values starting at start.
-func Float64Range(start, end, step float64) []float64 {
-	out := []float64{start}
-
-	if step == 0 {
-		return out
-	}
-
-	for {
-		newVal := out[len(out)-1] + step
-
-		if step > 0 {
-			if newVal > end {
-				break
-			}
-		} else {
-			if newVal < end {
-				break
-			}
-		}
-
-		out = append(out, newVal)
-	}
-
-	return out
-}
-
 // DontLock is short-hand for various functions that permit disabling locking.
 var DontLock = dontLock
 var dontLock = Options{DontLock: true}
