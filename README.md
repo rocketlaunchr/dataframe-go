@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-<img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/logo.png" alt="dataframe-go" />
+<img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/assets/logo.png" alt="dataframe-go" />
 </p>
 
 Dataframes are used for statistics, machine-learning, and data manipulation/exploration. You can think of a Dataframe as an excel spreadsheet.
@@ -230,7 +230,7 @@ plt.Display(plot.None)
 Output:
 
 <p align="center">
-<img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/plot.png" alt="plot" />
+<img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/assets/plot.png" alt="plot" />
 </p>
 
 ## Math Functions
@@ -250,7 +250,7 @@ funcs.PiecewiseFunc(ctx, df, fn, 1)
 Output:
 
 <p align="center">
-<img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/sine.png" alt="sine wave" />
+<img src="https://github.com/rocketlaunchr/dataframe-go/raw/master/assets/sine.png" alt="sine wave" />
 </p>
 
 ## Importing Data
