@@ -25,6 +25,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v0.1.1 // indirect
 	github.com/ory/dockertest v3.3.5+incompatible // indirect
+	github.com/rocketlaunchr/dbq/v2 v2.5.0
 	github.com/rocketlaunchr/mysql-go v1.1.3
 	github.com/sandertv/go-formula/v2 v2.0.0-alpha.7
 	github.com/sirupsen/logrus v1.6.0 // indirect

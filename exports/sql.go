@@ -11,6 +11,7 @@ import (
 	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
+	"github.com/rocketlaunchr/dbq/v2"
 )
 
 // Database is used to set the Database.
@@ -269,41 +270,24 @@ func ExportToSQL(ctx context.Context, db execContexter, df *dataframe.DataFrame,
 }
 
 func sqlInsert(ctx context.Context, db execContexter, database Database, tableName string, columnNames []string, batchData []interface{}) error {
-
 	tableName = strings.Join(escapeNames(database, []string{tableName}), ",")
 	columns := strings.Join(escapeNames(database, columnNames), ",")
-	placeholders := placeholders(database, columnNames, len(batchData)/len(columnNames))
+
+	var placeholders string
+	if database == MySQL {
+		placeholders = dbq.Ph(len(columnNames), len(batchData)/len(columnNames), 0)
+	} else {
+		placeholders = dbq.Ph(len(columnNames), len(batchData)/len(columnNames), 0, dbq.PostgreSQL)
+	}
 
 	stmt := "INSERT INTO " + tableName + " (" + columns + ") VALUES " + placeholders
 
-	_, err := db.ExecContext(ctx, stmt, batchData...)
+	_, err := dbq.E(ctx, db, stmt, nil, batchData...)
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func placeholders(dbtype Database, fields []string, rows int) string {
-
-	if dbtype == MySQL {
-		inner := "( " + strings.TrimSuffix(strings.Repeat("?,", len(fields)), ",") + " ),"
-		return strings.TrimSuffix(strings.Repeat(inner, rows), ",")
-	}
-
-	var singleValuesStr string
-
-	varCount := 1
-	for i := 1; i <= rows; i++ {
-		singleValuesStr = singleValuesStr + "("
-		for j := 1; j <= len(fields); j++ {
-			singleValuesStr = singleValuesStr + fmt.Sprintf("$%d,", varCount)
-			varCount++
-		}
-		singleValuesStr = strings.TrimSuffix(singleValuesStr, ",") + "),"
-	}
-
-	return strings.TrimSuffix(singleValuesStr, ",")
 }
 
 func escapeNames(database Database, names []string) []string {
