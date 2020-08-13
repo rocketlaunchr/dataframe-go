@@ -145,7 +145,7 @@ OUTPUT:
 
 You can change the step and starting row. It may be wise to lock the DataFrame before iterating.
 
-The returned values are a map containing the name of the series (`string`) and the order of the series (`int`).
+The returned value is a map containing the name of the series (`string`) and the order of the series (`int`) as keys.
 
 ```go
 
@@ -174,7 +174,7 @@ OUTPUT:
 
 ## Statistics
 
-You can easily calculate statistics for a Series using the [gonum](https://godoc.org/gonum.org/v1/gonum) or [montanaflynn/stats](https://godoc.org/github.com/montanaflynn/stats) package.
+You can easily calculate statistics for a Series using the [gonum](https://godoc.org/gonum.org/v1/gonum/stat) or [montanaflynn/stats](https://godoc.org/github.com/montanaflynn/stats) package.
 
 ### Example
 
