@@ -111,7 +111,7 @@ type ValuesOptions struct {
 	InitialRow int
 
 	// Step represents by how much each iteration should step by.
-	// It can be negative to represent iterating in backwards direction.
+	// It can be negative to represent iterating in reverse direction.
 	// InitialRow should be adjusted to NRows()-1 if Step is negative.
 	// If Step is 0, the function will panic.
 	Step int
