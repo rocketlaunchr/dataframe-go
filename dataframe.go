@@ -123,13 +123,17 @@ type ValuesOptions struct {
 
 // ValuesIterator will return an iterator that can be used to iterate through all the values.
 //
+// The default returned values are a map containing the name of the series (string) and the order of the series (int).
+// This can be controlled by passing zero or more return options into the iterator function.
+// Currently supported options include [dataframe.SeriesName, dataframe.SeriesIdx].
+//
 // Example:
 //
 //  iterator := df.ValuesIterator(dataframe.ValuesOptions{0, 1, true})
 //
 //  df.Lock()
 //  for {
-//     row, vals, _ := iterator()
+//     row, vals, _ := iterator()	// You can optionally pass in zero or more return options.
 //     if row == nil {
 //        break
 //     }
