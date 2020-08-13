@@ -36,7 +36,7 @@ type GuessTimeFreqOptions struct {
 
 // GuessTimeFreq will attempt to guess the time interval in a SeriesTime.
 // It will return a string that is compatible with TimeIntervalGenerator.
-// It will also return a bool indicating whether the sequence is backwards.
+// It will also return a bool indicating whether the sequence is in reverse.
 //
 // Due to daylight savings and varying days per month, it is not always possible to
 // determine a pattern with 100% confidence.
