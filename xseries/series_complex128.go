@@ -323,7 +323,6 @@ func (s *SeriesComplex128) ValuesIterator(opts ...dataframe.ValuesOptions) func(
 	initial := row
 
 	return func() (*int, interface{}, int) {
-		// Should this be on the outside?
 		if !dontReadLock {
 			s.lock.RLock()
 			defer s.lock.RUnlock()

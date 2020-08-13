@@ -121,11 +121,10 @@ type ValuesOptions struct {
 	DontReadLock bool
 }
 
-// ValuesIterator will return an iterator that can be used to iterate through all the values.
+// ValuesIterator will return a function that can be used to iterate through all the values.
 //
-// The default returned values are a map containing the name of the series (string) and the order of the series (int).
-// This can be controlled by passing zero or more return options into the iterator function.
-// Currently supported options include [dataframe.SeriesName, dataframe.SeriesIdx].
+// The returned value is a map containing the name of the series (string) and the order of the series (int) as keys.
+// You can reduce the keys in the map to only return the series name (SeriesName) or series index (SeriesIdx).
 //
 // Example:
 //
@@ -133,7 +132,7 @@ type ValuesOptions struct {
 //
 //  df.Lock()
 //  for {
-//     row, vals, _ := iterator()	// You can optionally pass in zero or more return options.
+//     row, vals, _ := iterator(dataframe.SeriesName)
 //     if row == nil {
 //        break
 //     }
@@ -163,7 +162,6 @@ func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...Ser
 	initial := row
 
 	return func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int) {
-		// Should this be on the outside?
 		if !dontReadLock {
 			df.lock.RLock()
 			defer df.lock.RUnlock()

@@ -311,7 +311,6 @@ func (s *SeriesMixed) ValuesIterator(opts ...ValuesOptions) func() (*int, interf
 	initial := row
 
 	return func() (*int, interface{}, int) {
-		// Should this be on the outside?
 		if !dontReadLock {
 			s.lock.RLock()
 			defer s.lock.RUnlock()
