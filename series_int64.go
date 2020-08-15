@@ -286,7 +286,7 @@ func (s *SeriesInt64) Update(row int, val interface{}, opts ...Options) {
 	s.values[row] = newVal
 }
 
-// ValuesIterator will return an iterator that can be used to iterate through all the values.
+// ValuesIterator will return a function that can be used to iterate through all the values.
 func (s *SeriesInt64) ValuesIterator(opts ...ValuesOptions) func() (*int, interface{}, int) {
 
 	var (

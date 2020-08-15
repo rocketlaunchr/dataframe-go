@@ -123,8 +123,8 @@ type ValuesOptions struct {
 
 // ValuesIterator will return a function that can be used to iterate through all the values.
 //
-// The returned value is a map containing the name of the series (string) and the order of the series (int) as keys.
-// You can reduce the keys in the map to only return the series name (SeriesName) or series index (SeriesIdx).
+// The returned value is a map containing the name of the series (string) and the index of the series (int) as keys.
+// You can reduce the keys in the map to only contain the series name (SeriesName) or series index (SeriesIdx).
 //
 // Example:
 //

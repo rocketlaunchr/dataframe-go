@@ -97,7 +97,7 @@ type Series interface {
 	// Reset is used clear all data contained in the Series.
 	Reset(opts ...Options)
 
-	// ValuesIterator will return an iterator that can be used to iterate through all the values.
+	// ValuesIterator will return a function that can be used to iterate through all the values.
 	ValuesIterator(opts ...ValuesOptions) func() (*int, interface{}, int)
 
 	// Update is used to update the value of a particular row.

@@ -145,7 +145,7 @@ OUTPUT:
 
 You can change the step and starting row. It may be wise to lock the DataFrame before iterating.
 
-The returned value is a map containing the name of the series (`string`) and the order of the series (`int`) as keys.
+The returned value is a map containing the name of the series (`string`) and the index of the series (`int`) as keys.
 
 ```go
 

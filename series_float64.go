@@ -291,7 +291,7 @@ func (s *SeriesFloat64) Update(row int, val interface{}, opts ...Options) {
 	s.Values[row] = newVal
 }
 
-// ValuesIterator will return an iterator that can be used to iterate through all the values.
+// ValuesIterator will return a function that can be used to iterate through all the values.
 func (s *SeriesFloat64) ValuesIterator(opts ...ValuesOptions) func() (*int, interface{}, int) {
 
 	var (

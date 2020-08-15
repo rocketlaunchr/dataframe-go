@@ -300,7 +300,7 @@ func (s *SeriesComplex128) Update(row int, val interface{}, opts ...dataframe.Op
 	s.Values[row] = newVal
 }
 
-// ValuesIterator will return an iterator that can be used to iterate through all the values.
+// ValuesIterator will return a function that can be used to iterate through all the values.
 func (s *SeriesComplex128) ValuesIterator(opts ...dataframe.ValuesOptions) func() (*int, interface{}, int) {
 
 	var (

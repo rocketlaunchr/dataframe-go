@@ -268,7 +268,7 @@ func (s *SeriesGeneric) Update(row int, val interface{}, opts ...Options) {
 	}
 }
 
-// ValuesIterator will return an iterator that can be used to iterate through all the values.
+// ValuesIterator will return a function that can be used to iterate through all the values.
 func (s *SeriesGeneric) ValuesIterator(opts ...ValuesOptions) func() (*int, interface{}, int) {
 
 	var (
