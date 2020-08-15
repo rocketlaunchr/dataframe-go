@@ -140,7 +140,7 @@ type ValuesOptions struct {
 //  }
 //  df.Unlock()
 //
-func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int) {
+func (df *DataFrame) ValuesIterator(opts ...ValuesOptions) func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int) {
 
 	var (
 		row  int
@@ -149,11 +149,11 @@ func (df *DataFrame) ValuesIterator(options ...ValuesOptions) func(retOpt ...Ser
 
 	var dontReadLock bool
 
-	if len(options) > 0 {
-		dontReadLock = options[0].DontReadLock
+	if len(opts) > 0 {
+		dontReadLock = opts[0].DontReadLock
 
-		row = options[0].InitialRow
-		step = options[0].Step
+		row = opts[0].InitialRow
+		step = opts[0].Step
 		if step == 0 {
 			panic("Step can not be zero")
 		}
