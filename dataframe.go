@@ -161,7 +161,7 @@ func (df *DataFrame) ValuesIterator(opts ...ValuesOptions) func(retOpt ...Series
 
 	initial := row
 
-	return func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int) {
+	return func(opts ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int) {
 		if !dontReadLock {
 			df.lock.RLock()
 			defer df.lock.RUnlock()
@@ -184,10 +184,10 @@ func (df *DataFrame) ValuesIterator(opts ...ValuesOptions) func(retOpt ...Series
 		for idx, aSeries := range df.Series {
 			val := aSeries.Value(row)
 
-			if len(retOpt) == 0 || retOpt[0].has(SeriesIdx) {
+			if len(opts) == 0 || opts[0].has(SeriesIdx) {
 				out[idx] = val
 			}
-			if len(retOpt) == 0 || retOpt[0].has(SeriesName) {
+			if len(opts) == 0 || opts[0].has(SeriesName) {
 				out[aSeries.Name()] = val
 			}
 		}
