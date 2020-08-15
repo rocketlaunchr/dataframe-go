@@ -31,6 +31,8 @@ It is recommended your package manager locks to a commit id instead of the maste
 11. Math functions
 12. Plotting (cross-platform)
 
+See [Tutorial](https://github.com/rocketlaunchr/dataframe-go#tutorial) here.
+
 ## Installation
 
 ```
@@ -179,6 +181,7 @@ You can easily calculate statistics for a Series using the [gonum](https://godoc
 ### Example
 
 Generally, statistics packages require `SeriesFloat64` to operate. Some series provide easy conversion using the `ToSeriesFloat64` method.
+`SeriesFloat64` and `SeriesTime` provide access to the exported `Values` field to seamlessly interoperate with external math packages.
 
 ```go
 import "gonum.org/v1/gonum/stat"
@@ -329,7 +332,7 @@ OUTPUT:
 
 ```
 
-# Example
+# Tutorial
 
 ## Create some fake data
 
