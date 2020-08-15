@@ -248,7 +248,7 @@ sy := dataframe.NewSeriesFloat64("y", &dataframe.SeriesInit{Size: res})
 df := dataframe.NewDataFrame(sx, sy)
 
 fn := funcs.RegFunc("sin((2*𝜋*x)/24)")
-funcs.PiecewiseFunc(ctx, df, fn, 1)
+funcs.Evaluate(ctx, df, fn, 1)
 ```
 
 Output:

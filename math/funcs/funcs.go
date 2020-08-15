@@ -10,8 +10,8 @@ import (
 	"github.com/sandertv/go-formula/v2"
 )
 
-// PiecewiseFuncOptions modifies the behavior of the PiecewiseFunc function.
-type PiecewiseFuncOptions struct {
+// EvaluateOptions modifies the behavior of the Evaluate function.
+type EvaluateOptions struct {
 
 	// CustomFns adds custom functions to be used within fn.
 	//
@@ -109,14 +109,14 @@ func (p pfs) pf(row int) (*formula.Formula, error) {
 	return nil, &dataframe.RowError{row, ErrUndefined}
 }
 
-// PiecewiseFunc applies a PiecewiseFuncDefn to a particular series in a DataFrame.
+// Evaluate applies a PiecewiseFuncDefn to a particular series in a DataFrame.
 //
 // Example:
 //
 //  fn := funcs.RegFunc("sin((2*𝜋*x)/24)")
-//  funcs.PiecewiseFunc(ctx, df, fn, 1)
+//  funcs.Evaluate(ctx, df, fn, 1)
 //
-func PiecewiseFunc(ctx context.Context, df *dataframe.DataFrame, fn PiecewiseFuncDefn, col interface{}, opts ...PiecewiseFuncOptions) error {
+func Evaluate(ctx context.Context, df *dataframe.DataFrame, fn PiecewiseFuncDefn, col interface{}, opts ...EvaluateOptions) error {
 
 	var r dataframe.Range
 	if len(opts) > 0 {

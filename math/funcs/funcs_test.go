@@ -10,7 +10,7 @@ import (
 
 var ctx = context.Background()
 
-func TestPiecewiseFunc(t *testing.T) {
+func TestEvaluate(t *testing.T) {
 
 	s1 := dataframe.NewSeriesFloat64("x", nil, 1, 2, 3, 4, 5, 6)
 	s2 := dataframe.NewSeriesFloat64("y", nil, 7, 8, 9, 10, 11, 12)
@@ -29,7 +29,7 @@ func TestPiecewiseFunc(t *testing.T) {
 		},
 	}
 
-	opts := PiecewiseFuncOptions{
+	opts := EvaluateOptions{
 		CustomFns: map[string]func(args ...float64) float64{
 			"add1": func(args ...float64) float64 {
 				return 1
@@ -38,7 +38,7 @@ func TestPiecewiseFunc(t *testing.T) {
 		Range: &[]dataframe.Range{dataframe.RangeFinite(0, -2)}[0],
 	}
 
-	err := PiecewiseFunc(ctx, df, fn, 3, opts)
+	err := Evaluate(ctx, df, fn, 3, opts)
 	if err != nil {
 		panic(err)
 	}
