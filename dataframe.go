@@ -140,7 +140,7 @@ type ValuesOptions struct {
 //  }
 //  df.Unlock()
 //
-func (df *DataFrame) ValuesIterator(opts ...ValuesOptions) func(retOpt ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int) {
+func (df *DataFrame) ValuesIterator(opts ...ValuesOptions) func(opts ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int) {
 
 	var (
 		row  int
