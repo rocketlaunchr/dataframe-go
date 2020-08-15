@@ -178,10 +178,11 @@ OUTPUT:
 
 You can easily calculate statistics for a Series using the [gonum](https://godoc.org/gonum.org/v1/gonum/stat) or [montanaflynn/stats](https://godoc.org/github.com/montanaflynn/stats) package.
 
+`SeriesFloat64` and `SeriesTime` provide access to the exported `Values` field to seamlessly interoperate with external math-based packages.
+
 ### Example
 
-Generally, statistics packages require `SeriesFloat64` to operate. Some series provide easy conversion using the `ToSeriesFloat64` method.
-`SeriesFloat64` and `SeriesTime` provide access to the exported `Values` field to seamlessly interoperate with external math packages.
+Some series provide easy conversion using the `ToSeriesFloat64` method.
 
 ```go
 import "gonum.org/v1/gonum/stat"

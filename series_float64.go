@@ -24,7 +24,7 @@ type SeriesFloat64 struct {
 	//
 	// See: https://godoc.org/gonum.org/v1/gonum
 	//
-	// WARNING: Do not modify.
+	// WARNING: Do not modify directly.
 	Values   []float64
 	nilCount int
 }

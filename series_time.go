@@ -29,7 +29,7 @@ type SeriesTime struct {
 
 	// Values is exported to better improve interoperability with various sub-packages.
 	//
-	// WARNING: Do not modify.
+	// WARNING: Do not modify directly.
 	Values   []*time.Time
 	nilCount int
 }
