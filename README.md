@@ -45,7 +45,7 @@ import dataframe "github.com/rocketlaunchr/dataframe-go"
 
 # DataFrames
 
-## Creating a DataFrame
+## Creating a DataFrame [![Go Playground](https://img.shields.io/badge/Go-Playground-5593c7.svg?labelColor=41c3f3&style=for-the-badge)](http://msn.com)
 
 ```go
 
