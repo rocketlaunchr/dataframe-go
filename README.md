@@ -145,7 +145,7 @@ OUTPUT:
 | 9X2 | INT64 | FLOAT64 |
 +-----+-------+---------+
 ```
-[![Go Playground](https://img.shields.io/badge/Go-Playground-5593c7.svg?labelColor=41c3f3&style=for-the-badge)](https://play.golang.org/p/AQh6OheSRK-)
+[![Go Playground](https://img.shields.io/badge/Go-Playground-5593c7.svg?labelColor=41c3f3&style=for-the-badge)](https://play.golang.org/p/lsJkKw3ZUJq)
 
 ## Iterating
 
@@ -177,6 +177,7 @@ OUTPUT:
 6 map[day:7 0:7 sales:72 1:72]
 7 map[day:8 0:8 sales:89 1:89]
 ```
+[![Go Playground](https://img.shields.io/badge/Go-Playground-5593c7.svg?labelColor=41c3f3&style=for-the-badge)](https://play.golang.org/p/eqjvu-vO8sr)
 
 ## Statistics
 
