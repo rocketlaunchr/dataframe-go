@@ -276,7 +276,7 @@ Country,Date,Age,Amount,Id
 "United States",2012-02-01,32,321.31,54320
 "United Kingdom",2012-02-01,17,18.2,12345
 "United States",2012-02-01,32,321.31,54320
-"United Kingdom",2012-02-01,NA,18.2,12345
+"United Kingdom",2012-05-07,NA,18.2,12345
 "United States",2012-02-01,32,321.31,54320
 "United States",2012-02-01,32,321.31,54320
 Spain,2012-02-01,66,555.42,00241
@@ -299,6 +299,7 @@ OUTPUT:
 | 8X5 |     STRING     |    TIME    | INT64 | FLOAT64 | INT64 |
 +-----+----------------+------------+-------+---------+-------+
 ```
+[![Go Playground](https://img.shields.io/badge/Go-Playground-5593c7.svg?labelColor=41c3f3&style=for-the-badge)](https://play.golang.org/p/7hyUXnRy1pR)
 
 ## Exporting Data
 
