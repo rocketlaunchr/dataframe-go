@@ -72,7 +72,6 @@ OUTPUT:
 +-----+-------+---------+
 
 ```
-
 [![Go Playground](https://img.shields.io/badge/Go-Playground-5593c7.svg?labelColor=41c3f3&style=for-the-badge)](https://play.golang.org/p/eC5HYAEHjNI)
 
 ## Insert and Remove Row
@@ -146,6 +145,8 @@ OUTPUT:
 | 9X2 | INT64 | FLOAT64 |
 +-----+-------+---------+
 ```
+[![Go Playground](https://img.shields.io/badge/Go-Playground-5593c7.svg?labelColor=41c3f3&style=for-the-badge)](https://play.golang.org/p/AQh6OheSRK-)
+
 ## Iterating
 
 You can change the step and starting row. It may be wise to lock the DataFrame before iterating.
