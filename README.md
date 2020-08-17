@@ -105,6 +105,7 @@ OUTPUT:
 | 9X2 | INT64 | FLOAT64 |
 +-----+-------+---------+
 ```
+[![Go Playground](https://img.shields.io/badge/Go-Playground-5593c7.svg?labelColor=41c3f3&style=for-the-badge)](https://play.golang.org/p/xwW_410vQ2p)
 
 ## Update Row
 
