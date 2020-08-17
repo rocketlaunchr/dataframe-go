@@ -1,5 +1,7 @@
 // Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
+// Package faker can be used to generate DataFrames filled with fake data.
+// The list of functions can be found here: https://godoc.org/github.com/brianvoe/gofakeit .
 package faker
 
 import (
