@@ -34,13 +34,15 @@ func (o *OrderedMapIntFloat64) Get(key int) (float64, bool) {
 	return val, exists
 }
 
-// Set will set a key and value pair. It will over-write an
+// Set will set a key and value pair. It will overwrite an
 // existing pair if it exists already.
 func (o *OrderedMapIntFloat64) Set(key int, val float64) {
-	o.store[key] = val
 	if o.keys != nil {
-		o.keys = append(o.keys, key)
+		if _, exists := o.store[key]; !exists {
+			o.keys = append(o.keys, key)
+		}
 	}
+	o.store[key] = val
 }
 
 // Delete will remove the key from the OrderedMapIntFloat64.
@@ -63,7 +65,9 @@ func (o *OrderedMapIntFloat64) Delete(key int) {
 			break
 		}
 	}
-	o.keys = append(o.keys[:*idx], o.keys[*idx+1:]...)
+	if idx != nil {
+		o.keys = append(o.keys[:*idx], o.keys[*idx+1:]...)
+	}
 }
 
 // ValuesIterator is used to iterate through the values of OrderedMapIntFloat64.
@@ -121,13 +125,15 @@ func (o *OrderedMapIntMixed) Get(key int) (interface{}, bool) {
 	return val, exists
 }
 
-// Set will set a key and value pair. It will over-write an
+// Set will set a key and value pair. It will overwrite an
 // existing pair if it exists already.
 func (o *OrderedMapIntMixed) Set(key int, val interface{}) {
-	o.store[key] = val
 	if o.keys != nil {
-		o.keys = append(o.keys, key)
+		if _, exists := o.store[key]; !exists {
+			o.keys = append(o.keys, key)
+		}
 	}
+	o.store[key] = val
 }
 
 // Delete will remove the key from the OrderedMapIntMixed.
@@ -150,7 +156,9 @@ func (o *OrderedMapIntMixed) Delete(key int) {
 			break
 		}
 	}
-	o.keys = append(o.keys[:*idx], o.keys[*idx+1:]...)
+	if idx != nil {
+		o.keys = append(o.keys[:*idx], o.keys[*idx+1:]...)
+	}
 }
 
 // ValuesIterator is used to iterate through the values of OrderedMapIntMixed.
