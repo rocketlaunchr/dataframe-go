@@ -108,11 +108,12 @@ func (df *DataFrame) Row(row int, dontReadLock bool, retOpt ...SeriesReturnOpt) 
 type ValuesOptions struct {
 
 	// InitialRow represents the starting value for iterating.
+	// Negative values are acceptable. A value of -2 means the second last row.
 	InitialRow int
 
 	// Step represents by how much each iteration should step by.
 	// It can be negative to represent iterating in reverse direction.
-	// InitialRow should be adjusted to NRows()-1 if Step is negative.
+	// InitialRow should be adjusted to -1 if Step is negative.
 	// If Step is 0, the function will panic.
 	Step int
 
@@ -162,6 +163,9 @@ func (df *DataFrame) ValuesIterator(opts ...ValuesOptions) func(opts ...SeriesRe
 		dontReadLock = opts[0].DontReadLock
 
 		row = opts[0].InitialRow
+		if row < 0 {
+			row = df.n + row
+		}
 		step = opts[0].Step
 		if step == 0 {
 			panic("Step can not be zero")

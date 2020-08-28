@@ -282,6 +282,9 @@ func (s *SeriesGeneric) ValuesIterator(opts ...ValuesOptions) func() (*int, inte
 		dontReadLock = opts[0].DontReadLock
 
 		row = opts[0].InitialRow
+		if row < 0 {
+			row = len(s.values) + row
+		}
 		step = opts[0].Step
 		if step == 0 {
 			panic("Step can not be zero")
