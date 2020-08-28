@@ -140,6 +140,14 @@ type ValuesOptions struct {
 //  }
 //  df.Unlock()
 //
+//
+//  df.Lock()
+//  row, vals, _ := iterator()
+//  for ; row != nil; row, vals, _ = iterator() {
+//     fmt.Println(*row, vals)
+//  }
+//  df.Unlock()
+//
 func (df *DataFrame) ValuesIterator(opts ...ValuesOptions) func(opts ...SeriesReturnOpt) (*int, map[interface{}]interface{}, int) {
 
 	var (
