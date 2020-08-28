@@ -2,8 +2,8 @@
 
 package utils
 
-// Float64Range will return a sequence of float64 values starting at start.
-func Float64Range(start, end, step float64, max ...int) []float64 {
+// Float64Seq will return a sequence of float64 values starting at start.
+func Float64Seq(start, end, step float64, max ...int) []float64 {
 	if len(max) > 0 && max[0] == 0 {
 		return []float64{}
 	}
@@ -37,8 +37,8 @@ func Float64Range(start, end, step float64, max ...int) []float64 {
 	return out
 }
 
-// IntRange will return a sequence of int values starting at start.
-func IntRange(start, end, step int, max ...int) []int {
+// IntSeq will return a sequence of int values starting at start.
+func IntSeq(start, end, step int, max ...int) []int {
 	if len(max) > 0 && max[0] == 0 {
 		return []int{}
 	}
@@ -72,8 +72,8 @@ func IntRange(start, end, step int, max ...int) []int {
 	return out
 }
 
-// Int64Range will return a sequence of int64 values starting at start.
-func Int64Range(start, end, step int64, max ...int) []int64 {
+// Int64Seq will return a sequence of int64 values starting at start.
+func Int64Seq(start, end, step int64, max ...int) []int64 {
 	if len(max) > 0 && max[0] == 0 {
 		return []int64{}
 	}

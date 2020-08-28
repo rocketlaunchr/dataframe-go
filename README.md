@@ -248,14 +248,14 @@ Output:
 import "github.com/rocketlaunchr/dataframe-go/math/funcs"
 
 res := 24
-sx := dataframe.NewSeriesFloat64("x", nil, utils.Float64Range(1, float64(res), 1))
+sx := dataframe.NewSeriesFloat64("x", nil, utils.Float64Seq(1, float64(res), 1))
 sy := dataframe.NewSeriesFloat64("y", &dataframe.SeriesInit{Size: res})
 df := dataframe.NewDataFrame(sx, sy)
 
 fn := funcs.RegFunc("sin(2*𝜋*x/24)")
 funcs.Evaluate(ctx, df, fn, 1)
 ```
-[![Go Playground](https://img.shields.io/badge/Go-Playground-5593c7.svg?labelColor=41c3f3&style=for-the-badge)](https://play.golang.org/p/3olXTJUxb6U)
+[![Go Playground](https://img.shields.io/badge/Go-Playground-5593c7.svg?labelColor=41c3f3&style=for-the-badge)](https://play.golang.org/p/f4GfS2rUjaM)
 
 Output:
 

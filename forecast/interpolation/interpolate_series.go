@@ -274,7 +274,7 @@ func interpolateSeriesFloat64(ctx context.Context, fs *dataframe.SeriesFloat64, 
 				case Lagrange:
 					var fillFn func(int) (float64, error)
 					if xaxisF == nil && xaxisT == nil {
-						lagrangeXVals := utils.Float64Range(float64(*left), float64(*right), 1)
+						lagrangeXVals := utils.Float64Seq(float64(*left), float64(*right), 1)
 						lagrangeYVals, err := interpolate.WithMulti(alg.(*lagrange.Lagrange), lagrangeXVals)
 						if err != nil {
 							return nil, xerrors.Errorf("Lagrange method: %w", err)
