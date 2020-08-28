@@ -140,6 +140,7 @@ type ValuesOptions struct {
 //  }
 //  df.Unlock()
 //
+//  // OR
 //
 //  df.Lock()
 //  row, vals, _ := iterator()
