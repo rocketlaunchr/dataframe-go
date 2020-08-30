@@ -1,3 +1,7 @@
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+
+// Package matrix can be used to wrap a DataFrame such that it implements the Matrix
+// interface found in various external packages such as gonum.
 package matrix
 
 import (

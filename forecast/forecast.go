@@ -1,5 +1,6 @@
 // Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
+// Package forecast provides an interface for custom forecasting algorithms.
 package forecast
 
 import (

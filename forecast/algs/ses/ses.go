@@ -1,5 +1,6 @@
 // Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
+// Package ses implements the simple exponential smooting forecasting algorithm.
 package ses
 
 import (

@@ -1,3 +1,6 @@
+// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+
+// Package funcs provides functionality to apply mathematical functions to DataFrames.
 package funcs
 
 import (
@@ -109,7 +112,7 @@ func (p pfs) pf(row int) (*formula.Formula, error) {
 	return nil, &dataframe.RowError{row, ErrUndefined}
 }
 
-// Evaluate applies a PiecewiseFuncDefn to a particular series in a DataFrame.
+// Evaluate applies a PiecewiseFuncDefn to a particular Series in a DataFrame.
 //
 // Example:
 //

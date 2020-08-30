@@ -1,5 +1,6 @@
 // Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
+// Package hw implements the Holt-Winters forecasting algorithm.
 package hw
 
 import (

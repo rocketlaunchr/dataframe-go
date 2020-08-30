@@ -1,5 +1,6 @@
 // Copyright 2019-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
+// Package xseries contains specialized and/or "exotic" Series types that don't belong in the core package.
 package xseries
 
 import (

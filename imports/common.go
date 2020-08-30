@@ -1,5 +1,7 @@
 // Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
+// Package imports provides functionality to read data contained in another format to populate a DataFrame.
+// It provides inverse functionality to the exports package.
 package imports
 
 import (

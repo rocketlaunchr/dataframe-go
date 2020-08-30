@@ -1,5 +1,7 @@
 // Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
+// Package exports provides functionality to save the data contained in a DataFrame into another format.
+// It provides inverse functionality to the imports package.
 package exports
 
 import (
