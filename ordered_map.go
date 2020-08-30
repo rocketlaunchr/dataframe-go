@@ -46,6 +46,7 @@ func (o *OrderedMapIntFloat64) Set(key int, val float64) {
 }
 
 // Delete will remove the key from the OrderedMapIntFloat64.
+// For performance reasons, ensure the key exists beforehand when in ordered mode.
 func (o *OrderedMapIntFloat64) Delete(key int) {
 	if o.keys == nil {
 		// unordered
@@ -137,6 +138,7 @@ func (o *OrderedMapIntMixed) Set(key int, val interface{}) {
 }
 
 // Delete will remove the key from the OrderedMapIntMixed.
+// For performance reasons, ensure the key exists beforehand when in ordered mode.
 func (o *OrderedMapIntMixed) Delete(key int) {
 	if o.keys == nil {
 		// unordered
