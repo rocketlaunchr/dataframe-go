@@ -943,8 +943,12 @@ type AsciiGraphOptions struct {
 }
 
 // AsciiGraph will produce a simple ascii based graph of the data.
-// The function will panic if the range R is invalid.
+// The function will panic if the range R is invalid or nil values (NaN) are present.
 func (s *SeriesFloat64) AsciiGraph(opts ...AsciiGraphOptions) string {
+
+	if s.nilCount != 0 {
+		panic("The SeriesFloat64 must not contain any nil values.")
+	}
 
 	var (
 		st = 0
@@ -980,5 +984,5 @@ func (s *SeriesFloat64) AsciiGraph(opts ...AsciiGraphOptions) string {
 		}
 	}
 
-	return asciigraph.Plot(s.Values[st:en], popts...)
+	return asciigraph.Plot(s.Values[st:en], popts...) + "\n"
 }
