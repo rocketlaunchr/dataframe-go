@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/guptarohit/asciigraph"
 	"github.com/olekukonko/tablewriter"
 )
 
@@ -919,4 +920,65 @@ func (s *SeriesFloat64) IsEqual(ctx context.Context, s2 Series, opts ...IsEqualO
 	}
 
 	return true, nil
+}
+
+// AsciiGraphOptions can be used to configure the look of the graph.
+type AsciiGraphOptions struct {
+
+	// Caption sets the graph's caption.
+	Caption string
+
+	// Height sets the graph's height.
+	Height int
+
+	// Offset sets the graph's offset.
+	Offset int
+
+	// Width sets the graph's width. By default, the width of the graph is determined by the number of data points.
+	// If the value given is a positive number, the data points are interpolated on the x axis. Values <= 0 reset the width to the default value.
+	Width int
+
+	// R is used to limit the range of rows.
+	R *Range
+}
+
+// AsciiGraph will produce a simple ascii based graph of the data.
+// The function will panic if the range R is invalid.
+func (s *SeriesFloat64) AsciiGraph(opts ...AsciiGraphOptions) string {
+
+	var (
+		st = 0
+		en = len(s.Values)
+	)
+
+	popts := []asciigraph.Option{}
+
+	if len(opts) > 0 {
+		if opts[0].Caption != "" {
+			popts = append(popts, asciigraph.Caption(opts[0].Caption))
+		}
+
+		if opts[0].Height != 0 {
+			popts = append(popts, asciigraph.Height(opts[0].Height))
+		}
+
+		if opts[0].Offset != 0 {
+			popts = append(popts, asciigraph.Offset(opts[0].Offset))
+		}
+
+		if opts[0].Width != 0 {
+			popts = append(popts, asciigraph.Width(opts[0].Width))
+		}
+
+		if opts[0].R != nil {
+			s, e, err := opts[0].R.Limits(len(s.Values))
+			if err != nil {
+				panic(err)
+			}
+			st = s
+			en = e + 1
+		}
+	}
+
+	return asciigraph.Plot(s.Values[st:en], popts...)
 }
