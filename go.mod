@@ -20,7 +20,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/google/go-cmp v0.4.0
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
-	github.com/guptarohit/asciigraph v0.5.0
+	github.com/guptarohit/asciigraph v0.5.1
 	github.com/icza/gox v0.0.0-20200320174535-a6ff52ab3d90
 	github.com/jmoiron/sqlx v1.2.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
