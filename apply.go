@@ -12,7 +12,7 @@ type ApplyDataFrameFn func(vals map[interface{}]interface{}, row, nRows int) map
 // ApplySeriesFn is used by Apply when used with Series.
 type ApplySeriesFn func(val interface{}, row, nRows int) interface{}
 
-// Apply will run fn for each row in the Series or DataFrame and replace the existing value with the new
+// Apply will call fn for each row in the Series or DataFrame and replace the existing value with the new
 // value returned by fn. When sdf is a DataFrame, fn must be of type ApplyDataFrameFn. When sdf is a Series, fn must be of type ApplySeriesFn.
 //
 // As a special case, if fn returns nil when used with a DataFrame, the existing value is kept.
