@@ -7,15 +7,17 @@ import (
 )
 
 // ApplyDataFrameFn is used by Apply when used with DataFrames.
+// vals contains the values for the current row. They key contains ints (index of Series) and strings (name of Series).
+// The returned map must only contain what values you intend to update. They key can be a string (name of Series) or int (index of Series).
+// If nil is returned, the existing values for the row are unchanged.
 type ApplyDataFrameFn func(vals map[interface{}]interface{}, row, nRows int) map[interface{}]interface{}
 
 // ApplySeriesFn is used by Apply when used with Series.
+// val contains the value of the current row. The returned value is the updated value.
 type ApplySeriesFn func(val interface{}, row, nRows int) interface{}
 
 // Apply will call fn for each row in the Series or DataFrame and replace the existing value with the new
 // value returned by fn. When sdf is a DataFrame, fn must be of type ApplyDataFrameFn. When sdf is a Series, fn must be of type ApplySeriesFn.
-//
-// As a special case, if fn returns nil when used with a DataFrame, the existing value is kept.
 func Apply(ctx context.Context, sdf interface{}, fn interface{}, opts ...FilterOptions) (interface{}, error) {
 
 	switch typ := sdf.(type) {
