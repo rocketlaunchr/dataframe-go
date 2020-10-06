@@ -22,13 +22,31 @@ func Apply(ctx context.Context, sdf interface{}, fn interface{}, opts ...FilterO
 
 	switch typ := sdf.(type) {
 	case Series:
-		s, err := applySeries(ctx, typ, fn.(ApplySeriesFn), opts...)
+		var x ApplySeriesFn
+
+		switch v := fn.(type) {
+		case func(val interface{}, row, nRows int) interface{}:
+			x = ApplySeriesFn(v)
+		default:
+			x = fn.(ApplySeriesFn)
+		}
+
+		s, err := applySeries(ctx, typ, x, opts...)
 		if s == nil {
 			return nil, err
 		}
 		return s, err
 	case *DataFrame:
-		df, err := applyDataFrame(ctx, typ, fn.(ApplyDataFrameFn), opts...)
+		var x ApplyDataFrameFn
+
+		switch v := fn.(type) {
+		case func(vals map[interface{}]interface{}, row, nRows int) map[interface{}]interface{}:
+			x = ApplyDataFrameFn(v)
+		default:
+			x = fn.(ApplyDataFrameFn)
+		}
+
+		df, err := applyDataFrame(ctx, typ, x, opts...)
 		if df == nil {
 			return nil, err
 		}

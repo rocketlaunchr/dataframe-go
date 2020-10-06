@@ -49,13 +49,31 @@ func Filter(ctx context.Context, sdf interface{}, fn interface{}, opts ...Filter
 
 	switch typ := sdf.(type) {
 	case Series:
-		s, err := filterSeries(ctx, typ, fn.(FilterSeriesFn), opts...)
+		var x FilterSeriesFn
+
+		switch v := fn.(type) {
+		case func(val interface{}, row, nRows int) (FilterAction, error):
+			x = FilterSeriesFn(v)
+		default:
+			x = fn.(FilterSeriesFn)
+		}
+
+		s, err := filterSeries(ctx, typ, x, opts...)
 		if s == nil {
 			return nil, err
 		}
 		return s, err
 	case *DataFrame:
-		df, err := filterDataFrame(ctx, typ, fn.(FilterDataFrameFn), opts...)
+		var x FilterDataFrameFn
+
+		switch v := fn.(type) {
+		case func(vals map[interface{}]interface{}, row, nRows int) (FilterAction, error):
+			x = FilterDataFrameFn(v)
+		default:
+			x = fn.(FilterDataFrameFn)
+		}
+
+		df, err := filterDataFrame(ctx, typ, x, opts...)
 		if df == nil {
 			return nil, err
 		}
