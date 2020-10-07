@@ -33,10 +33,12 @@ type FilterOptions struct {
 }
 
 // FilterSeriesFn is used by the Filter function to determine which rows are selected.
+// val contains the value of the current row.
 // If the function returns DROP, then the row is removed. If KEEP or CHOOSE is chosen, the row is kept.
 type FilterSeriesFn func(val interface{}, row, nRows int) (FilterAction, error)
 
 // FilterDataFrameFn is used by the Filter function to determine which rows are selected.
+// vals contains the values for the current row. The keys contain ints (index of Series) and strings (name of Series).
 // If the function returns DROP, then the row is removed. If KEEP or CHOOSE is chosen, the row is kept.
 type FilterDataFrameFn func(vals map[interface{}]interface{}, row, nRows int) (FilterAction, error)
 
