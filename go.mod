@@ -21,6 +21,7 @@ require (
 	github.com/guptarohit/asciigraph v0.5.1
 	github.com/icza/gox v0.0.0-20200320174535-a6ff52ab3d90
 	github.com/jmoiron/sqlx v1.2.0 // indirect
+	github.com/juju/utils/v2 v2.0.0-20200923005554-4646bfea2ef1
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/ompluscator/dynamic-struct v1.2.0
 	github.com/opencontainers/image-spec v1.0.1 // indirect
@@ -30,6 +31,7 @@ require (
 	github.com/rocketlaunchr/mysql-go v1.1.3
 	github.com/sandertv/go-formula/v2 v2.0.0-alpha.7
 	github.com/sirupsen/logrus v1.6.0 // indirect
+	github.com/stretchr/testify v1.5.1
 	github.com/tealeg/xlsx/v3 v3.0.0
 	github.com/wcharczuk/go-chart v2.0.1+incompatible
 	github.com/xitongsys/parquet-go v1.5.2

@@ -1,4 +1,4 @@
-// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+// Copyright 2018-21 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
 package imports
 
@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
+
+	jutils "github.com/juju/utils/v2"
 )
 
 // CSVLoadOptions is likely to change.
@@ -60,6 +63,10 @@ type CSVLoadOptions struct {
 	// DictateDataType always takes precedence when determining the type.
 	// If the data type could not be detected, NewSeriesString is used.
 	InferDataTypes bool
+
+	// Headers must be set if the CSV file does not contain a header row. This must be nil if the CSV file contains a
+	// header row.
+	Headers []string
 }
 
 // LoadFromCSV will load data from a csv file.
@@ -67,15 +74,34 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 
 	var init *dataframe.SeriesInit
 
-	cr := csv.NewReader(r)
+	var (
+		comma            rune
+		comment          rune
+		trimLeadingSpace bool
+
+		newR io.ReadSeeker = r
+	)
+
+	if len(options) > 0 {
+		comma = options[0].Comma
+		if comma == 0 {
+			comma = ','
+		}
+		comment = options[0].Comment
+		trimLeadingSpace = options[0].TrimLeadingSpace
+
+		if len(options[0].Headers) > 0 {
+			headers := strings.NewReader(strings.Join(options[0].Headers, string(comma)) + "\n")
+			newR = jutils.NewMultiReaderSeeker(headers, r)
+		}
+	}
+
+	cr := csv.NewReader(newR)
 	cr.ReuseRecord = true
 	if len(options) > 0 {
-		cr.Comma = options[0].Comma
-		if cr.Comma == 0 {
-			cr.Comma = ','
-		}
-		cr.Comment = options[0].Comment
-		cr.TrimLeadingSpace = options[0].TrimLeadingSpace
+		cr.Comma = comma
+		cr.Comment = comment
+		cr.TrimLeadingSpace = trimLeadingSpace
 
 		// Count how many rows we have in order to preallocate underlying slices
 		if options[0].LargeDataSet {
@@ -88,7 +114,7 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 				_, err := cr.Read()
 				if err != nil {
 					if err == io.EOF {
-						r.Seek(0, io.SeekStart)
+						newR.Seek(0, io.SeekStart)
 						break
 					}
 					return nil, err
