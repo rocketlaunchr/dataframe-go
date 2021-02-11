@@ -53,7 +53,7 @@ func TestLoadFromCSV(t *testing.T) {
 			args: args{
 				file: "valid_without_headers.csv",
 				options: CSVLoadOptions{
-					ColumnNames: []string{"time-nh", "text-nh", "decimal-nh", "boolean-nh"},
+					Headers: []string{"time-nh", "text-nh", "decimal-nh", "boolean-nh"},
 				},
 			},
 			want: dataframe.NewDataFrame(

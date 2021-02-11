@@ -1,4 +1,4 @@
-// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+// Copyright 2018-21 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
 package imports
 
@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	dataframe "github.com/rocketlaunchr/dataframe-go"
+
+	jutils "github.com/juju/utils/v2"
 )
 
 // CSVLoadOptions is likely to change.
@@ -61,9 +64,9 @@ type CSVLoadOptions struct {
 	// If the data type could not be detected, NewSeriesString is used.
 	InferDataTypes bool
 
-	// ColumnNames contains the name of each column of the CSV dataset; if this is set the first row of the file is
-	// interpreted as data (do not set this if the CSV contains a header row)
-	ColumnNames []string
+	// Headers must be set if the CSV file does not contain a header row. This must be nil if the CSV file contains a
+	// header row.
+	Headers []string
 }
 
 // LoadFromCSV will load data from a csv file.
@@ -71,17 +74,34 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 
 	var init *dataframe.SeriesInit
 
-	cr := csv.NewReader(r)
-	cr.ReuseRecord = true
-	var names []string
+	var (
+		comma            rune
+		comment          rune
+		trimLeadingSpace bool
+
+		newR io.ReadSeeker = r
+	)
+
 	if len(options) > 0 {
-		cr.Comma = options[0].Comma
-		if cr.Comma == 0 {
-			cr.Comma = ','
+		comma = options[0].Comma
+		if comma == 0 {
+			comma = ','
 		}
-		cr.Comment = options[0].Comment
-		cr.TrimLeadingSpace = options[0].TrimLeadingSpace
-		names = options[0].ColumnNames
+		comment = options[0].Comment
+		trimLeadingSpace = options[0].TrimLeadingSpace
+
+		if len(options[0].Headers) > 0 {
+			headers := strings.NewReader(strings.Join(options[0].Headers, string(comma)) + "\n")
+			newR = jutils.NewMultiReaderSeeker(headers, r)
+		}
+	}
+
+	cr := csv.NewReader(newR)
+	cr.ReuseRecord = true
+	if len(options) > 0 {
+		cr.Comma = comma
+		cr.Comment = comment
+		cr.TrimLeadingSpace = trimLeadingSpace
 
 		// Count how many rows we have in order to preallocate underlying slices
 		if options[0].LargeDataSet {
@@ -94,7 +114,7 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 				_, err := cr.Read()
 				if err != nil {
 					if err == io.EOF {
-						r.Seek(0, io.SeekStart)
+						newR.Seek(0, io.SeekStart)
 						break
 					}
 					return nil, err
@@ -107,74 +127,8 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 		}
 	}
 
-	if names == nil {
-		rec, err := cr.Read()
-		if err != nil {
-			if err == io.EOF {
-				return nil, dataframe.ErrNoRows
-			}
-			return nil, err
-		}
-		names = rec
-	}
-	// First row contains headings
-
-	seriess := []dataframe.Series{}
-
-	// Create the series
-	for _, name := range names {
-
-		// Check if the datatype is dictated
-		if len(options) > 0 && len(options[0].DictateDataType) > 0 {
-			typ, exists := options[0].DictateDataType[name]
-			if !exists {
-				goto INFER1
-			}
-
-			switch T := typ.(type) {
-			case float64:
-				seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
-			case int64, bool:
-				seriess = append(seriess, dataframe.NewSeriesInt64(name, init))
-			case string:
-				seriess = append(seriess, dataframe.NewSeriesString(name, init))
-			case time.Time:
-				seriess = append(seriess, dataframe.NewSeriesTime(name, init))
-			case dataframe.NewSerieser:
-				seriess = append(seriess, T.NewSeries(name, init))
-			case Converter:
-				switch T.ConcreteType.(type) {
-				case time.Time:
-					seriess = append(seriess, dataframe.NewSeriesTime(name, init))
-				default:
-					seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
-				}
-			default:
-				seriess = append(seriess, dataframe.NewSeriesGeneric(name, typ, init))
-			}
-
-			continue
-		}
-
-	INFER1:
-
-		if len(options) > 0 && options[0].InferDataTypes {
-			var knownSize *int
-			if init != nil {
-				knownSize = &init.Capacity
-			}
-			is := newInferSeries(name, knownSize)
-			seriess = append(seriess, is)
-		} else {
-			// Default assumption is string
-			seriess = append(seriess, dataframe.NewSeriesString(name, init))
-		}
-	}
-
-	// Create the dataframe
-	df := dataframe.NewDataFrame(seriess...)
-
 	var row int
+	var df *dataframe.DataFrame
 
 	for {
 		if err := ctx.Err(); err != nil {
@@ -189,85 +143,145 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 			return nil, err
 		}
 
-		insertVals := []interface{}{}
-		for idx, v := range rec {
+		if row == 0 {
+			// First row contains headings
 
-			// Check if v represents a nil value
-			if len(options) > 0 && options[0].NilValue != nil {
-				if v == *options[0].NilValue {
-					insertVals = append(insertVals, nil)
+			seriess := []dataframe.Series{}
+
+			// Create the series
+			for _, name := range rec {
+
+				// Check if the datatype is dictated
+				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
+					typ, exists := options[0].DictateDataType[name]
+					if !exists {
+						goto INFER1
+					}
+
+					switch T := typ.(type) {
+					case float64:
+						seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
+					case int64, bool:
+						seriess = append(seriess, dataframe.NewSeriesInt64(name, init))
+					case string:
+						seriess = append(seriess, dataframe.NewSeriesString(name, init))
+					case time.Time:
+						seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+					case dataframe.NewSerieser:
+						seriess = append(seriess, T.NewSeries(name, init))
+					case Converter:
+						switch T.ConcreteType.(type) {
+						case time.Time:
+							seriess = append(seriess, dataframe.NewSeriesTime(name, init))
+						default:
+							seriess = append(seriess, dataframe.NewSeriesGeneric(name, T.ConcreteType, init))
+						}
+					default:
+						seriess = append(seriess, dataframe.NewSeriesGeneric(name, typ, init))
+					}
+
 					continue
 				}
+
+			INFER1:
+
+				if len(options) > 0 && options[0].InferDataTypes {
+					var knownSize *int
+					if init != nil {
+						knownSize = &init.Capacity
+					}
+					is := newInferSeries(name, knownSize)
+					seriess = append(seriess, is)
+				} else {
+					// Default assumption is string
+					seriess = append(seriess, dataframe.NewSeriesString(name, init))
+				}
 			}
 
-			// Check if the datatype is dictated
-			if len(options) > 0 && len(options[0].DictateDataType) > 0 {
+			// Create the dataframe
+			df = dataframe.NewDataFrame(seriess...)
+		} else {
 
-				name := df.Names(dataframe.DontLock)[idx]
+			insertVals := []interface{}{}
+			for idx, v := range rec {
 
-				// Check if a datatype is dictated
-				typ, exists := options[0].DictateDataType[name]
-				if !exists {
-					goto INFER2
+				// Check if v represents a nil value
+				if len(options) > 0 && options[0].NilValue != nil {
+					if v == *options[0].NilValue {
+						insertVals = append(insertVals, nil)
+						continue
+					}
 				}
 
-				switch T := typ.(type) {
-				case string:
-					insertVals = append(insertVals, v)
-				case bool:
-					if v == "TRUE" || v == "true" || v == "True" || v == "1" {
-						insertVals = append(insertVals, int64(1))
-					} else if v == "FALSE" || v == "false" || v == "False" || v == "0" {
-						insertVals = append(insertVals, int64(0))
-					} else {
-						return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", v, row-1, name)
+				// Check if the datatype is dictated
+				if len(options) > 0 && len(options[0].DictateDataType) > 0 {
+
+					name := df.Names(dataframe.DontLock)[idx]
+
+					// Check if a datatype is dictated
+					typ, exists := options[0].DictateDataType[name]
+					if !exists {
+						goto INFER2
 					}
-				case int64:
-					i, err := strconv.ParseInt(v, 10, 64)
-					if err != nil {
-						return nil, fmt.Errorf("can't force string: %s to int64. row: %d field: %s", v, row-1, name)
-					}
-					insertVals = append(insertVals, i)
-				case float64:
-					f, err := strconv.ParseFloat(v, 64)
-					if err != nil {
-						return nil, fmt.Errorf("can't force string: %s to float64. row: %d field: %s", v, row-1, name)
-					}
-					insertVals = append(insertVals, f)
-				case time.Time:
-					t, err := time.Parse(time.RFC3339, v)
-					if err != nil {
-						// Assume unix timestamp
-						sec, err := strconv.ParseInt(v, 10, 64)
-						if err != nil {
-							return nil, fmt.Errorf("can't force string: %s to time.Time (%s). row: %d field: %s", v, time.RFC3339, row-1, name)
+
+					switch T := typ.(type) {
+					case string:
+						insertVals = append(insertVals, v)
+					case bool:
+						if v == "TRUE" || v == "true" || v == "True" || v == "1" {
+							insertVals = append(insertVals, int64(1))
+						} else if v == "FALSE" || v == "false" || v == "False" || v == "0" {
+							insertVals = append(insertVals, int64(0))
+						} else {
+							return nil, fmt.Errorf("can't force string: %s to bool. row: %d field: %s", v, row-1, name)
 						}
-						insertVals = append(insertVals, time.Unix(sec, 0))
-					} else {
-						insertVals = append(insertVals, t)
+					case int64:
+						i, err := strconv.ParseInt(v, 10, 64)
+						if err != nil {
+							return nil, fmt.Errorf("can't force string: %s to int64. row: %d field: %s", v, row-1, name)
+						}
+						insertVals = append(insertVals, i)
+					case float64:
+						f, err := strconv.ParseFloat(v, 64)
+						if err != nil {
+							return nil, fmt.Errorf("can't force string: %s to float64. row: %d field: %s", v, row-1, name)
+						}
+						insertVals = append(insertVals, f)
+					case time.Time:
+						t, err := time.Parse(time.RFC3339, v)
+						if err != nil {
+							// Assume unix timestamp
+							sec, err := strconv.ParseInt(v, 10, 64)
+							if err != nil {
+								return nil, fmt.Errorf("can't force string: %s to time.Time (%s). row: %d field: %s", v, time.RFC3339, row-1, name)
+							}
+							insertVals = append(insertVals, time.Unix(sec, 0))
+						} else {
+							insertVals = append(insertVals, t)
+						}
+					case dataframe.NewSerieser:
+						insertVals = append(insertVals, v)
+					case Converter:
+						cv, err := T.ConverterFunc(v)
+						if err != nil {
+							return nil, fmt.Errorf("can't force string: %s to generic data type. row: %d field: %s", v, row-1, name)
+						}
+						insertVals = append(insertVals, cv)
+					default:
+						insertVals = append(insertVals, v)
 					}
-				case dataframe.NewSerieser:
-					insertVals = append(insertVals, v)
-				case Converter:
-					cv, err := T.ConverterFunc(v)
-					if err != nil {
-						return nil, fmt.Errorf("can't force string: %s to generic data type. row: %d field: %s", v, row-1, name)
-					}
-					insertVals = append(insertVals, cv)
-				default:
-					insertVals = append(insertVals, v)
+
+					continue
 				}
 
-				continue
+			INFER2:
+
+				// Datatype is either inferred or assumed to be a string
+				insertVals = append(insertVals, v)
 			}
 
-		INFER2:
-
-			// Datatype is either inferred or assumed to be a string
-			insertVals = append(insertVals, v)
+			df.Append(&dataframe.DontLock, insertVals...)
 		}
-
-		df.Append(&dataframe.DontLock, insertVals...)
 		row++
 	}
 
