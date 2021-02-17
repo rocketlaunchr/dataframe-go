@@ -18,7 +18,7 @@ It is recommended your package manager locks to a commit id instead of the maste
 
 # Features
 
-1. Importing from CSV, JSONL, MySQL & PostgreSQL
+1. Importing from CSV, JSONL, Parquet, MySQL & PostgreSQL
 2. Exporting to CSV, JSONL, Excel, Parquet, MySQL & PostgreSQL
 3. Developer Friendly
 4. Flexible - Create custom Series (custom data types)
@@ -265,7 +265,7 @@ Output:
 
 ## Importing Data
 
-The `imports` sub-package has support for importing csv, jsonl and directly from a SQL database. The `DictateDataType` option can be set to specify the true underlying data type. Alternatively, `InferDataTypes` option can be set.
+The `imports` sub-package has support for importing csv, jsonl, parquet, and directly from a SQL database. The `DictateDataType` option can be set to specify the true underlying data type. Alternatively, `InferDataTypes` option can be set.
 
 ### CSV
 
@@ -490,4 +490,4 @@ seniors, _ := dataframe.Filter(ctx, df, filterFn)
 
 The license is a modified MIT license. Refer to `LICENSE` file for more details.
 
-**© 2018-20 PJ Engineering and Business Solutions Pty. Ltd.**
+**© 2018-21 PJ Engineering and Business Solutions Pty. Ltd.**

@@ -556,7 +556,7 @@ func (s *SeriesGeneric) String() string {
 
 	count := len(s.values)
 
-	out := "[ "
+	out := s.name + ": [ "
 
 	if count > 6 {
 		idx := []int{0, 1, 2, count - 3, count - 2, count - 1}

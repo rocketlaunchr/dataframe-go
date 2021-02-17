@@ -1,4 +1,4 @@
-// Copyright 2018-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
+// Copyright 2018-21 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
 package exports
 
@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"runtime"
 	"strings"
 	"time"
 
@@ -92,7 +93,7 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 	fw := writerfile.NewWriterFile(w)
 	defer fw.Close()
 
-	pw, err := writer.NewParquetWriter(fw, schemaStruct.New(), 4)
+	pw, err := writer.NewParquetWriter(fw, schemaStruct.New(), int64(runtime.NumCPU()))
 	if err != nil {
 		return err
 	}
@@ -138,7 +139,7 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 						case string:
 							v.Set(reflect.ValueOf(&vl))
 						case time.Time:
-							t := vl.UnixNano() / int64(time.Microsecond)
+							t := vl.UnixNano() / 1e3 // Store as microseconds
 							v.Set(reflect.ValueOf(&t))
 						default: // interface{}
 							str := aSeries.ValueString(row)

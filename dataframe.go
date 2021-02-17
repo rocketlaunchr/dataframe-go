@@ -38,7 +38,7 @@ func NewDataFrame(se ...Series) *DataFrame {
 					panic("different number of rows in series")
 				}
 				if _, exists := names[s.Name()]; exists {
-					panic("names of series must be unique")
+					panic("names of series must be unique: " + s.Name())
 				}
 				names[s.Name()] = struct{}{}
 			}

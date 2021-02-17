@@ -241,7 +241,7 @@ func (is *inferSeries) Name(opts ...dataframe.Options) string {
 
 func (*inferSeries) Rename(n string, opts ...dataframe.Options) {}
 
-func (*inferSeries) Type() string { return "" }
+func (*inferSeries) Type() string { return "infer" }
 
 func (*inferSeries) NRows(opts ...dataframe.Options) int { return 0 }
 

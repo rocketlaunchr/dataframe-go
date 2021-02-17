@@ -363,6 +363,28 @@ func (s *SeriesTime) valToPointer(v interface{}) *time.Time {
 		return &[]time.Time{*val}[0]
 	case time.Time:
 		return &val
+	case *int:
+		if val == nil {
+			return nil
+		}
+		// Assume seconds
+		t := time.Unix(int64(*val), 0).In(time.UTC)
+		return &t
+	case int:
+		// Assume seconds
+		t := time.Unix(int64(val), 0).In(time.UTC)
+		return &t
+	case *int64:
+		if val == nil {
+			return nil
+		}
+		// Assume seconds
+		t := time.Unix(*val, 0).In(time.UTC)
+		return &t
+	case int64:
+		// Assume seconds
+		t := time.Unix(val, 0).In(time.UTC)
+		return &t
 	case *string:
 		if val == nil {
 			return nil
@@ -602,7 +624,7 @@ func (s *SeriesTime) String() string {
 
 	count := len(s.Values)
 
-	out := "[ "
+	out := s.name + ": [ "
 
 	if count > 6 {
 		idx := []int{0, 1, 2, count - 3, count - 2, count - 1}
