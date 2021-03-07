@@ -171,6 +171,12 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 						seriess = append(seriess, T.NewSeries(name, init))
 					case Converter:
 						switch T.ConcreteType.(type) {
+						case float64:
+							seriess = append(seriess, dataframe.NewSeriesFloat64(name, init))
+						case int64, bool:
+							seriess = append(seriess, dataframe.NewSeriesInt64(name, init))
+						case string:
+							seriess = append(seriess, dataframe.NewSeriesString(name, init))
 						case time.Time:
 							seriess = append(seriess, dataframe.NewSeriesTime(name, init))
 						default:
