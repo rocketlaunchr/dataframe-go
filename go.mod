@@ -15,7 +15,7 @@ require (
 	github.com/icza/gox v0.0.0-20200320174535-a6ff52ab3d90
 	github.com/juju/utils/v2 v2.0.0-20200923005554-4646bfea2ef1
 	github.com/olekukonko/tablewriter v0.0.4
-	github.com/ompluscator/dynamic-struct v1.2.0
+	github.com/ompluscator/dynamic-struct v1.3.0
 	github.com/rocketlaunchr/dbq/v2 v2.5.0
 	github.com/rocketlaunchr/mysql-go v1.1.3
 	github.com/sandertv/go-formula/v2 v2.0.0-alpha.7
