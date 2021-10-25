@@ -1,4 +1,8 @@
 <p align="right">
+  ⭐ &nbsp;&nbsp;<strong>the project to show your appreciation.</strong> :arrow_upper_right:
+</p>
+
+<p align="right">
   <a href="http://godoc.org/github.com/rocketlaunchr/dataframe-go"><img src="http://godoc.org/github.com/rocketlaunchr/dataframe-go?status.svg" /></a>
   <a href="https://goreportcard.com/report/github.com/rocketlaunchr/dataframe-go"><img src="https://goreportcard.com/badge/github.com/rocketlaunchr/dataframe-go" /></a>
   <a href="https://gocover.io/github.com/rocketlaunchr/dataframe-go"><img src="http://gocover.io/_badge/github.com/rocketlaunchr/dataframe-go" /></a>
@@ -11,10 +15,10 @@
 Dataframes are used for statistics, machine-learning, and data manipulation/exploration. You can think of a Dataframe as an excel spreadsheet.
 This package is designed to be light-weight and intuitive.
 
-⚠️ The package is production ready but the API is not stable yet. Once stability is reached, version `1.0.0` will be tagged.
+⚠️ The package is production ready but the API is not stable yet. Once Go 1.18 (Generics) is introduced, the  **ENTIRE** package will be rewritten. For example, there will only be 1 generic Series type. After that, version `1.0.0` will be tagged.
+
 It is recommended your package manager locks to a commit id instead of the master branch directly. ⚠️
 
-⭐ **the project to show your appreciation.**
 
 # Features
 

@@ -1,0 +1,17 @@
+
+Date: 25-OCT-2021
+Commit: 1713e5c
+
+Changes:
+- improved json importing performance
+- import json arrays and jsonl arrays/objects
+- ValuesIterator step config can now be zero (interpreted as 1)
+
+Breaking:
+
+- minimum Go version is now Go 1.15
+- imports.LoadFromJSONL is now LoadFromJSON. It now supports json arrays, jsonl arrays and jsonl objects.
+- providing a bool value to a SeriesString will now store a "true"/"false" instead of a "1"/"0"
+- for SeriesGeneric, type() returns "generic(%T)" instead of "%T"
+- complex number string interpretation now uses strconv package. The interpreted formats are more limited now.
+- Table function of string now prints series name before values
