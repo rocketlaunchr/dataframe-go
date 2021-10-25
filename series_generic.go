@@ -106,7 +106,7 @@ func (s *SeriesGeneric) Rename(n string, opts ...Options) {
 
 // Type returns the type of data the series holds.
 func (s *SeriesGeneric) Type() string {
-	return fmt.Sprintf("%T", s.concreteType)
+	return fmt.Sprintf("generic(%T)", s.concreteType)
 }
 
 // NRows returns how many rows the series contains.

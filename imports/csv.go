@@ -47,7 +47,7 @@ type CSVLoadOptions struct {
 	// DictateDataType is used to inform LoadFromCSV what the true underlying data type is for a given field name.
 	// The key must be the case-sensitive field name.
 	// The value for a given key must be of the data type of the data.
-	// eg. For a string use "". For a int64 use int64(0). What is relevant is the data type and not the value itself.
+	// eg. For a string use "". For an int64 use int64(0). What is relevant is the data type and not the value itself.
 	//
 	// NOTE: A custom Series must implement NewSerieser interface and be able to interpret strings to work.
 	DictateDataType map[string]interface{}
@@ -61,7 +61,7 @@ type CSVLoadOptions struct {
 	// InferDataTypes can be set to true if the underlying data type should be automatically detected.
 	// Using DictateDataType is the recommended approach (especially for large datasets or memory constrained systems).
 	// DictateDataType always takes precedence when determining the type.
-	// If the data type could not be detected, NewSeriesString is used.
+	// If the data type could not be detected, SeriesString is used.
 	InferDataTypes bool
 
 	// Headers must be set if the CSV file does not contain a header row. This must be nil if the CSV file contains a

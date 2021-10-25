@@ -10,6 +10,7 @@ require (
 	github.com/cnkei/gospline v0.0.0-20191204072713-842a72f86331
 	github.com/containerd/continuity v0.0.0-20200413184840-d3ef23f19fbb // indirect
 	github.com/davecgh/go-spew v1.1.1
+	github.com/goccy/go-json v0.7.6
 	github.com/google/go-cmp v0.4.0
 	github.com/guptarohit/asciigraph v0.5.1
 	github.com/icza/gox v0.0.0-20200320174535-a6ff52ab3d90

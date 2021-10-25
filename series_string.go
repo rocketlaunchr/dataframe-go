@@ -349,15 +349,15 @@ func (s *SeriesString) valToPointer(v interface{}) *string {
 			return nil
 		}
 		if *val == true {
-			return &[]string{"1"}[0]
+			return &[]string{"true"}[0]
 		} else {
-			return &[]string{"0"}[0]
+			return &[]string{"false"}[0]
 		}
 	case bool:
 		if val == true {
-			return &[]string{"1"}[0]
+			return &[]string{"true"}[0]
 		} else {
-			return &[]string{"0"}[0]
+			return &[]string{"false"}[0]
 		}
 	case *string:
 		if val == nil {
@@ -366,6 +366,41 @@ func (s *SeriesString) valToPointer(v interface{}) *string {
 		return &[]string{*val}[0]
 	case string:
 		return &val
+	case *float64:
+		if val == nil {
+			return nil
+		}
+		return &[]string{strconv.FormatFloat(*val, 'G', -1, 64)}[0]
+	case float64:
+		return &[]string{strconv.FormatFloat(val, 'G', -1, 64)}[0]
+	case *float32:
+		if val == nil {
+			return nil
+		}
+		return &[]string{strconv.FormatFloat(float64(*val), 'G', -1, 64)}[0]
+	case float32:
+		return &[]string{strconv.FormatFloat(float64(val), 'G', -1, 64)}[0]
+	case *int64:
+		if val == nil {
+			return nil
+		}
+		return &[]string{strconv.FormatInt(*val, 10)}[0]
+	case int64:
+		return &[]string{strconv.FormatInt(val, 10)}[0]
+	case *int:
+		if val == nil {
+			return nil
+		}
+		return &[]string{strconv.Itoa(*val)}[0]
+	case int:
+		return &[]string{strconv.Itoa(val)}[0]
+	case *int32:
+		if val == nil {
+			return nil
+		}
+		return &[]string{strconv.FormatInt(int64(*val), 10)}[0]
+	case int32:
+		return &[]string{strconv.FormatInt(int64(val), 10)}[0]
 	default:
 		_ = v.(string) // Intentionally panic
 		return nil

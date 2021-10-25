@@ -64,7 +64,7 @@ type SQLLoadOptions struct {
 	// DictateDataType is used to inform LoadFromSQL what the true underlying data type is for a given column name.
 	// The key must be the case-sensitive column name.
 	// The value for a given key must be of the data type of the data.
-	// eg. For a string use "". For a int64 use int64(0). What is relevant is the data type and not the value itself.
+	// eg. For a string use "". For an int64 use int64(0). What is relevant is the data type and not the value itself.
 	//
 	// NOTE: A custom Series must implement NewSerieser interface and be able to interpret strings to work.
 	DictateDataType map[string]interface{}

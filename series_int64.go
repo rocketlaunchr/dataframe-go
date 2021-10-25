@@ -376,12 +376,22 @@ func (s *SeriesInt64) valToPointer(v interface{}) *int64 {
 		if val == nil {
 			return nil
 		}
+		if *val == "true" || *val == "TRUE" || *val == "True" || *val == "1" {
+			return &[]int64{1}[0]
+		} else if *val == "false" || *val == "FALSE" || *val == "False" || *val == "0" {
+			return &[]int64{0}[0]
+		}
 		i, err := strconv.ParseInt(*val, 10, 64)
 		if err != nil {
 			_ = v.(int64) // Intentionally panic
 		}
 		return &i
 	case string:
+		if val == "true" || val == "TRUE" || val == "True" || val == "1" {
+			return &[]int64{1}[0]
+		} else if val == "false" || val == "FALSE" || val == "False" || val == "0" {
+			return &[]int64{0}[0]
+		}
 		i, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
 			_ = v.(int64) // Intentionally panic
