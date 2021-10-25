@@ -302,9 +302,8 @@ func (s *SeriesString) ValuesIterator(opts ...ValuesOptions) func() (*int, inter
 		if row < 0 {
 			row = len(s.values) + row
 		}
-		step = opts[0].Step
-		if step == 0 {
-			panic("Step can not be zero")
+		if opts[0].Step != 0 {
+			step = opts[0].Step
 		}
 	}
 

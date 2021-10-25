@@ -166,9 +166,8 @@ func (df *DataFrame) ValuesIterator(opts ...ValuesOptions) func(opts ...SeriesRe
 		if row < 0 {
 			row = df.n + row
 		}
-		step = opts[0].Step
-		if step == 0 {
-			panic("Step can not be zero")
+		if opts[0].Step != 0 {
+			step = opts[0].Step
 		}
 	}
 

@@ -317,9 +317,8 @@ func (s *SeriesComplex128) ValuesIterator(opts ...dataframe.ValuesOptions) func(
 		if row < 0 {
 			row = len(s.Values) + row
 		}
-		step = opts[0].Step
-		if step == 0 {
-			panic("Step can not be zero")
+		if opts[0].Step != 0 {
+			step = opts[0].Step
 		}
 	}
 
