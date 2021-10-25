@@ -20,7 +20,7 @@ func TestParseComplex(t *testing.T) {
 			expAnswer: complex(99, 0),
 		},
 		{
-			str:       "+99",
+			str:       "99",
 			expAnswer: complex(99, 0),
 		},
 		{
@@ -28,7 +28,7 @@ func TestParseComplex(t *testing.T) {
 			expAnswer: complex(-99, 0),
 		},
 		{
-			str:       "+1i",
+			str:       "1i",
 			expAnswer: complex(0, 1),
 		},
 		{
@@ -36,59 +36,59 @@ func TestParseComplex(t *testing.T) {
 			expAnswer: complex(0, -1),
 		},
 		{
-			str:       "+3-i",
+			str:       "3-1i",
 			expAnswer: complex(3, -1),
 		},
 		{
-			str:       "+3+i",
+			str:       "3+1i",
 			expAnswer: complex(3, 1),
 		},
 		{
-			str:       "3-i",
+			str:       "3-1i",
 			expAnswer: complex(3, -1),
 		},
 		{
-			str:       "3+i",
+			str:       "3+1i",
 			expAnswer: complex(3, 1),
 		},
 		{
-			str:       "+i",
+			str:       "1i",
 			expAnswer: complex(0, 1),
 		},
 		{
-			str:       "-i",
+			str:       "-1i",
 			expAnswer: complex(0, -1),
 		},
 		{
-			str:       "3e3-i",
+			str:       "3e3-1i",
 			expAnswer: complex(3e3, -1),
 		},
 		{
-			str:       "-3e3-i",
+			str:       "-3e3-1i",
 			expAnswer: complex(-3e3, -1),
 		},
 		{
-			str:       "+3e3-i",
+			str:       "3e3-1i",
 			expAnswer: complex(3e3, -1),
 		},
 		{
-			str:       "3e+3-i",
+			str:       "3e+3-1i",
 			expAnswer: complex(3e+3, -1),
 		},
 		{
-			str:       "-3e+3-i",
+			str:       "-3e+3-1i",
 			expAnswer: complex(-3e+3, -1),
 		},
 		{
-			str:       "-3e+3-i",
+			str:       "-3e+3-1i",
 			expAnswer: complex(-3e+3, -1),
 		},
 		{
-			str:       "+3e+3-3e+3i",
+			str:       "3e+3-3e+3i",
 			expAnswer: complex(3e+3, -3e+3),
 		},
 		{
-			str:       "+3e+3+3e+3i",
+			str:       "3e+3+3e+3i",
 			expAnswer: complex(3e+3, 3e+3),
 		},
 	}

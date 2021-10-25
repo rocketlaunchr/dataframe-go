@@ -57,7 +57,7 @@ func TestSeriesType(t *testing.T) {
 		"string",
 		"time",
 		"mixed",
-		"civil.Date",
+		"generic(civil.Date)",
 	}
 
 	for i := range init {
@@ -192,10 +192,9 @@ func TestSeriesUpdate(t *testing.T) {
 			s.Update(0, tRef.Add(99*24*time.Hour))
 		case "mixed":
 			s.Update(0, 99)
-		case "civil.Date":
+		case "generic(civil.Date)":
 			s.Update(0, civil.Date{2018, time.May, 99})
 		}
-
 	}
 
 	expectedValues := [][]interface{}{
@@ -380,15 +379,16 @@ func TestSeriesTable(t *testing.T) {
 +-----+-------------------------------+
 | 3X1 |             TIME              |
 +-----+-------------------------------+`,
-		`+-----+------------+
-|     |    TEST    |
-+-----+------------+
-| 0:  | 2018-05-01 |
-| 1:  | 2018-05-02 |
-| 2:  | 2018-05-03 |
-+-----+------------+
-| 3X1 | CIVIL DATE |
-+-----+------------+`,
+		`+-----+---------------------+
+|     |        TEST         |
++-----+---------------------+
+| 0:  |     2018-05-01      |
+| 1:  |     2018-05-02      |
+| 2:  |     2018-05-03      |
++-----+---------------------+
+| 3X1 | GENERIC(CIVIL DATE) |
++-----+---------------------+
+`,
 	}
 
 	for i := range init {
@@ -423,23 +423,22 @@ func TestSeriesString(t *testing.T) {
 		NewSeriesGeneric("test", civil.Date{}, &SeriesInit{0, 1}, civil.Date{2018, time.May, 01}, civil.Date{2018, time.May, 02}, civil.Date{2018, time.May, 03}, civil.Date{2018, time.May, 04}, civil.Date{2018, time.May, 05}, civil.Date{2018, time.May, 06}, civil.Date{2018, time.May, 07}),
 	}
 
-	expected := []string{`[ 1 2 3 ]`,
-		`[ 1 2 3 ]`,
-		`[ 1 2 3 ]`,
-		`[ 2017-01-01 05:30:12 +0000 UTC 2017-01-02 05:30:12 +0000 UTC 2017-01-03 05:30:12 +0000 UTC ]`,
-		`[ 2018-05-01 2018-05-02 2018-05-03 ]`,
-		`[ 1 2 3 ... 5 6 7 ]`,
-		`[ 1 2 3 ... 5 6 7 ]`,
-		`[ 1 2 3 ... 5 6 7 ]`,
-		`[ 2017-01-01 05:30:12 +0000 UTC 2017-01-02 05:30:12 +0000 UTC 2017-01-03 05:30:12 +0000 UTC ... 2017-01-05 05:30:12 +0000 UTC 2017-01-06 05:30:12 +0000 UTC 2017-01-07 05:30:12 +0000 UTC ]`,
-		`[ 2018-05-01 2018-05-02 2018-05-03 ... 2018-05-05 2018-05-06 2018-05-07 ]`,
+	expected := []string{`test: [ 1 2 3 ]`,
+		`test: [ 1 2 3 ]`,
+		`test: [ 1 2 3 ]`,
+		`test: [ 2017-01-01 05:30:12 +0000 UTC 2017-01-02 05:30:12 +0000 UTC 2017-01-03 05:30:12 +0000 UTC ]`,
+		`test: [ 2018-05-01 2018-05-02 2018-05-03 ]`,
+		`test: [ 1 2 3 ... 5 6 7 ]`,
+		`test: [ 1 2 3 ... 5 6 7 ]`,
+		`test: [ 1 2 3 ... 5 6 7 ]`,
+		`test: [ 2017-01-01 05:30:12 +0000 UTC 2017-01-02 05:30:12 +0000 UTC 2017-01-03 05:30:12 +0000 UTC ... 2017-01-05 05:30:12 +0000 UTC 2017-01-06 05:30:12 +0000 UTC 2017-01-07 05:30:12 +0000 UTC ]`,
+		`test: [ 2018-05-01 2018-05-02 2018-05-03 ... 2018-05-05 2018-05-06 2018-05-07 ]`,
 	}
 
 	for i := range init {
 		s := init[i]
 
 		if v, ok := s.(Tabler); ok {
-
 			if strings.TrimSpace(v.String()) != strings.TrimSpace(expected[i]) {
 				t.Errorf("wrong val: expected: %v actual: %v", expected[i], v.String())
 			}

@@ -1,6 +1,4 @@
-// Copyright 2019-20 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
-
-// +build go1.15
+// Copyright 2019-21 PJ Engineering and Business Solutions Pty. Ltd. All rights reserved.
 
 package xseries
 

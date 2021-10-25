@@ -1,6 +1,6 @@
 module github.com/rocketlaunchr/dataframe-go
 
-go 1.12
+go 1.15
 
 require (
 	cloud.google.com/go v0.57.0
@@ -9,7 +9,6 @@ require (
 	github.com/brianvoe/gofakeit/v4 v4.3.0
 	github.com/cnkei/gospline v0.0.0-20191204072713-842a72f86331
 	github.com/containerd/continuity v0.0.0-20200413184840-d3ef23f19fbb // indirect
-	github.com/davecgh/go-spew v1.1.1
 	github.com/goccy/go-json v0.7.6
 	github.com/google/go-cmp v0.4.0
 	github.com/guptarohit/asciigraph v0.5.1
