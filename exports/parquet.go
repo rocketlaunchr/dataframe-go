@@ -65,7 +65,7 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 	// Create Schema
 	dataSchema := dynamicstruct.NewStruct()
 	for _, aSeries := range df.Series {
-		fieldName := strings.Title(strings.ToLower(aSeries.Name()))
+		fieldName := "Z" + strings.Title(strings.ToLower(aSeries.Name())) // Make it validly exported
 		seriesName := santizeColumnName(aSeries.Name())
 
 		switch aSeries.(type) {
@@ -125,7 +125,7 @@ func ExportToParquet(ctx context.Context, w io.Writer, df *dataframe.DataFrame, 
 
 			rec := schemaStruct.New()
 			for _, aSeries := range df.Series {
-				fieldName := strings.Title(strings.ToLower(aSeries.Name()))
+				fieldName := "Z" + strings.Title(strings.ToLower(aSeries.Name()))
 
 				v := reflect.ValueOf(rec).Elem().FieldByName(fieldName)
 				if v.IsValid() {
