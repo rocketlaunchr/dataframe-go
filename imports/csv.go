@@ -74,6 +74,22 @@ func LoadFromCSV(ctx context.Context, r io.ReadSeeker, options ...CSVLoadOptions
 
 	var init *dataframe.SeriesInit
 
+	// Check for bom characters in the beginning (that python seems to add).
+	// See:
+	// https://github.com/rocketlaunchr/dataframe-go/issues/62
+	// https://github.com/golang/go/issues/33887
+	// https://github.com/dimchansky/utfbom
+	// https://github.com/spkg/bom/
+	checkBOM := make([]byte, 3)
+	readN, err := r.Read(checkBOM)
+	if err != nil {
+		return nil, err
+	}
+	if !(readN == 3 && checkBOM[0] == 0xef && checkBOM[1] == 0xbb && checkBOM[2] == 0xbf) {
+		// bom not found so reset reader
+		r.Seek(0, io.SeekStart)
+	}
+
 	var (
 		comma            rune
 		comment          rune
